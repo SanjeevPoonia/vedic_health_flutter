@@ -23,7 +23,7 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
    final String token;
-   MyApp(this.token);
+   MyApp(this.token, {super.key});
 
   @override
   Widget build(BuildContext context) {

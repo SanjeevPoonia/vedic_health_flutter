@@ -571,80 +571,61 @@ class _MyHomePageState extends State<AddAddressScreen> {
   // Successurl
   //http://vedic.qdegrees.com:3008/order-management/paymentSuccess/682dff96a56e642c84ea1a4f
 
-
-
-
   fetchCountryID() async {
-
-
     APIDialog.showAlertDialog(context, "Please wait...");
 
-
-
     ApiBaseHelper helper = ApiBaseHelper();
-    var  response =
-    await helper.get('https://maps.googleapis.com/maps/api/geocode/json?address='+streetAddressController.text.toString()+","+cityController.text.toString()+","+stateController.text.toString()+","+countryController.text.toString()+"-"+zipcodeController.text.toString()+"&key=AIzaSyDg2z9b58is8H3h_SNNpQTzMMl7Ma18Zac", context);
+    var response = await helper.get(
+        'https://maps.googleapis.com/maps/api/geocode/json?address=' +
+            streetAddressController.text.toString() +
+            "," +
+            cityController.text.toString() +
+            "," +
+            stateController.text.toString() +
+            "," +
+            countryController.text.toString() +
+            "-" +
+            zipcodeController.text.toString() +
+            "&key=AIzaSyDg2z9b58is8H3h_SNNpQTzMMl7Ma18Zac",
+        context);
 
     var responseJSON = json.decode(response.body);
-
 
     print(responseJSON);
     print("****222");
 
     Navigator.pop(context);
 
-    List<dynamic> addressList=responseJSON["results"];
+    List<dynamic> addressList = responseJSON["results"];
     print("****");
 
+    String stateID = "";
+    String countryID = "";
 
-    String stateID="";
-    String countryID="";
-
-
-    for(int i=0;i<addressList[0]["address_components"].length;i++)
-      {
-
-        if(addressList[0]["address_components"][i]["types"].toString().contains("administrative_area_level_1"))
-          {
-            stateID=addressList[0]["address_components"][i]["short_name"].toString();
-          }
-
-
-        if(addressList[0]["address_components"][i]["types"].toString().contains("country"))
-        {
-          countryID=addressList[0]["address_components"][i]["short_name"].toString();
-        }
-
-
-
-
+    for (int i = 0; i < addressList[0]["address_components"].length; i++) {
+      if (addressList[0]["address_components"][i]["types"]
+          .toString()
+          .contains("administrative_area_level_1")) {
+        stateID =
+            addressList[0]["address_components"][i]["short_name"].toString();
       }
 
+      if (addressList[0]["address_components"][i]["types"]
+          .toString()
+          .contains("country")) {
+        countryID =
+            addressList[0]["address_components"][i]["short_name"].toString();
+      }
+    }
 
     print(stateID);
     print(countryID);
 
-
-
     addAddress(stateID, countryID);
-
-
-
-
-
-
-
-
   }
 
-
-  addAddress(String stateCode,String countryCode) async {
-
-
-
-
+  addAddress(String stateCode, String countryCode) async {
     APIDialog.showAlertDialog(context, "Please wait...");
-
 
     String? userId = await MyUtils.getSharedPreferences("user_id");
     var data = {
@@ -674,31 +655,22 @@ class _MyHomePageState extends State<AddAddressScreen> {
     var responseJSON = json.decode(response.toString());
     print(response.toString());
 
-
     if (responseJSON['message'] == "Address added successfully!") {
-
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
 
-      String addressID="";
-      addressID=responseJSON["data"]["_id"].toString();
+      String addressID = "";
+      addressID = responseJSON["data"]["_id"].toString();
       Navigator.pop(context);
-      Navigator.pop(context,addressID);
-
-
-    }
-    else
-    {
+      Navigator.pop(context, addressID);
+    } else {
       Toast.show(responseJSON['error'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
     }
-
-
-
 
     setState(() {});
   }
