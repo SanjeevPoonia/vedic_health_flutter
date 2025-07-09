@@ -15,18 +15,16 @@ import 'dart:convert' show utf8, base64;
 class ApiBaseHelper {
   final String _baseUrl = AppConstant.appBaseURL;
 
-
-
   Future<dynamic> get(String url, BuildContext context) async {
     var responseJson;
-    print(url+'  API CALLED');
+    print(url + '  API CALLED');
     try {
       final response = await http.get(Uri.parse(url), headers: {
         'Content-Type': 'application/json',
-        'Accept':'application/json',
-        'X-Requested-With':'XMLHttpRequest'
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
       });
-      var decodedJson=jsonDecode(response.body.toString());
+      var decodedJson = jsonDecode(response.body.toString());
       print(decodedJson);
 
       responseJson = _returnResponse(response, context);
@@ -36,18 +34,14 @@ class ApiBaseHelper {
     return responseJson;
   }
 
-
-  Future<dynamic> getAPI(
-      String url, BuildContext context) async {
-    print(_baseUrl+url+'  API CALLED');
+  Future<dynamic> getAPI(String url, BuildContext context) async {
+    print(_baseUrl + url + '  API CALLED');
     var responseJson;
     try {
-      final response = await http.get(Uri.parse(_baseUrl + url),
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept':'application/json'
-          }
-      );
+      final response = await http.get(Uri.parse(_baseUrl + url), headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      });
       log(response.body.toString());
       responseJson = _returnResponse2(response, context);
     } on SocketException {
@@ -56,10 +50,9 @@ class ApiBaseHelper {
     return responseJson;
   }
 
-
   Future<dynamic> postAPI(
       String url, var apiParams, BuildContext context) async {
-    print(_baseUrl+url+'  API CALLED');
+    print(_baseUrl + url + '  API CALLED');
     print(apiParams.toString());
     var responseJson;
     try {
@@ -67,9 +60,8 @@ class ApiBaseHelper {
           body: json.encode(apiParams),
           headers: {
             'Content-Type': 'application/json',
-            'Accept':'application/json'
-          }
-          );
+            'Accept': 'application/json'
+          });
       log(response.body.toString());
       responseJson = _returnResponse2(response, context);
     } on SocketException {
@@ -86,7 +78,7 @@ class ApiBaseHelper {
 
     print(utf8.decode(res));
 
-    print(response.statusCode.toString() +'Status Code******* ');
+    print(response.statusCode.toString() + 'Status Code******* ');
 
     // log('api helper response $response');
     switch (response.statusCode) {
@@ -127,10 +119,9 @@ class ApiBaseHelper {
     }
   }
 
-
   dynamic _returnResponse(http.Response response, BuildContext context) {
     var responseJson = jsonDecode(response.body.toString());
-    print(response.statusCode.toString() +'Status Code******* ');
+    print(response.statusCode.toString() + 'Status Code******* ');
     log(responseJson.toString());
 
     // log('api helper response $response');
@@ -169,6 +160,7 @@ class ApiBaseHelper {
             'Error occured while Communication with Server with StatusCode : ${response.statusCode}');
     }
   }
+
   _logOut(BuildContext context) async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.clear();
@@ -179,6 +171,6 @@ class ApiBaseHelper {
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false);
+        (Route<dynamic> route) => false);
   }
 }
