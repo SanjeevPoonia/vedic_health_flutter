@@ -14,6 +14,12 @@ import 'dart:convert' show utf8, base64;
 
 class ApiBaseHelper {
   final String _baseUrl = AppConstant.appBaseURL;
+  final String frontEnd = AppConstant.frontEnd;
+  
+
+  getFrontEndUrl(){
+    return frontEnd;
+  }
 
   Future<dynamic> get(String url, BuildContext context) async {
     var responseJson;

@@ -157,7 +157,7 @@ class MenuState extends State<MenuScreen> {
                               //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
                             },
                             child: SideBarWidget(
-                                'My Profile', 'assets/nav_profile.png'),
+                                'My Profile ', 'assets/nav_profile.png'),
                           ),
                           InkWell(
                             onTap: () {
@@ -359,9 +359,11 @@ class MenuState extends State<MenuScreen> {
                         ToastContext().init(context);
                         Navigator.of(ctx).pop();
 
-                        SharedPreferences preferences =
-                            await SharedPreferences.getInstance();
-                        await preferences.clear();
+                        await MyUtils.removePrefs("user_id");
+                        await MyUtils.removePrefs("email");
+                        await MyUtils.removePrefs("auth_key");
+                        await MyUtils.removePrefs("token");
+                        await MyUtils.removePrefs("access_token");
 
                         Route route = MaterialPageRoute(
                             builder: (context) => LoginScreen());

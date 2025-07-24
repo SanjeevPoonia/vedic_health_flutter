@@ -272,7 +272,7 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              'Order ID:  20${order.orderId}',
+                                              'Order ID: ${order.orderId}',
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey,

@@ -115,7 +115,7 @@ class ConsultationCard extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          border: BoxBorder.all(color: Color(0xFFE2D7D7)),
+          // border: BoxBorder.all(color: Color(0xFFE2D7D7)),
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
         child: Row(
@@ -125,8 +125,8 @@ class ConsultationCard extends StatelessWidget {
               width: 125,
               decoration: BoxDecoration(
                 color: Color(0xFFF8F8F8),
-                border: BoxBorder.fromLTRB(
-                    right: BorderSide(color: Color(0xFFE2D7D7))),
+                // border: BoxBorder.fromLTRB(
+                //     right: BorderSide(color: Color(0xFFE2D7D7))),
                 borderRadius: BorderRadius.only(
                     bottomRight: Radius.circular(10),
                     topRight: Radius.circular(10),
@@ -140,7 +140,7 @@ class ConsultationCard extends StatelessWidget {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        border: BoxBorder.all(color: Color(0xFFE2D7D7)),
+                        // border: BoxBorder.all(color: Color(0xFFE2D7D7)),
                         borderRadius:
                             const BorderRadius.all(Radius.circular(10)),
                       ),

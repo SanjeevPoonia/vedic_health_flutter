@@ -529,7 +529,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-                                  Text(' 24${item.price.toStringAsFixed(2)}',
+                                  Text('${item.price.toStringAsFixed(2)}',
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold)),
                                 ],

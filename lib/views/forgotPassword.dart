@@ -15,22 +15,18 @@ import '../widgets/textfield_widget.dart';
 import 'home_screen.dart';
 import 'dart:convert' show utf8, base64;
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class ForgotPassword extends StatefulWidget {
+  const ForgotPassword({super.key});
 
   @override
-  LoginState createState() => LoginState();
+  ForgotPasswordState createState() => ForgotPasswordState();
 }
 
-class LoginState extends State<SignUpScreen> {
+class ForgotPasswordState extends State<ForgotPassword> {
   bool isObscure = true;
-  bool termsChecked = false;
-  bool checkToggle = false;
   final otpController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   var emailController = TextEditingController();
-  var nameController = TextEditingController();
-  var mobileController = TextEditingController();
   var passwordController = TextEditingController();
   var confirmPasswordController = TextEditingController();
   void showOtpVerificationDialog() {
@@ -112,7 +108,7 @@ class LoginState extends State<SignUpScreen> {
                           children: [
                             const SizedBox(height: 12),
                             const Center(
-                              child: Text('Hello',
+                              child: Text('Forgot your Password? ',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -121,7 +117,7 @@ class LoginState extends State<SignUpScreen> {
                             ),
                             const SizedBox(height: 10),
                             const Center(
-                              child: Text('Register a new account',
+                              child: Text("Don't Worry !! You can Reset It" ,
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -129,26 +125,6 @@ class LoginState extends State<SignUpScreen> {
                                   )),
                             ),
                             const SizedBox(height: 25),
-                            Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              child: TextFieldRegister(
-                                validator: Validators.checkEmptyString,
-                                controller: nameController,
-                                labeltext: 'Name*',
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              child: TextFieldPhone(
-                                validator: Validators.checkEmptyString,
-                                controller: mobileController,
-                                labeltext: 'Mobile Number*',
-                              ),
-                            ),
-                            const SizedBox(height: 10),
                             Container(
                               margin:
                                   const EdgeInsets.symmetric(horizontal: 10),
@@ -179,9 +155,6 @@ class LoginState extends State<SignUpScreen> {
                                   ),
                                   decoration: InputDecoration(
                                     contentPadding: EdgeInsets.zero,
-                                    /*    contentPadding:
-                                      const EdgeInsets.fromLTRB(
-                                          0.0, 20.0, 0.0, 10.0),*/
                                     suffixIcon: IconButton(
                                       icon: isObscure
                                           ? const Icon(
@@ -263,94 +236,6 @@ class LoginState extends State<SignUpScreen> {
                                   )),
                             ),
                             const SizedBox(height: 35),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 15),
-                              child: Row(
-                                children: [
-                                  GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          termsChecked = !termsChecked;
-                                        });
-                                      },
-                                      child: termsChecked
-                                          ? Icon(Icons.check_box,
-                                              color: AppTheme.darkBrown)
-                                          : Icon(Icons
-                                              .check_box_outline_blank_outlined)),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                        "By clicking you agree to our Terms of Use and Privacy Policy",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.black,
-                                        )),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            /*     const SizedBox(height: 20),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 35,
-                                  height: 35,
-                                  child: Checkbox(
-                                    activeColor: AppTheme.darkBrown,
-                                    value: termsChecked,
-                                    onChanged: (newValue) => setState(
-                                            () => termsChecked = newValue!),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: RichText(
-                                      text: TextSpan(
-                                        style: const TextStyle(
-                                          fontSize: 12.5,
-
-                                          color: Colors.black87,
-                                        ),
-                                        children: <TextSpan>[
-                                          const TextSpan(
-                                              text:
-                                              'By continuing, you agree that you have read and accept our '),
-                                          TextSpan(
-                                            text: 'T&Cs',
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppTheme.darkBrown),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                //Navigator.push(context, MaterialPageRoute(builder: (context)=>CMSScreen("terms-conditions", "Terms & Conditions")));
-                                              },
-                                          ),
-                                          const TextSpan(text: ' and '),
-                                          TextSpan(
-                                            text: 'Privacy Policy',
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppTheme.darkBrown),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                // Navigator.push(context, MaterialPageRoute(builder: (context)=>CMSScreen("privacy-policy", "Privacy Policy")));
-                                              },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),*/
                             const SizedBox(height: 22),
                             InkWell(
                               onTap: () {
@@ -365,7 +250,7 @@ class LoginState extends State<SignUpScreen> {
                                       borderRadius: BorderRadius.circular(5)),
                                   height: 50,
                                   child: const Center(
-                                    child: Text('Register',
+                                    child: Text('Verify Mail',
                                         style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
@@ -405,51 +290,37 @@ class LoginState extends State<SignUpScreen> {
       return;
     }
     _formKey.currentState!.save();
-    validateTerms();
-
-    //
+    sendOTP();
   }
 
-  validateTerms() {
-    if (!termsChecked) {
-      Toast.show("Please accept the T&Cs and Privacy Policy",
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.red);
+  changepassword() async {
+    var signupData = {
+      "email": emailController.text,
+      "password": passwordController.text,
+      "confirmPassword": passwordController.text,
+    };
+
+    var requestModel = {
+      'data': base64.encode(utf8.encode(json.encode(signupData)))
+    };
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var signUPResponse =
+        await helper.postAPI('users/changePassword', requestModel, context);
+
+    var responseJSONs = json.decode(signUPResponse.toString());
+    print(responseJSONs);
+    print("klklkl");
+    if (responseJSONs['statusCode'] == 200 ||
+        responseJSONs['statusCode'] == 201) {
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()));
     } else {
-      sendOTP();
-    }
-  }
-
-  signupUser()async{
-       var signupData = {
-        "email": emailController.text,
-        "mobileNo": mobileController.text,
-        "password": passwordController.text,
-        "name":nameController.text
-      };
-
-      var requestModel = {
-        'data': base64.encode(utf8.encode(json.encode(signupData)))
-      };
-
-      ApiBaseHelper helper = ApiBaseHelper();
-      var signUPResponse =
-          await helper.postAPI('users/create', requestModel, context);
-
-      var responseJSONs = json.decode(signUPResponse.toString());
-      print(responseJSONs);
-print("klklkl");
-      if (responseJSONs['statusCode'] == 200 ||
-          responseJSONs['statusCode'] == 201) {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()));
-      }else{
-        Toast.show(responseJSONs['message'],
+      Toast.show(responseJSONs['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
-      }
+    }
   }
 
   void verifyOtp() async {
@@ -463,17 +334,13 @@ print("klklkl");
       return;
     }
 
-  
-
-
     var data = {
       "email": emailController.text,
-      "mobileNumber": mobileController.text,
       "otp": otpController.text
     };
 
     APIDialog.showAlertDialog(context, 'Verifying OTP...');
-Navigator.pop(context);
+    Navigator.pop(context);
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
 
     ApiBaseHelper helper = ApiBaseHelper();
@@ -483,10 +350,10 @@ Navigator.pop(context);
     Navigator.pop(context); // close loading dialog
 
     var responseJSON = json.decode(response.toString());
-print(responseJSON);
+    print(responseJSON);
     if (responseJSON['statusCode'] == 200 ||
         responseJSON['statusCode'] == 201) {
-   signupUser();
+      changepassword();
     } else {
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
@@ -500,14 +367,13 @@ print(responseJSON);
     APIDialog.showAlertDialog(context, 'Sending OTP...');
     var data = {
       "email": emailController.text,
-      "mobileNumber": mobileController.text.toString(),
-      "requestFor": ""
+      
     };
 
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
 
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('users/sendOtp', requestModel, context);
+    var response = await helper.postAPI('users/sendOtpForPassword', requestModel, context);
 
     Navigator.pop(context);
 

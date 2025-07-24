@@ -14,4 +14,10 @@ class MyUtils
     final String? value =  preferences.getString(key);
     return value;
   }
+
+  static Future<Null> removePrefs(String key) async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    preferences.remove(key);
+    return null;
+  }
 }

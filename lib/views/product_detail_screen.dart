@@ -1,3 +1,4 @@
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
@@ -8,6 +9,11 @@ import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/cart_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedic_health/widgets/readMore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:convert' show base64, json, utf8;
 
 import '../network/api_helper.dart';
@@ -27,9 +33,74 @@ class ProductState extends State<ProductDetailScreen> {
   Map<String, dynamic> productData = {};
   Map<String, dynamic> ratingData = {};
   bool isLoading = false;
+  PageController _imagepageController = PageController();
+  List<dynamic> imageList = [];
+  int _currentPage = 0;
+    ApiBaseHelper helper = ApiBaseHelper();
 
-  List<dynamic> similarProducts=[];
-  List<dynamic> reviewsList=[];
+  List<dynamic> similarProducts = [];
+  List<dynamic> reviewsList = [];
+  void _showShareOptions(BuildContext context,id) {
+  showModalBottomSheet(
+    context: context,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
+              title: Text('Share via WhatsApp'),
+              onTap: () async {
+                final text = "Check this product: "+helper.getFrontEndUrl()+"Shop/product/"+id;
+                final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
+                if (await canLaunchUrl(whatsappUrl)) {
+                  await launchUrl(whatsappUrl);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("WhatsApp not installed")),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
+              title: Text('Share on Instagram'),
+              onTap: () {
+                // Instagram doesn't allow direct text sharing
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Instagram sharing not supported directly")),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.link, color: Colors.blue),
+              title: Text('Copy Link'),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: helper.getFrontEndUrl()+"Shop/product/"+id));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Link copied!")),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share, color: Colors.black),
+              title: Text('More Options'),
+              onTap: () {
+                Share.share("Check this product: "+ helper.getFrontEndUrl()+ "Shop/product/"+id);
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
@@ -45,39 +116,80 @@ class ProductState extends State<ProductDetailScreen> {
                       children: [
                         Stack(
                           children: [
-                            Container(
-                              width: double.infinity,
+                            SizedBox(
                               height: 280,
-                              decoration: BoxDecoration(
-                                  image: DecorationImage(
-                                      fit: BoxFit.cover,
-                                      image: NetworkImage(
-                                        AppConstant.appBaseURL +
-                                            productData["coverImage"]
-                                                .toString(),
-                                      ))),
+                              width: double.infinity,
+                              child: PageView.builder(
+                                controller: _imagepageController,
+                                itemCount: imageList.length,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentPage = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  return Image.network(
+                                    AppConstant.appBaseURL + imageList[index],
+                                    fit: BoxFit.contain,
+                                    width: double.infinity,
+                                  );
+                                },
+                              ),
                             ),
                             Padding(
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 11),
                               child: Row(
                                 children: [
                                   GestureDetector(
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: Image.asset("assets/back_ic.png",
-                                          width: 39, height: 39)),
-
-                                  //share_ic
-
-                                  Spacer(),
-
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Image.asset("assets/back_ic.png",
+                                        width: 39, height: 39),
+                                  ),
+                                  const Spacer(),
                                   GestureDetector(
-                                      onTap: () {},
-                                      child: Image.asset("assets/share_ic.png",
-                                          width: 39, height: 39))
+                                    onTap: () {
+                                      _showShareOptions(context,widget.productID);
+                                    },
+                                    child: Image.asset(
+                                      "assets/share_ic.png",
+                                      width: 39,
+                                      height: 39,
+                                    ),
+                                  ),
                                 ],
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 16,
+                              left: 0,
+                              right: 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  imageList.length,
+                                  (index) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    width: _currentPage == index ? 12 : 10,
+                                    height: _currentPage == index ? 12 : 10,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: _currentPage == index
+                                          ? Colors.brown
+                                          : Colors.brown.withOpacity(0.3),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.4),
+                                          spreadRadius: 1,
+                                          blurRadius: 2,
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             )
                           ],
@@ -94,7 +206,7 @@ class ProductState extends State<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: 32),
-                              Text(productData["brandName"].toString(),
+                              Text(productData["categoryName"].toString(),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -122,44 +234,33 @@ class ProductState extends State<ProductDetailScreen> {
                                       ))
                                 ],
                               ),
-/*
-                    SizedBox(height: 10),
-
-
-
-
-                    Row(
-                      children: [
-                        StarRating(
-                          rating: 4,
-                          allowHalfRating: true,
-                          color: Color(0xFFF4AB3E),
-                          onRatingChanged: (rating) => setState(() => this.rating = rating),
-                        ),
-
-                        SizedBox(width: 5),
-
-
-                        Text("4.2",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF662A09),
-                            )),
-
-                        SizedBox(width: 10),
-
-                        Text("1,200 ratings",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF3872D4),
-                            )),
-
-
-                      ],
-                    ),*/
-
+                              SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  StarRating(
+                                    rating: double.parse(
+                                        ratingData['averageRating']),
+                                    allowHalfRating: true,
+                                    color: Color(0xFFF4AB3E),
+                                    onRatingChanged: (rating) =>
+                                        setState(() => this.rating = rating),
+                                  ),
+                                  SizedBox(width: 5),
+                                  Text(ratingData['averageRating'],
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF662A09),
+                                      )),
+                                  SizedBox(width: 10),
+                                  Text("${ratingData['totalReviews']} Reviews",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF3872D4),
+                                      )),
+                                ],
+                              ),
                               SizedBox(height: 19),
                               Text("Description",
                                   style: TextStyle(
@@ -168,13 +269,13 @@ class ProductState extends State<ProductDetailScreen> {
                                     color: Colors.black,
                                   )),
                               SizedBox(height: 7),
-                              Text(
-                                  productData["product_description"].toString(),
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    color: Color(0xFF696969),
-                                  ),
-                                  maxLines: 10),
+                              ReadMoreText(
+                                text: productData["product_description"]
+                                    .toString(),
+                                maxLines: 4, // or 10 as you want initially
+                                style: TextStyle(
+                                    fontSize: 14.5, color: Color(0xFF696969)),
+                              ),
                               SizedBox(height: 19),
                               Text("About Item",
                                   style: TextStyle(
@@ -195,7 +296,7 @@ class ProductState extends State<ProductDetailScreen> {
                                         )),
                                   ),
                                   Expanded(
-                                    child: Text(productData["brandName"]??"",
+                                    child: Text(productData["brandName"] ?? "",
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.black,
@@ -208,7 +309,7 @@ class ProductState extends State<ProductDetailScreen> {
                                 children: [
                                   Container(
                                     width: 140,
-                                    child: Text("Weight",
+                                    child: Text("Quantity",
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -217,7 +318,7 @@ class ProductState extends State<ProductDetailScreen> {
                                   ),
                                   Expanded(
                                     child: Text(
-                                        ((productData["weight"]) / 1000)
+                                        ((productData["weight"]))
                                                 .toStringAsFixed(2) +
                                             " Grams",
                                         style: TextStyle(
@@ -253,7 +354,7 @@ class ProductState extends State<ProductDetailScreen> {
                                 children: [
                                   Container(
                                     width: 140,
-                                    child: Text("Ingredient",
+                                    child: Text("Ingredients",
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -282,85 +383,113 @@ class ProductState extends State<ProductDetailScreen> {
                                     color: Colors.black,
                                   )),
                               SizedBox(height: 15),
-
-
                               Container(
-                                height:250,
-
+                                height: 250,
                                 child: ListView.builder(
-
                                     scrollDirection: Axis.horizontal,
                                     itemCount: similarProducts.length,
-                                    itemBuilder: (BuildContext context,int index)
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          ProductDetailScreen(
+                                                              similarProducts[
+                                                                          index]
+                                                                      ["_id"]
+                                                                  .toString(),
+                                                              similarProducts[
+                                                                          index]
+                                                                      [
+                                                                      "category"]
+                                                                  .toString())));
+                                            },
+                                            child: Container(
+                                              padding: EdgeInsets.all(5),
+                                              width: 200,
+                                              decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  color: Colors.white,
+                                                  border: Border.all(
+                                                      color: Color(0xFFE2D7D7),
+                                                      width: 1)),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(height: 10),
+                                                  Container(
+                                                    height: 135,
+                                                    child: Stack(
+                                                      children: [
+                                                        Container(
+                                                          decoration: BoxDecoration(
+                                                              image: DecorationImage(
+                                                                  image: NetworkImage(AppConstant
+                                                                          .appBaseURL +
+                                                                      similarProducts[
+                                                                              index]
+                                                                          [
+                                                                          "coverImage"]),
+                                                                  fit: BoxFit
+                                                                      .contain)),
+                                                        ),
 
-                                {
-                                  return Row(
-                                    children: [
-
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(context, MaterialPageRoute(builder: (context)=>ProductDetailScreen(similarProducts[index]["_id"].toString(),similarProducts[index]["category"].toString())));
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.all(5),
-                                          width:200,
-                                          decoration: BoxDecoration(
-                                              borderRadius:
-                                              BorderRadius.circular(10),
-                                              color: Colors.white,
-                                              border: Border.all(
-                                                  color: Color(0xFFE2D7D7),
-                                                  width: 1)),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            children: [
-
-                                              SizedBox(height:10),
-                                              Container(
-                                                height: 135,
-                                                child: Stack(
-                                                  children: [
-                                                    Container(
-                                                      decoration: BoxDecoration(
-                                                          image: DecorationImage(
-                                                              image: NetworkImage(
-                                                                  AppConstant.appBaseURL+similarProducts[index]["coverImage"]),
-                                                              fit: BoxFit.cover)),
+                                                        //  Image.asset("assets/banner4.png"),
+                                                        Align(
+                                                          alignment: Alignment
+                                                              .topRight,
+                                                          child: GestureDetector(
+                                                            onTap: (){_showShareOptions(context,similarProducts[
+                                                                          index]
+                                                                      ["_id"]
+                                                                  .toString());},
+                                                            child: Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .only(
+                                                                      right: 4),
+                                                              child: Image.asset(
+                                                                  "assets/arrow_right.png",
+                                                                  width: 34,
+                                                                  height: 26),
+                                                            ),
+                                                          ),
+                                                        )
+                                                      ],
                                                     ),
+                                                  ),
 
-                                                    //  Image.asset("assets/banner4.png"),
-                                                  Align(
-                                                    alignment: Alignment.topRight,
-                                                    child:   Padding(
-                                                      padding:
-                                                      const EdgeInsets.only(
-                                                           right: 4),
-                                                      child: Image.asset(
-                                                          "assets/arrow_right.png",
-                                                          width: 34,
-                                                          height: 26),
-                                                    ),
-                                                  )
-                                                  ],
-                                                ),
-                                              ),
+                                                  //  SizedBox(height: 8),
 
-                                              //  SizedBox(height: 8),
-
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(
-                                                    horizontal: 5),
-                                                child: Row(
-                                                  children: [
-                                                    Text("\$"+similarProducts[index]["discounted_price"].toString(),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                          FontWeight.bold,
-                                                          color: AppTheme.darkBrown,
-                                                        )),
-                                                    /*      Spacer(),
+                                                  Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 5),
+                                                    child: Row(
+                                                      children: [
+                                                        Text(
+                                                            "\$" +
+                                                                similarProducts[
+                                                                            index]
+                                                                        [
+                                                                        "discounted_price"]
+                                                                    .toString(),
+                                                            style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: AppTheme
+                                                                  .darkBrown,
+                                                            )),
+                                                        /*      Spacer(),
                                                 Image.asset(
                                                     "assets/star_ic.png",
                                                     width: 13,
@@ -373,48 +502,53 @@ class ProductState extends State<ProductDetailScreen> {
                                                           FontWeight.w500,
                                                       color: Colors.black,
                                                     )),*/
-                                                  ],
-                                                ),
+                                                      ],
+                                                    ),
+                                                  ),
+
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            3.0),
+                                                    child: Text(
+                                                        similarProducts[index]
+                                                            ["productName"],
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppTheme
+                                                              .darkBrown,
+                                                        ),
+                                                        maxLines: 2),
+                                                  ),
+
+                                                  SizedBox(height: 3),
+
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            3.0),
+                                                    child: Text(
+                                                        similarProducts[index]
+                                                            ["brandName"],
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color:
+                                                              Color(0xFFF38328),
+                                                        )),
+                                                  ),
+                                                ],
                                               ),
-
-
-
-                                              Padding(
-                                                padding: const EdgeInsets.all(3.0),
-                                                child: Text(similarProducts[index]["productName"],
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: AppTheme.darkBrown,
-                                                    ),maxLines: 2),
-                                              ),
-
-                                              SizedBox(height: 3),
-
-                                              Padding(
-                                                padding: const EdgeInsets.all(3.0),
-                                                child: Text(similarProducts[index]["brandName"],
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Color(0xFFF38328),
-                                                    )),
-                                              ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                      ),
-
-                                      SizedBox(width: 13)
-                                    ],
-                                  );
-                                }
-
-
-                                ),
+                                          SizedBox(width: 13)
+                                        ],
+                                      );
+                                    }),
                               ),
-
-
                               SizedBox(height: 28),
                               Row(
                                 children: [
@@ -424,134 +558,152 @@ class ProductState extends State<ProductDetailScreen> {
                                         fontWeight: FontWeight.w600,
                                         color: Colors.black,
                                       )),
-                              /*    Spacer(),
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: Text("See all",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0XFF3E99C4),
-                                        )),
-                                  ),*/
                                 ],
                               ),
                               SizedBox(height: 13),
-
-                              ratingData.isEmpty?Container():
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 49,
-                                    height: 25,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(40),
-                                        color: Color(0xFFF8B84E)),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                              ratingData.isEmpty
+                                  ? Container()
+                                  : Row(
                                       children: [
-                                        Text(ratingData["averageRating"].toString(),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            )),
-                                        SizedBox(width: 2),
-                                        Icon(
-                                          Icons.star,
-                                          color: Colors.white,
-                                          size: 12,
+                                        Container(
+                                          width: 49,
+                                          height: 25,
+                                          decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(40),
+                                              color: Color(0xFFF8B84E)),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                  ratingData["averageRating"]
+                                                      .toString(),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  )),
+                                              SizedBox(width: 2),
+                                              Icon(
+                                                Icons.star,
+                                                color: Colors.white,
+                                                size: 12,
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                              ratingData["totalReviews"]
+                                                      .toString() +
+                                                  " reviews",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Color(0xFFBEBEBE),
+                                              )),
                                         )
                                       ],
                                     ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(ratingData["totalReviews"].toString()+" reviews",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Color(0xFFBEBEBE),
-                                        )),
-                                  )
-                                ],
-                              ),
                               SizedBox(height: 28),
-
-                              reviewsList.length==0?
-
-                                  Center(
-                                    child: Text("No reviews found!"),
-                                  ):
-
-
-                              ListView.builder(
-                                  itemCount: reviewsList.length,
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemBuilder: (BuildContext context, int pos) {
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
+                              reviewsList.length == 0
+                                  ? Center(
+                                      child: Text("No reviews found!"),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: reviewsList.length,
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      itemBuilder:
+                                          (BuildContext context, int pos) {
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            CircleAvatar(
-                                              radius: 24,
-                                              backgroundImage: AssetImage(
-                                                  "assets/user_d2.png"),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Expanded(
-                                                child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                            Row(
                                               children: [
-                                                Text(reviewsList[pos]["userName"],
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.black
-                                                          .withOpacity(0.92),
-                                                    )),
-                                                SizedBox(height: 3),
-                                                Text("Reviewed on "+reviewsList[pos]["date"],
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: Color(0xFF898989)
-                                                          .withOpacity(0.92),
-                                                    )),
+                                                CircleAvatar(
+                                                  radius: 24,
+                                                  backgroundImage: AssetImage(
+                                                      "assets/user_d2.png"),
+                                                ),
+                                                SizedBox(width: 12),
+                                                Expanded(
+                                                    child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                        reviewsList[pos]
+                                                            ["userName"],
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Colors.black
+                                                              .withOpacity(
+                                                                  0.92),
+                                                        )),
+                                                    SizedBox(height: 3),
+                                                    Text(
+                                                        "Reviewed on " +
+                                                            reviewsList[pos]
+                                                                ["date"],
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color:
+                                                              Color(0xFF898989)
+                                                                  .withOpacity(
+                                                                      0.92),
+                                                        )),
+                                                  ],
+                                                )),
+                                                SizedBox(width: 5),
+                                                StarRating(
+                                                  rating: double.parse(
+                                                      reviewsList[pos]["rating"]
+                                                          .toString()),
+                                                  allowHalfRating: true,
+                                                  color: Color(0xFFF4AB3E),
+                                                  borderColor:
+                                                      Color(0xFFF4AB3E),
+                                                  onRatingChanged: (rating) =>
+                                                      setState(() =>
+                                                          this.rating = rating),
+                                                ),
                                               ],
-                                            )),
-                                            SizedBox(width: 5),
-                                            StarRating(
-                                              rating: double.parse(reviewsList[pos]["rating"].toString()),
-                                              allowHalfRating: true,
-                                              color: Color(0xFFF4AB3E),
-                                              borderColor: Color(0xFFF4AB3E),
-                                              onRatingChanged: (rating) =>
-                                                  setState(() =>
-                                                      this.rating = rating),
                                             ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 12),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 5),
-                                          child: Text(
-                                              reviewsList[pos]["review"],
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black
-                                                    .withOpacity(0.92),
-                                              )),
-                                        ),
-
-                                        pos==4?Container():
-                                        SizedBox(height: 35),
-                                       /* Row(
+                                            SizedBox(height: 12),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 5),
+                                              child: reviewsList[pos]["review"]
+                                                          .length >
+                                                      150
+                                                  ? ReadMoreText(
+                                                      text: reviewsList[pos]
+                                                          ["review"],
+                                                      maxLines: 2,
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.black
+                                                            .withOpacity(0.92),
+                                                      ))
+                                                  : Text(
+                                                      reviewsList[pos]
+                                                          ["review"],
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.black
+                                                            .withOpacity(0.92),
+                                                      ),
+                                                    ),
+                                            ),
+                                            pos == 4
+                                                ? Container()
+                                                : SizedBox(height: 35),
+                                            /* Row(
                                           children: [
                                             Container(
                                               width: 68,
@@ -581,9 +733,9 @@ class ProductState extends State<ProductDetailScreen> {
                                           ],
                                         ),
                                         SizedBox(height: 35)*/
-                                      ],
-                                    );
-                                  })
+                                          ],
+                                        );
+                                      })
                             ],
                           ),
                         ),
@@ -607,9 +759,7 @@ class ProductState extends State<ProductDetailScreen> {
                 Expanded(
                     child: GestureDetector(
                       onTap: () {
-
                         addProductToCart();
-
                       },
                       child: Container(
                         height: 54,
@@ -691,54 +841,53 @@ class ProductState extends State<ProductDetailScreen> {
 
     var responseJSON = json.decode(response.toString());
     print(response.toString());
+    if (responseJSON['statusCode'] == 200 ||
+        responseJSON['statusCode'] == 201) {
+      productData = responseJSON["product"];
+      var img = [];
 
-    productData = responseJSON["product"];
-
-    setState(() {});
+      img.add(productData['coverImage']);
+      img.addAll(productData['additionalImages']);
+      setState(() {
+        imageList = img;
+      });
+    }
   }
 
-
   addProductToCart() async {
-
     APIDialog.showAlertDialog(context, "Adding to cart...");
 
-    String? userId=await MyUtils.getSharedPreferences("user_id");
+    String? userId = await MyUtils.getSharedPreferences("user_id");
 
-
-
-
-    var data = {"productId": widget.productID,"userId":userId.toString(),"quantity":productData["minOrderQuantity"]};
+    var data = {
+      "productId": widget.productID,
+      "userId": userId.toString(),
+      "quantity": productData["minOrderQuantity"]
+    };
 
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
 
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('cart_management/addCart', requestModel, context);
-
+    var response =
+        await helper.postAPI('cart_management/addCart', requestModel, context);
 
     Navigator.pop(context);
-
-
 
     var responseJSON = json.decode(response.toString());
     print(response.toString());
     if (responseJSON['message'] == "Cart successfully added!") {
-
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
-
+    } else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
     }
-    else
-      {
-        Toast.show(responseJSON['message'],
-            duration: Toast.lengthLong,
-            gravity: Toast.bottom,
-            backgroundColor: Colors.red);
-      }
-
 
     setState(() {});
   }
@@ -754,10 +903,8 @@ class ProductState extends State<ProductDetailScreen> {
   }
 
   fetchSimilarProducts() async {
-
-    List<String> catList=[];
+    List<String> catList = [];
     catList.add(widget.catID.toString());
-
 
     setState(() {
       isLoading = true;
@@ -765,7 +912,7 @@ class ProductState extends State<ProductDetailScreen> {
     var data = {
       "page": 1,
       "pageSize": 8,
-      "category":catList,
+      "category": catList,
       "brand": [],
       "sortBy": "buy_count",
       "sortOrder": "desc"
@@ -776,34 +923,35 @@ class ProductState extends State<ProductDetailScreen> {
     print(requestModel);
 
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('product/allProducts', requestModel, context);
+    var response =
+        await helper.postAPI('product/allProducts', requestModel, context);
 
     setState(() {
       isLoading = false;
     });
 
     var responseJSON = json.decode(response.toString());
-    print(response.toString());
+  
 
-    similarProducts = responseJSON["productsWithUrls"];
+    similarProducts = responseJSON["productsWithUrls"].where((element)=>element["_id"]!=widget.productID).toList();
+    
 
     setState(() {});
   }
 
-
   fetchProductsReviews() async {
-
     setState(() {
       isLoading = true;
     });
-    var data = {"product_id":widget.productID,"limit":5,"page":1};
+    var data = {"product_id": widget.productID, "limit": 5, "page": 1};
 
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
 
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('product/get-reviews', requestModel, context);
+    var response =
+        await helper.postAPI('product/get-reviews', requestModel, context);
 
     setState(() {
       isLoading = false;
@@ -818,18 +966,18 @@ class ProductState extends State<ProductDetailScreen> {
   }
 
   fetchProductsRatings() async {
-
     setState(() {
       isLoading = true;
     });
-    var data = {"product_id":widget.productID};
+    var data = {"product_id": widget.productID};
 
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
 
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('product/getReviewRating', requestModel, context);
+    var response =
+        await helper.postAPI('product/getReviewRating', requestModel, context);
 
     setState(() {
       isLoading = false;
@@ -838,8 +986,10 @@ class ProductState extends State<ProductDetailScreen> {
     var responseJSON = json.decode(response.toString());
     print(response.toString());
 
-    ratingData = responseJSON["data"];
-
-    setState(() {});
+    setState(() {
+      ratingData = responseJSON["data"];
+      print(ratingData);
+      print("ratingdata");
+    });
   }
 }
