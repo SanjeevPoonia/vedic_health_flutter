@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:vedic_health/utils/app_theme.dart'; // Assuming this file exists and defines AppTheme
 import 'package:vedic_health/views/appointments/appointment_detail.dart';
+import 'package:vedic_health/views/appointments/book_appointment_screen.dart';
+import 'package:vedic_health/views/appointments/book_classes/book_class_screen.dart';
+import 'package:vedic_health/views/appointments/book_classes/select_class_screen.dart';
+import 'package:vedic_health/views/appointments/detox_programs/detox_programs_home.dart';
+import 'package:vedic_health/views/appointments/events/event_home_screen.dart';
+import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
+import 'package:vedic_health/views/appointments/my_appointment_screen.dart';
+import 'package:vedic_health/views/appointments/yoga_classes/yoga_classes_screen.dart';
 import 'package:vedic_health/views/profile_screen.dart';
 
 // Dummy ProfileScreen for navigation
@@ -62,6 +70,54 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
     ),
     AppointmentOption(
       title: "Mental Health Counseling",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFBFF2C9), // Light Green
+    ),
+    AppointmentOption(
+      title: "1-1 Yoga Therapy",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFB9E0EC), // Light Teal/Blue
+    ),
+    AppointmentOption(
+      title: "Pranic Energy Healing",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFDBD4F7), // Light Purple
+    ),
+    AppointmentOption(
+      title: "Membership",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFFFE5AB), // Light Orange/Peach
+    ),
+    AppointmentOption(
+      title: "Yoga Classes",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFBFF2C9), // Light Green
+    ),
+    AppointmentOption(
+      title: "Detox Programs",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFB9E0EC), // Light Teal/Blue
+    ),
+    AppointmentOption(
+      title: "Event Sign-Up",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFDBD4F7), // Light Purple
+    ),
+    AppointmentOption(
+      title: "Reschedule or Cancel Appt",
+      description:
+          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
+      color: const Color(0xFFFFE5AB), // Light Orange/Peach
+    ),
+    AppointmentOption(
+      title: "Get More Information",
       description:
           "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
       color: const Color(0xFFBFF2C9), // Light Green
@@ -141,13 +197,13 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
               // elevation: 2,
               // margin: EdgeInsets.only(bottom: 10),
               color: Colors.white,
-              shape: RoundedRectangleBorder(
+              shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(15),
                       bottomRight: Radius.circular(15))),
               child: Container(
                 height: 65,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
                     bottomLeft:
@@ -156,7 +212,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         Radius.circular(20), // Adjust the radius as needed
                   ),
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
                     // GestureDetector(
@@ -175,10 +231,10 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         height: 22,
                       ),
                     ),
-                    Expanded(
+                    const Expanded(
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 10),
+                          padding: EdgeInsets.only(right: 10),
                           child: Text("Appointment",
                               style: TextStyle(
                                 fontSize: 17,
@@ -242,7 +298,12 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                                     const SizedBox(height: 16),
                                     ElevatedButton(
                                       onPressed: () {
-                                        // Handle book classes button tap
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const SelectClassScreen(),
+                                            ));
                                       },
                                       style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.white,
@@ -395,8 +456,8 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
                       childAspectRatio: 0.75, // Lowered for more height
                       children: appointmentOptions
                           .map((option) => _buildAppointmentCard(option))
@@ -415,6 +476,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
 
   Widget _buildAppointmentCard(AppointmentOption option) {
     return Card(
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
@@ -454,7 +516,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         option.title,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.black,
                           height: 1.1,
                         ),
@@ -475,7 +537,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                       color: Colors.black,
                       height: 1.3,
                     ),
-                    maxLines: 4,
+                    maxLines: 5,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -486,30 +548,65 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
 
             // Book Button
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
               child: SizedBox(
+                height: 35,
                 width: 100,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ConsultationScreen(),
-                        ));
+                    switch (option.title) {
+                      case "Yoga Classes":
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const YogaClassesScreen()),
+                        );
+                        break;
+                      case "Membership":
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const JoinMembershipScreen()),
+                        );
+                        break;
+                      case "Detox Programs":
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const DetoxProgramsHome()),
+                        );
+                        break;
+                      case "Event Sign-Up":
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const EventHomeScreen()),
+                        );
+                        break;
+                      default:
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const AppointmentHomeScreen()),
+                        );
+                        break;
+                    }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF07442),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF38328),
+                    // shape: RoundedRectangleBorder(
+                    //   borderRadius: BorderRadius.circular(20),
+                    // ),
+                    padding: const EdgeInsets.all(8),
                     elevation: 0,
                   ),
                   child: const Text(
                     "Book Now",
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
                   ),
@@ -523,35 +620,35 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   }
 }
 
-class AsymmetricCurveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    final curveHeight = size.height * 0.12;
+// class AsymmetricCurveClipper extends CustomClipper<Path> {
+//   @override
+//   Path getClip(Size size) {
+//     final path = Path();
+//     final curveHeight = size.height * 0.12;
 
-    // Start at top-left
-    path.lineTo(0, 0);
+//     // Start at top-left
+//     path.lineTo(0, 0);
 
-    // Line to bottom-left
-    path.lineTo(0, size.height - curveHeight);
+//     // Line to bottom-left
+//     path.lineTo(0, size.height - curveHeight);
 
-    // Left inward curve (quadratic bezier)
-    path.quadraticBezierTo(size.width * 0.25, size.height, size.width * 0.5,
-        size.height - curveHeight);
+//     // Left inward curve (quadratic bezier)
+//     path.quadraticBezierTo(size.width * 0.25, size.height, size.width * 0.5,
+//         size.height - curveHeight);
 
-    // Right outward curve (quadratic bezier)
-    path.quadraticBezierTo(size.width * 0.75, size.height - curveHeight * 2,
-        size.width, size.height - curveHeight);
+//     // Right outward curve (quadratic bezier)
+//     path.quadraticBezierTo(size.width * 0.75, size.height - curveHeight * 2,
+//         size.width, size.height - curveHeight);
 
-    // Line to top-right
-    path.lineTo(size.width, 0);
+//     // Line to top-right
+//     path.lineTo(size.width, 0);
 
-    // Close path
-    path.close();
+//     // Close path
+//     path.close();
 
-    return path;
-  }
+//     return path;
+//   }
 
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-}
+//   @override
+//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+// }

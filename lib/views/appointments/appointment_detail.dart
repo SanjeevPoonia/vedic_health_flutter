@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedic_health/views/appointments/book_appointment_screen.dart';
 
 class ConsultationScreen extends StatelessWidget {
   const ConsultationScreen({super.key});
@@ -114,7 +115,7 @@ class ConsultationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           // border: BoxBorder.all(color: Color(0xFFE2D7D7)),
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
@@ -123,7 +124,7 @@ class ConsultationCard extends StatelessWidget {
             // Left: Icon, Price, Button
             Container(
               width: 125,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Color(0xFFF8F8F8),
                 // border: BoxBorder.fromLTRB(
                 //     right: BorderSide(color: Color(0xFFE2D7D7))),
@@ -139,10 +140,9 @@ class ConsultationCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         // border: BoxBorder.all(color: Color(0xFFE2D7D7)),
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(10)),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
                       ),
                       child: CircleAvatar(
                         backgroundColor: Colors.white,
@@ -166,7 +166,14 @@ class ConsultationCard extends StatelessWidget {
                     SizedBox(
                       height: 30,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const BookAppointmentScreen(),
+                              ));
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF38328),
                           shape: RoundedRectangleBorder(
