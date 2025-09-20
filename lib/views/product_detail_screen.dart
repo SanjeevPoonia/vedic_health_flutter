@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
@@ -36,70 +35,79 @@ class ProductState extends State<ProductDetailScreen> {
   PageController _imagepageController = PageController();
   List<dynamic> imageList = [];
   int _currentPage = 0;
-    ApiBaseHelper helper = ApiBaseHelper();
+  ApiBaseHelper helper = ApiBaseHelper();
 
   List<dynamic> similarProducts = [];
   List<dynamic> reviewsList = [];
-  void _showShareOptions(BuildContext context,id) {
-  showModalBottomSheet(
-    context: context,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
-              title: Text('Share via WhatsApp'),
-              onTap: () async {
-                final text = "Check this product: "+helper.getFrontEndUrl()+"Shop/product/"+id;
-                final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
-                if (await canLaunchUrl(whatsappUrl)) {
-                  await launchUrl(whatsappUrl);
-                } else {
+  void _showShareOptions(BuildContext context, id) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
+                title: Text('Share via WhatsApp'),
+                onTap: () async {
+                  final text = "Check this product: " +
+                      helper.getFrontEndUrl() +
+                      "Shop/product/" +
+                      id;
+                  final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
+                  if (await canLaunchUrl(whatsappUrl)) {
+                    await launchUrl(whatsappUrl);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("WhatsApp not installed")),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
+                title: Text('Share on Instagram'),
+                onTap: () {
+                  // Instagram doesn't allow direct text sharing
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("WhatsApp not installed")),
+                    SnackBar(
+                        content:
+                            Text("Instagram sharing not supported directly")),
                   );
-                }
-              },
-            ),
-            ListTile(
-              leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
-              title: Text('Share on Instagram'),
-              onTap: () {
-                // Instagram doesn't allow direct text sharing
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Instagram sharing not supported directly")),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.link, color: Colors.blue),
-              title: Text('Copy Link'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: helper.getFrontEndUrl()+"Shop/product/"+id));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Link copied!")),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.share, color: Colors.black),
-              title: Text('More Options'),
-              onTap: () {
-                Share.share("Check this product: "+ helper.getFrontEndUrl()+ "Shop/product/"+id);
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.link, color: Colors.blue),
+                title: Text('Copy Link'),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(
+                      text: helper.getFrontEndUrl() + "Shop/product/" + id));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Link copied!")),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.share, color: Colors.black),
+                title: Text('More Options'),
+                onTap: () {
+                  Share.share("Check this product: " +
+                      helper.getFrontEndUrl() +
+                      "Shop/product/" +
+                      id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +159,8 @@ class ProductState extends State<ProductDetailScreen> {
                                   const Spacer(),
                                   GestureDetector(
                                     onTap: () {
-                                      _showShareOptions(context,widget.productID);
+                                      _showShareOptions(
+                                          context, widget.productID);
                                     },
                                     child: Image.asset(
                                       "assets/share_ic.png",
@@ -445,11 +454,17 @@ class ProductState extends State<ProductDetailScreen> {
                                                         Align(
                                                           alignment: Alignment
                                                               .topRight,
-                                                          child: GestureDetector(
-                                                            onTap: (){_showShareOptions(context,similarProducts[
-                                                                          index]
-                                                                      ["_id"]
-                                                                  .toString());},
+                                                          child:
+                                                              GestureDetector(
+                                                            onTap: () {
+                                                              _showShareOptions(
+                                                                  context,
+                                                                  similarProducts[
+                                                                              index]
+                                                                          [
+                                                                          "_id"]
+                                                                      .toString());
+                                                            },
                                                             child: Padding(
                                                               padding:
                                                                   const EdgeInsets
@@ -488,7 +503,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                                       .bold,
                                                               color: AppTheme
                                                                   .darkBrown,
-                                                            )),
+                                                            ))
                                                         /*      Spacer(),
                                                 Image.asset(
                                                     "assets/star_ic.png",
@@ -931,10 +946,10 @@ class ProductState extends State<ProductDetailScreen> {
     });
 
     var responseJSON = json.decode(response.toString());
-  
 
-    similarProducts = responseJSON["productsWithUrls"].where((element)=>element["_id"]!=widget.productID).toList();
-    
+    similarProducts = responseJSON["productsWithUrls"]
+        .where((element) => element["_id"] != widget.productID)
+        .toList();
 
     setState(() {});
   }

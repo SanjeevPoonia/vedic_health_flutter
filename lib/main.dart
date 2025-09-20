@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vedic_health/utils/app_modal.dart';
-import 'package:vedic_health/views/home_screen.dart';
 import 'package:vedic_health/views/splash_screen.dart';
 
 Future<void> main() async {
@@ -11,10 +10,9 @@ Future<void> main() async {
     [DeviceOrientation.portraitUp],
   );
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? token=prefs.getString('access_token')??'';
+  String? token = prefs.getString('access_token') ?? '';
   print(token);
-  if(token!='')
-  {
+  if (token != '') {
     AppModel.setTokenValue(token.toString());
     AppModel.setLoginToken(true);
   }
@@ -22,8 +20,8 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-   final String token;
-   MyApp(this.token, {super.key});
+  final String token;
+  MyApp(this.token, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +34,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         useMaterial3: true,
       ),
-      home:  SplashScreen(token),
+      home: SplashScreen(token),
     );
   }
 }
-
-

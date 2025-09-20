@@ -284,8 +284,15 @@ class _MyHomePageState extends State<MyReviewScreen> {
 
     String? userId = await MyUtils.getSharedPreferences("user_id");
 
+    // Create the data object with the userId
+    var data = {"user": userId.toString()};
+
+    // Encode the data object into a Base64 string
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI('product/get-reviews', userId, context);
+    var response =
+        await helper.postAPI('product/get-reviews', requestModel, context);
 
     setState(() {
       isLoading = false;

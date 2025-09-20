@@ -704,8 +704,9 @@ class _BookClassScreenState extends State<BookClassScreen> {
                                     builder: (context) =>
                                         BookAppointmentScreen2(
                                       date: selectedDate ?? DateTime.now(),
-                                      name: "Practitioner",
-                                      title: "Appointment",
+                                      serviceId: "",
+                                      employeeId: "",
+                                      userId: "",
                                     ),
                                   ));
                             },

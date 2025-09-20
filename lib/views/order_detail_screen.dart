@@ -1,5 +1,9 @@
 // order_details_screen.dart
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/utils/order_model.dart';
 import 'package:vedic_health/views/order_return_screen.dart';
 import 'package:vedic_health/views/order_tracking_screen.dart';
@@ -94,7 +98,7 @@ class OrderDetailsScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.attach_money,
+                                    const Icon(Icons.attach_money,
                                         color: Color(0xFF865940)),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -333,7 +337,14 @@ class OrderDetailsScreen extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const DeliveryTrackingScreen(),
+                                            ));
+                                      },
                                       style: OutlinedButton.styleFrom(
                                         backgroundColor:
                                             const Color(0xFF865940),
@@ -353,7 +364,9 @@ class OrderDetailsScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: OutlinedButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        _modalBottomCancelReturn(context);
+                                      },
                                       style: OutlinedButton.styleFrom(
                                         backgroundColor: Colors.white,
                                         side: const BorderSide(
@@ -601,6 +614,158 @@ class OrderDetailsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _modalBottomCancelReturn(BuildContext context) {
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15)),
+            color: Colors.white,
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 25),
+              Row(
+                children: [
+                  const Spacer(),
+                  GestureDetector(
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                      },
+                      child: Image.asset(
+                        'assets/close_icc.png',
+                        width: 14,
+                        height: 14,
+                      )),
+                  const SizedBox(width: 20)
+                ],
+              ),
+              const SizedBox(height: 20),
+              Column(
+                children: [
+                  Lottie.asset('assets/yoga.json', height: 120, width: 120),
+                  const SizedBox(height: 5),
+                  Text(
+                    "Are you sure?",
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: "Montserrat",
+                        fontWeight: FontWeight.w600,
+                        fontSize: 24),
+                  ),
+                  SizedBox(
+                    height: 18,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      "Do you really want to cancel order",
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: "Montserrat",
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ],
+              ),
+              SizedBox(
+                height: 35,
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                      },
+                      child: Container(
+                        height: 50,
+                        margin: EdgeInsets.only(left: 16),
+                        padding: const EdgeInsets.only(left: 4, right: 4),
+                        decoration: BoxDecoration(
+                            shape: BoxShape.rectangle,
+                            borderRadius: BorderRadius.circular(10),
+                            color: Color(0xFFE3E3E3)),
+                        child: Center(
+                          child: Text(
+                            "No",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: "Montserrat",
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () async {
+                        ToastContext().init(context);
+                        Navigator.of(ctx).pop();
+
+                        SharedPreferences preferences =
+                            await SharedPreferences.getInstance();
+                        await preferences.clear();
+
+                        // Route route = MaterialPageRoute(
+                        //     builder: (context) => TrackReturnScreen(
+                        //           order: order,
+                        //         ));
+                        Navigator.pop(context);
+                        // Navigator.push(context, route);
+                        Toast.show("Order cancel successful!",
+                            duration: Toast.lengthLong,
+                            gravity: Toast.bottom,
+                            backgroundColor: Colors.greenAccent);
+                      },
+                      child: Container(
+                        height: 50,
+                        margin: EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.only(left: 4, right: 4),
+                        decoration: BoxDecoration(
+                            shape: BoxShape.rectangle,
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.darkBrown),
+                        child: Center(
+                          child: Text(
+                            "Yes",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: "Montserrat",
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

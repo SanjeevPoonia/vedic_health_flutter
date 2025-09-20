@@ -35,7 +35,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
   List<dynamic> productList = [];
   String? name;
   final GlobalKey<ScaffoldState> _key = GlobalKey();
-  final ApiBaseHelper helper=ApiBaseHelper();
+  final ApiBaseHelper helper = ApiBaseHelper();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -325,7 +325,13 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       children: [
                                                         Spacer(),
                                                         GestureDetector(
-                                                          onTap: (){_showShareOptions(context,productList[index]['_id']);},
+                                                          onTap: () {
+                                                            _showShareOptions(
+                                                                context,
+                                                                productList[
+                                                                        index]
+                                                                    ['_id']);
+                                                          },
                                                           child: Padding(
                                                             padding:
                                                                 const EdgeInsets
@@ -364,8 +370,6 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                           color: AppTheme
                                                               .darkBrown,
                                                         )),
-
-                                                  
                                                   ],
                                                 ),
                                               ),
@@ -840,66 +844,75 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {});
   }
 
-   void _showShareOptions(BuildContext context,id) {
-  showModalBottomSheet(
-    context: context,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
-              title: Text('Share via WhatsApp'),
-              onTap: () async {
-                final text = "Check this product: "+helper.getFrontEndUrl()+"Shop/product/"+id;
-                final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
-                if (await canLaunchUrl(whatsappUrl)) {
-                  await launchUrl(whatsappUrl);
-                } else {
+  void _showShareOptions(BuildContext context, id) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
+                title: Text('Share via WhatsApp'),
+                onTap: () async {
+                  final text = "Check this product: " +
+                      helper.getFrontEndUrl() +
+                      "Shop/product/" +
+                      id;
+                  final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
+                  if (await canLaunchUrl(whatsappUrl)) {
+                    await launchUrl(whatsappUrl);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("WhatsApp not installed")),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
+                title: Text('Share on Instagram'),
+                onTap: () {
+                  // Instagram doesn't allow direct text sharing
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("WhatsApp not installed")),
+                    SnackBar(
+                        content:
+                            Text("Instagram sharing not supported directly")),
                   );
-                }
-              },
-            ),
-            ListTile(
-              leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
-              title: Text('Share on Instagram'),
-              onTap: () {
-                // Instagram doesn't allow direct text sharing
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Instagram sharing not supported directly")),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.link, color: Colors.blue),
-              title: Text('Copy Link'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: helper.getFrontEndUrl()+"Shop/product/"+id));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Link copied!")),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.share, color: Colors.black),
-              title: Text('More Options'),
-              onTap: () {
-                Share.share("Check this product: "+ helper.getFrontEndUrl()+ "Shop/product/"+id);
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.link, color: Colors.blue),
+                title: Text('Copy Link'),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(
+                      text: helper.getFrontEndUrl() + "Shop/product/" + id));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Link copied!")),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.share, color: Colors.black),
+                title: Text('More Options'),
+                onTap: () {
+                  Share.share("Check this product: " +
+                      helper.getFrontEndUrl() +
+                      "Shop/product/" +
+                      id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {

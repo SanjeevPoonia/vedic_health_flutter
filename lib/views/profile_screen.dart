@@ -9,6 +9,8 @@ import 'package:toast/toast.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
+import 'package:vedic_health/views/appointments/events/event_home_screen.dart';
+import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
 import 'package:vedic_health/views/invoices_screen.dart';
 import 'package:vedic_health/views/my_profile_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
@@ -78,15 +80,15 @@ class _MyHomePageState extends State<ProfileScreen> {
           children: [
             Card(
               elevation: 2,
-              margin: EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 10),
               color: Colors.white,
-              shape: RoundedRectangleBorder(
+              shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(15),
                       bottomRight: Radius.circular(15))),
               child: Container(
                 height: 65,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
                     bottomLeft:
@@ -95,19 +97,19 @@ class _MyHomePageState extends State<ProfileScreen> {
                         Radius.circular(20), // Adjust the radius as needed
                   ),
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
                     GestureDetector(
                         onTap: () {
                           Navigator.pop(context);
                         },
-                        child: Icon(Icons.arrow_back_ios_new_sharp,
+                        child: const Icon(Icons.arrow_back_ios_new_sharp,
                             size: 17, color: Colors.black)),
-                    Expanded(
+                    const Expanded(
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 10),
+                          padding: EdgeInsets.only(right: 10),
                           child: Text("My Account",
                               style: TextStyle(
                                 fontSize: 17,
@@ -132,10 +134,10 @@ class _MyHomePageState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Expanded(
                 child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
                 Row(
                   children: [
@@ -154,7 +156,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               image: profileImage == ""
-                                  ? DecorationImage(
+                                  ? const DecorationImage(
                                       fit: BoxFit.cover,
                                       image: AssetImage("assets/user_d2.png"))
                                   : DecorationImage(
@@ -175,20 +177,20 @@ class _MyHomePageState extends State<ProfileScreen> {
                               child: Container(
                                 width: 30,
                                 height: 30,
-                                padding: EdgeInsets.all(7),
+                                padding: const EdgeInsets.all(7),
                                 decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                         color: Colors.white, width: 1),
-                                    color: Color(0xFFF38328)),
+                                    color: const Color(0xFFF38328)),
                                 child: Image.asset("assets/edit_img.png",
                                     color: Colors.white),
                               ),
                             ))
                       ],
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
+                    const SizedBox(width: 12),
+                    const Expanded(
                         child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -208,13 +210,13 @@ class _MyHomePageState extends State<ProfileScreen> {
                     ))
                   ],
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 GestureDetector(
                   onTap: () async {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => MyProfileScreen()));
+                            builder: (context) => const MyProfileScreen()));
 
                     /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
@@ -224,24 +226,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 7, top: 7),
+                    padding: const EdgeInsets.only(bottom: 7, top: 7),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/profile_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("My Profile",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -257,23 +259,23 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/doc_tb.png", width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Documents",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -284,7 +286,8 @@ class _MyHomePageState extends State<ProfileScreen> {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => AppointmentHomeScreen()));
+                            builder: (context) =>
+                                const AppointmentHomeScreen()));
 
                     /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
@@ -294,24 +297,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/appoint_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Appointments",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -325,26 +328,32 @@ class _MyHomePageState extends State<ProfileScreen> {
                 {
                   fetchSchoolProfile();
                 }*/
+
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const JoinMembershipScreen(),
+                        ));
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/member_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Membership",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -360,24 +369,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/product_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Products",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -385,6 +394,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const AppointmentHomeScreen()));
+
                     /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
                 if(data!=null)
@@ -393,24 +408,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/courses_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Courses",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -423,27 +438,32 @@ class _MyHomePageState extends State<ProfileScreen> {
                 if(data!=null)
                 {
                   fetchSchoolProfile();
+                  
                 }*/
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const EventHomeScreen()));
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/member_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Events",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -466,24 +486,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/invoices_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Invoices",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -503,24 +523,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                             builder: (context) => MyReviewScreen()));
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/reviews_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("My Reviews",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -541,24 +561,24 @@ class _MyHomePageState extends State<ProfileScreen> {
                             builder: (context) => ChangePasswordScreen()));
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/pass_tb.png",
                             width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Password Change",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Colors.black))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
@@ -575,28 +595,28 @@ class _MyHomePageState extends State<ProfileScreen> {
                 }*/
                   },
                   child: Container(
-                    padding: EdgeInsets.only(bottom: 5, top: 5),
+                    padding: const EdgeInsets.only(bottom: 5, top: 5),
                     child: Row(
                       children: [
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Image.asset("assets/log_tb.png", width: 40, height: 40),
-                        SizedBox(width: 17),
-                        Expanded(
+                        const SizedBox(width: 17),
+                        const Expanded(
                             child: Text("Logout",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: "Montserrat",
                                     color: Color(0xFFBA363B)))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios_rounded,
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_forward_ios_rounded,
                             color: Colors.black, size: 16),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 20)
+                const SizedBox(height: 20)
               ],
             ))
           ],
@@ -686,7 +706,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                 children: [
                   Lottie.asset('assets/yoga.json', height: 120, width: 120),
                   const SizedBox(height: 5),
-                  Text(
+                  const Text(
                     "Logout Account !",
                     style: TextStyle(
                         color: Colors.black,
@@ -694,11 +714,11 @@ class _MyHomePageState extends State<ProfileScreen> {
                         fontWeight: FontWeight.w600,
                         fontSize: 24),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 18,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       "Are you sure you want to logout? Once you logout you need to login again.",
                       style: TextStyle(
@@ -711,7 +731,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                   )
                 ],
               ),
-              SizedBox(
+              const SizedBox(
                 height: 35,
               ),
               Row(
@@ -724,13 +744,13 @@ class _MyHomePageState extends State<ProfileScreen> {
                       },
                       child: Container(
                         height: 50,
-                        margin: EdgeInsets.only(left: 16),
+                        margin: const EdgeInsets.only(left: 16),
                         padding: const EdgeInsets.only(left: 4, right: 4),
                         decoration: BoxDecoration(
                             shape: BoxShape.rectangle,
                             borderRadius: BorderRadius.circular(10),
-                            color: Color(0xFFE3E3E3)),
-                        child: Center(
+                            color: const Color(0xFFE3E3E3)),
+                        child: const Center(
                           child: Text(
                             "No",
                             style: TextStyle(
@@ -751,7 +771,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                         ToastContext().init(context);
                         Navigator.of(ctx).pop();
                         Route route = MaterialPageRoute(
-                            builder: (context) => LoginScreen());
+                            builder: (context) => const LoginScreen());
                         Navigator.pushAndRemoveUntil(
                             context, route, (Route<dynamic> route) => false);
                         Toast.show("Logged out successfully!",
@@ -761,13 +781,13 @@ class _MyHomePageState extends State<ProfileScreen> {
                       },
                       child: Container(
                         height: 50,
-                        margin: EdgeInsets.only(right: 16),
+                        margin: const EdgeInsets.only(right: 16),
                         padding: const EdgeInsets.only(left: 4, right: 4),
                         decoration: BoxDecoration(
                             shape: BoxShape.rectangle,
                             borderRadius: BorderRadius.circular(10),
                             color: AppTheme.darkBrown),
-                        child: Center(
+                        child: const Center(
                           child: Text(
                             "Yes",
                             style: TextStyle(

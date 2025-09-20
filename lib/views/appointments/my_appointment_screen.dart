@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
+import 'package:vedic_health/views/profile_screen.dart';
 
 // Dummy data classes to make the UI work
 class Appointment {
@@ -180,7 +181,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ProfileScreen(),
+                    builder: (context) => ProfileScreen(),
                   ),
                 );
               },

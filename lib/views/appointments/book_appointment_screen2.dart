@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_payment_screen.dart';
 
 class BookAppointmentScreen2 extends StatefulWidget {
+  final String serviceId;
+  final String employeeId;
+  final String userId;
   final DateTime date;
-  final String name;
-  final String title;
 
   const BookAppointmentScreen2({
     super.key,
     required this.date,
-    required this.name,
-    required this.title,
+    required this.serviceId,
+    required this.employeeId,
+    required this.userId,
   });
   @override
   State<BookAppointmentScreen2> createState() => _BookAppointmentScreen2State();
@@ -193,7 +192,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "${widget.name}, ${widget.title}",
+                              "Name, Title",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
@@ -322,8 +321,8 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                             MaterialPageRoute(
                               builder: (context) => BookPaymentScreen(
                                 date: widget.date,
-                                name: widget.name,
-                                title: widget.title,
+                                name: "Name",
+                                title: "Title",
                               ),
                             ));
                       },

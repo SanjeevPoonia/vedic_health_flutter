@@ -1,42 +1,29 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:vedic_health/utils/app_theme.dart'; // Assuming this file exists and defines AppTheme
+import 'package:vedic_health/network/api_dialog.dart';
+import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/views/appointments/appointment_detail.dart';
-import 'package:vedic_health/views/appointments/book_appointment_screen.dart';
-import 'package:vedic_health/views/appointments/book_classes/book_class_screen.dart';
 import 'package:vedic_health/views/appointments/book_classes/select_class_screen.dart';
 import 'package:vedic_health/views/appointments/detox_programs/detox_programs_home.dart';
 import 'package:vedic_health/views/appointments/events/event_home_screen.dart';
 import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
-import 'package:vedic_health/views/appointments/my_appointment_screen.dart';
 import 'package:vedic_health/views/appointments/yoga_classes/yoga_classes_screen.dart';
-import 'package:vedic_health/views/profile_screen.dart';
-
-// Dummy ProfileScreen for navigation
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Profile"),
-      ),
-      body: const Center(
-        child: Text("Profile Screen"),
-      ),
-    );
-  }
-}
+import 'package:vedic_health/views/menu_screen.dart';
 
 class AppointmentOption {
   final String title;
   final String description;
   final Color color;
+  final String? id;
+  final List<dynamic>? services; // <-- raw list from API
 
   AppointmentOption({
     required this.title,
     required this.description,
     required this.color,
+    this.id,
+    this.services,
   });
 }
 
@@ -49,145 +36,110 @@ class AppointmentHomeScreen extends StatefulWidget {
 
 class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   int selectedCenter = 0;
-  final List<AppointmentOption> appointmentOptions = [
-    AppointmentOption(
-      title: "Ayurvedic Initial Consult",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFB9E0EC), // Light Teal/Blue
-    ),
-    AppointmentOption(
-      title: "Follow Up Appointment",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFDBD4F7), // Light Purple
-    ),
-    AppointmentOption(
-      title: "Panchakarma / Massage",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFFFE5AB), // Light Orange/Peach
-    ),
-    AppointmentOption(
-      title: "Mental Health Counseling",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFBFF2C9), // Light Green
-    ),
-    AppointmentOption(
-      title: "1-1 Yoga Therapy",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFB9E0EC), // Light Teal/Blue
-    ),
-    AppointmentOption(
-      title: "Pranic Energy Healing",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFDBD4F7), // Light Purple
-    ),
-    AppointmentOption(
-      title: "Membership",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFFFE5AB), // Light Orange/Peach
-    ),
-    AppointmentOption(
-      title: "Yoga Classes",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFBFF2C9), // Light Green
-    ),
-    AppointmentOption(
-      title: "Detox Programs",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFB9E0EC), // Light Teal/Blue
-    ),
-    AppointmentOption(
-      title: "Event Sign-Up",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFDBD4F7), // Light Purple
-    ),
-    AppointmentOption(
-      title: "Reschedule or Cancel Appt",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFFFE5AB), // Light Orange/Peach
-    ),
-    AppointmentOption(
-      title: "Get More Information",
-      description:
-          "Simply dummy text of the printing typesetting industry. Lorem Ipsum has been the industry's standard dummy text.",
-      color: const Color(0xFFBFF2C9), // Light Green
-    ),
-  ];
+  List<dynamic> centers = [];
+  List<dynamic> appointments = [];
+  bool isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    fetchAllCenters(1, 10, false);
+    if (centers.isNotEmpty) {
+      fetchAppointments(centers[0]["_id"]);
+    }
+  }
+
+  Future<void> fetchAllCenters(
+      int page, int pageSize, bool progressDialog) async {
+    if (progressDialog) {
+      APIDialog.showAlertDialog(context, "Please wait...");
+    } else {
+      setState(() => isLoading = true);
+    }
+
+    var data = {"page": page, "pageSize": pageSize};
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI(
+      'center_management/allCenterManagement',
+      requestModel,
+      context,
+    );
+
+    if (progressDialog) {
+      Navigator.pop(context);
+    } else {
+      setState(() => isLoading = false);
+    }
+
+    var responseJSON = json.decode(response.toString());
+    if (responseJSON["statusCode"] == 200 ||
+        responseJSON["statusCode"] == 201) {
+      setState(() {
+        centers = responseJSON["centers"];
+      });
+
+      // Fetch appointments for the first center by default
+      if (centers.isNotEmpty) {
+        fetchAppointments(centers[0]["_id"]);
+      }
+    } else {
+      print("Error: ${responseJSON["message"]}");
+    }
+  }
+
+  Future<void> fetchAppointments(String centerId) async {
+    setState(() => isLoading = true);
+
+    var data = {"page": 1, "pageSize": 30, "centerId": centerId};
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response =
+        await helper.postAPI('service_type/getAll', requestModel, context);
+
+    setState(() => isLoading = false);
+
+    final responseJSON = json.decode(response.toString());
+    print("Appointments response: $responseJSON");
+
+    if (responseJSON["statusCode"] == 200) {
+      final List<Color> palette = [
+        const Color(0xFFB9E0EC),
+        const Color(0xFFDBD4F7),
+        const Color(0xFFFFE5AB),
+        const Color(0xFFBFF2C9),
+        const Color(0xFFB9E0EC),
+      ];
+      final List<dynamic> fetched =
+          List<dynamic>.from(responseJSON["data"] ?? []);
+      final List<AppointmentOption> mapped = [];
+
+      for (var i = 0; i < fetched.length; i++) {
+        final item = fetched[i] as Map<String, dynamic>;
+        mapped.add(AppointmentOption(
+          id: item['_id'] as String?,
+          title: item['name'] ?? 'No name',
+          description: item['description'] ?? '',
+          color: palette[i % palette.length],
+          services: List<dynamic>.from(
+              item['service'] ?? []), // <-- store services here
+        ));
+      }
+
+      setState(() {
+        appointmentOptions.clear();
+        appointmentOptions.addAll(mapped);
+      });
+    } else {
+      print("Error fetching appointments: ${responseJSON["message"]}");
+    }
+  }
+
+  final List<AppointmentOption> appointmentOptions = [];
 
   @override
   Widget build(BuildContext context) {
-    // return SafeArea(
-    //   child: Scaffold(
-    //     backgroundColor: Colors.white,
-    //     body: Column(
-    //       children: [
-    //         Card(
-    //           elevation: 2,
-    //           margin: EdgeInsets.zero,
-    //           color: Colors.white,
-    //           shape: const RoundedRectangleBorder(
-    //               borderRadius: BorderRadius.only(
-    //                   bottomLeft: Radius.circular(15),
-    //                   bottomRight: Radius.circular(15))),
-    //           child: Container(
-    //             height: 65,
-    //             decoration: const BoxDecoration(
-    //               color: Colors.white,
-    //             ),
-    //             padding: const EdgeInsets.symmetric(horizontal: 14),
-    //             child: Row(
-    //               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //               children: [
-    //                 // Menu Icon (Hamburger)
-    //                 GestureDetector(
-    //                   onTap: () {
-    //                     // TODO: Open menu drawer if needed
-    //                   },
-    //                   child: Image.asset(
-    //                     'assets/ham3.png',
-    //                     width: 22,
-    //                     height: 22,
-    //                   ),
-    //                 ),
-    //                 // Title
-    //                 const Text(
-    //                   "Appointment",
-    //                   style: TextStyle(
-    //                     fontSize: 17,
-    //                     fontWeight: FontWeight.w600,
-    //                     color: Colors.black,
-    //                   ),
-    //                 ),
-    //                 // Profile Icon
-    //                 GestureDetector(
-    //                   onTap: () {
-    //                     Navigator.push(
-    //                       context,
-    //                       MaterialPageRoute(
-    //                         builder: (context) => const ProfileScreen(),
-    //                       ),
-    //                     );
-    //                   },
-    //                   child: Image.asset(
-    //                     'assets/profile_icc.png',
-    //                     width: 32,
-    //                     height: 32,
-    //                   ),
-    //                 ),
-    //               ],
-    //             ),
-    //           ),
-    //         ),
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -224,6 +176,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                     GestureDetector(
                       onTap: () {
                         // TODO: Open menu drawer if needed
+                        Navigator.pop(context);
                       },
                       child: Image.asset(
                         'assets/ham3.png',
@@ -249,7 +202,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const ProfileScreen(),
+                            builder: (context) => MenuScreen(),
                           ),
                         );
                       },
@@ -269,8 +222,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20), // Add spacing below app bar
-                    // Header with Image and Button
+                    const SizedBox(height: 20),
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -331,11 +283,8 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                             ],
                           ),
                         ),
-                        // The Positioned widget is now aligned so that the bottom of the image
-                        // is flush with the bottom of the container, while still overflowing at the top.
                         Positioned(
                           right: -15,
-                          // The bottom of the image is aligned with the bottom of the container.
                           bottom: 0,
                           child: Image.asset(
                             'assets/consultant_dummy.png',
@@ -358,111 +307,68 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Center Selection Tabs
                     Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(2),
                       height: 55,
                       decoration: BoxDecoration(
-                        color: Colors.grey
-                            .shade200, // Background color for the unselected part
-                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(28),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => selectedCenter = 0),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: List.generate(centers.length, (index) {
+                            var center = centers[index];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() => selectedCenter = index);
+
+                                if (centers.isNotEmpty) {
+                                  fetchAppointments(centers[0]["_id"]);
+                                }
+                                fetchAppointments(center["_id"]);
+                              },
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 25, vertical: 12),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 decoration: BoxDecoration(
-                                  color: selectedCenter == 0
+                                  color: selectedCenter == index
                                       ? Colors.white
-                                      : Colors
-                                          .transparent, // Changed to transparent for unselected
+                                      : Colors.transparent,
                                   borderRadius: BorderRadius.circular(24),
-                                  // boxShadow: selectedCenter == 0
-                                  //     ? [
-                                  //         BoxShadow(
-                                  //           color: Colors.grey.withOpacity(0.3),
-                                  //           spreadRadius: 2,
-                                  //           blurRadius: 5,
-                                  //           offset: const Offset(0, 3),
-                                  //         )
-                                  //   ]
-                                  // : [],
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    "Rockville Center",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedCenter == 0
-                                          ? Colors.black
-                                          : Colors.grey
-                                              .shade700, // Darker grey for unselected
-                                    ),
+                                child: Text(
+                                  center["centerName"] ?? "Unknown",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedCenter == index
+                                        ? Colors.black
+                                        : Colors.grey.shade700,
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          // No SizedBox here, as the background container handles spacing
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => selectedCenter = 1),
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: selectedCenter == 1
-                                      ? Colors.white
-                                      : Colors
-                                          .transparent, // Changed to transparent for unselected
-                                  borderRadius: BorderRadius.circular(24),
-                                  // boxShadow: selectedCenter == 1
-                                  //     ? [
-                                  //         BoxShadow(
-                                  //           color: Colors.grey.withOpacity(0.3),
-                                  //           spreadRadius: 2,
-                                  //           blurRadius: 5,
-                                  //           offset: const Offset(0, 3),
-                                  //         )
-                                  //   ]
-                                  // : [],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    "Denver Center",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedCenter == 1
-                                          ? Colors.black
-                                          : Colors.grey
-                                              .shade700, // Darker grey for unselected
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                            );
+                          }),
+                        ),
                       ),
                     ),
+
                     const SizedBox(height: 24),
 
-                    // Appointment Grid
                     GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 2,
                       crossAxisSpacing: 6,
                       mainAxisSpacing: 6,
-                      childAspectRatio: 0.75, // Lowered for more height
+                      childAspectRatio: 0.75,
                       children: appointmentOptions
                           .map((option) => _buildAppointmentCard(option))
                           .toList(),
                     ),
+
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -588,8 +494,11 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>
-                                  const AppointmentHomeScreen()),
+                            builder: (context) => AppointmentDetail(
+                              consultations: option.services ?? [],
+                              title: option.title,
+                            ),
+                          ),
                         );
                         break;
                     }
@@ -619,36 +528,3 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
     );
   }
 }
-
-// class AsymmetricCurveClipper extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     final path = Path();
-//     final curveHeight = size.height * 0.12;
-
-//     // Start at top-left
-//     path.lineTo(0, 0);
-
-//     // Line to bottom-left
-//     path.lineTo(0, size.height - curveHeight);
-
-//     // Left inward curve (quadratic bezier)
-//     path.quadraticBezierTo(size.width * 0.25, size.height, size.width * 0.5,
-//         size.height - curveHeight);
-
-//     // Right outward curve (quadratic bezier)
-//     path.quadraticBezierTo(size.width * 0.75, size.height - curveHeight * 2,
-//         size.width, size.height - curveHeight);
-
-//     // Line to top-right
-//     path.lineTo(size.width, 0);
-
-//     // Close path
-//     path.close();
-
-//     return path;
-//   }
-
-//   @override
-//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-// }
