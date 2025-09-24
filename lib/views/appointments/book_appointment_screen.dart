@@ -21,15 +21,14 @@ class BookAppointmentScreen extends StatefulWidget {
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   DateTime? selectedDate;
   int selectedServiceIndex = 0;
-  bool secondService = false;
   List<Map<String, dynamic>> employees = [];
   String? selectedEmployeeId;
   String? selectedUserId;
-  List<Map<String, dynamic>> selectedServices = [];
+
+  List<Map<String, dynamic>> additionalServices = [];
 
   bool isLoading = false;
   List<String> unavailableDates = [];
-
   List serviceList = [];
 
   @override
@@ -42,7 +41,206 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
 
-  /// Use ApiBaseHelper instead of direct http
+  Future<void> _loadService(String serviceId) async {
+    final data = await fetchServiceDetail(serviceId);
+    if (data != null) {
+      setState(() {
+        employees = List<Map<String, dynamic>>.from(data["employees"] ?? []);
+        selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
+        selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
+      });
+    }
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final firstDate = now;
+    final lastDate = DateTime(now.year, now.month + 3, now.day);
+
+    DateTime candidate = selectedDate ?? now;
+
+    String formatDate(DateTime d) => "${d.year.toString().padLeft(4, '0')}-"
+        "${d.month.toString().padLeft(2, '0')}-"
+        "${d.day.toString().padLeft(2, '0')}";
+
+    while (unavailableDates.contains(formatDate(candidate)) &&
+        candidate.isBefore(lastDate)) {
+      candidate = candidate.add(const Duration(days: 1));
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: candidate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      selectableDayPredicate: (day) {
+        final formatted = formatDate(day);
+        return !unavailableDates.contains(formatted);
+      },
+    );
+
+    if (picked != null) {
+      setState(() => selectedDate = picked);
+    }
+  }
+
+  Future<void> fetchUnavailableDates({
+    required String serviceId,
+    required String employeeId,
+    required String userId,
+    required String date,
+  }) async {
+    await fetchUnavailableDatesForService(
+      serviceId: serviceId,
+      employeeId: employeeId,
+      userId: userId,
+      date: date,
+      serviceIndex: null, // null for main service
+    );
+  }
+
+  Future<void> _loadServiceForAdditional(
+      String serviceId, int serviceIndex) async {
+    final data = await fetchServiceDetail(serviceId);
+    if (data != null) {
+      setState(() {
+        additionalServices[serviceIndex]['employees'] =
+            List<Map<String, dynamic>>.from(data["employees"] ?? []);
+        additionalServices[serviceIndex]['selectedEmployeeId'] =
+            additionalServices[serviceIndex]['employees'].isNotEmpty
+                ? additionalServices[serviceIndex]['employees'][0]["_id"]
+                : null;
+        additionalServices[serviceIndex]['selectedUserId'] =
+            additionalServices[serviceIndex]['employees'].isNotEmpty
+                ? additionalServices[serviceIndex]['employees'][0]["userId"]
+                : null;
+      });
+    }
+  }
+
+  Future<void> fetchUnavailableDatesForService({
+    required String serviceId,
+    required String employeeId,
+    required String userId,
+    required String date,
+    int? serviceIndex,
+  }) async {
+    setState(() => isLoading = true);
+
+    var data = {
+      "slotsPayload": [
+        {
+          "serviceId": serviceId,
+          "employeeId": employeeId,
+          "userId": userId,
+          "date": date,
+        }
+      ]
+    };
+
+    var requestModel = {
+      'data': base64.encode(utf8.encode(json.encode(data))),
+    };
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI(
+      'appointment-management/getUnavailableDatesInMonth',
+      requestModel,
+      context,
+    );
+
+    setState(() => isLoading = false);
+
+    final responseJSON = json.decode(response.toString());
+    print("Unavailable Dates response: $responseJSON");
+
+    if (responseJSON["statusCode"] == 200) {
+      final List<dynamic> fetched = responseJSON["data"] ?? [];
+      if (fetched.isNotEmpty) {
+        setState(() {
+          if (serviceIndex == null) {
+            unavailableDates = List<String>.from(
+              fetched[0]["unavailableDates"] ?? [],
+            );
+          } else {
+            additionalServices[serviceIndex]['unavailableDates'] =
+                List<String>.from(
+              fetched[0]["unavailableDates"] ?? [],
+            );
+          }
+        });
+      }
+    }
+  }
+
+  void _addNewService() {
+    setState(() {
+      additionalServices.add({
+        'selectedServiceIndex': 0,
+        'selectedServiceId': widget.consultations[0]["_id"],
+        'selectedServiceName': widget.consultations[0]["name"] ?? "",
+        'employees': <Map<String, dynamic>>[],
+        'selectedEmployeeId': null,
+        'selectedUserId': null,
+        'selectedDate': null,
+        'unavailableDates': <String>[],
+      });
+    });
+  }
+
+  void _removeService(int index) {
+    setState(() {
+      additionalServices.removeAt(index);
+    });
+  }
+
+  Future<void> _pickDateForService(
+      BuildContext context, int? serviceIndex) async {
+    final now = DateTime.now();
+    final firstDate = now;
+    final lastDate = DateTime(now.year, now.month + 3, now.day);
+
+    List<String> serviceDates = serviceIndex == null
+        ? unavailableDates
+        : additionalServices[serviceIndex]['unavailableDates'] ?? [];
+
+    DateTime? currentDate = serviceIndex == null
+        ? selectedDate
+        : additionalServices[serviceIndex]['selectedDate'];
+
+    DateTime candidate = currentDate ?? now;
+
+    String formatDate(DateTime d) => "${d.year.toString().padLeft(4, '0')}-"
+        "${d.month.toString().padLeft(2, '0')}-"
+        "${d.day.toString().padLeft(2, '0')}";
+
+    while (serviceDates.contains(formatDate(candidate)) &&
+        candidate.isBefore(lastDate)) {
+      candidate = candidate.add(const Duration(days: 1));
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: candidate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      selectableDayPredicate: (day) {
+        final formatted = formatDate(day);
+        return !serviceDates.contains(formatted);
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (serviceIndex == null) {
+          selectedDate = picked;
+        } else {
+          additionalServices[serviceIndex]['selectedDate'] = picked;
+        }
+      });
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchServiceDetail(String serviceId) async {
     try {
       setState(() => isLoading = true);
@@ -110,114 +308,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       print("Error fetching service detail: $e");
     }
     return null;
-  }
-
-  Future<void> _loadService(String serviceId) async {
-    final data = await fetchServiceDetail(serviceId);
-    if (data != null) {
-      setState(() {
-        employees = List<Map<String, dynamic>>.from(data["employees"] ?? []);
-
-        selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
-        selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
-      });
-    }
-  }
-
-  // Future<void> _loadSecondService(String serviceId) async {
-  //   final data = await fetchServiceDetail(serviceId);
-  //   if (data != null) {
-  //     setState(() {
-  //       secondemployees =
-  //           List<Map<String, dynamic>>.from(data["employees"] ?? []);
-  //       secondselectedEmployeeId =
-  //           secondemployees.isNotEmpty ? secondemployees[0]["_id"] : null;
-  //     });
-  //   }
-  // }
-
-  Future<void> _pickDate(BuildContext context) async {
-    final now = DateTime.now();
-    final firstDate = now;
-    final lastDate = DateTime(now.year, now.month + 3, now.day);
-
-    // Start from today or previously selected date
-    DateTime candidate = selectedDate ?? now;
-
-    // Format helper
-    String formatDate(DateTime d) => "${d.year.toString().padLeft(4, '0')}-"
-        "${d.month.toString().padLeft(2, '0')}-"
-        "${d.day.toString().padLeft(2, '0')}";
-
-    // If candidate is in unavailableDates → move forward until valid
-    while (unavailableDates.contains(formatDate(candidate)) &&
-        candidate.isBefore(lastDate)) {
-      candidate = candidate.add(const Duration(days: 1));
-    }
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: candidate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      selectableDayPredicate: (day) {
-        final formatted = formatDate(day);
-        return !unavailableDates.contains(formatted);
-      },
-    );
-
-    if (picked != null) {
-      setState(() => selectedDate = picked);
-    }
-  }
-
-  Future<void> fetchUnavailableDates({
-    required String serviceId,
-    required String employeeId,
-    required String userId,
-    required String date, // format yyyy-MM-dd
-  }) async {
-    setState(() => isLoading = true);
-
-    var data = {
-      "slotsPayload": [
-        {
-          "serviceId": serviceId,
-          "employeeId": employeeId,
-          "userId": userId,
-          "date": date,
-        }
-      ]
-    };
-
-    var requestModel = {
-      'data': base64.encode(utf8.encode(json.encode(data))),
-    };
-
-    ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI(
-      'appointment-management/getUnavailableDatesInMonth',
-      requestModel,
-      context,
-    );
-
-    setState(() => isLoading = false);
-
-    final responseJSON = json.decode(response.toString());
-    print("Unavailable Dates response: $responseJSON");
-
-    if (responseJSON["statusCode"] == 200) {
-      final List<dynamic> fetched = responseJSON["data"] ?? [];
-      if (fetched.isNotEmpty) {
-        setState(() {
-          unavailableDates = List<String>.from(
-            fetched[0]["unavailableDates"] ?? [],
-          );
-        });
-      }
-    } else {
-      print("Error fetching unavailable dates: ${responseJSON["message"]}");
-    }
   }
 
   @override
@@ -355,16 +445,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     isSelected: selectedEmployeeId == null,
                     onTap: () {
                       setState(() {
-                        selectedEmployeeId = null; // null means "Any Employee"
+                        selectedEmployeeId = null;
                         selectedUserId = null;
                       });
                       fetchUnavailableDates(
                         serviceId: widget.consultations[selectedServiceIndex]
                             ["_id"],
-                        employeeId: selectedEmployeeId ??
-                            "", // pass empty string for Any Employee
-                        userId: selectedUserId ??
-                            "", // replace with actual logged-in user ID
+                        employeeId: selectedEmployeeId ?? "",
+                        userId: selectedUserId ?? "",
                         date: DateTime.now().toIso8601String().substring(0, 10),
                       );
                     },
@@ -381,10 +469,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         fetchUnavailableDates(
                           serviceId: widget.consultations[selectedServiceIndex]
                               ["_id"],
-                          employeeId: selectedEmployeeId ??
-                              "", // pass empty string for Any Employee
-                          userId: selectedEmployeeId ??
-                              "", // replace with actual logged-in user ID
+                          employeeId: selectedEmployeeId ?? "",
+                          userId: selectedEmployeeId ?? "",
                           date:
                               DateTime.now().toIso8601String().substring(0, 10),
                         );
@@ -442,81 +528,128 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
 
               const SizedBox(height: 12),
-              // Check if secondService is true, show the section
-              secondService
-                  ? Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+              ...additionalServices.asMap().entries.map((entry) {
+                int index = entry.key;
+                Map<String, dynamic> service = entry.value;
+
+                return Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              const Text(
-                                "Second Service",
-                                style: TextStyle(
+                              Text(
+                                "Service ${index + 2}",
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                "Select Service",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 14),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => _removeService(index),
+                                child: Container(
+                                  height: 22,
+                                  width: 22,
                                   decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade400),
-                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        width: 2,
+                                        color: const Color(0xFFB65303)),
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
                                   ),
-                                  child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          "Select",
-                                          style: TextStyle(fontSize: 15),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              secondService = false;
-                                            });
-                                          },
-                                          child: Container(
-                                            height: 22,
-                                            width: 22,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  width: 5,
-                                                  color:
-                                                      const Color(0xFFB65303)),
-                                              shape: BoxShape.circle,
-                                              color: Colors.white,
-                                            ),
-                                            child: const Icon(
-                                              Icons.remove,
-                                              color: Color(0xFFB65303),
-                                              size: 12,
-                                            ),
-                                          ),
-                                        )
-                                      ])),
-                              const SizedBox(height: 12),
-                              const Text(
-                                "Select Employee",
-                                style: TextStyle(
-                                  fontSize: 13,
+                                  child: const Icon(
+                                    Icons.remove,
+                                    color: Color(0xFFB65303),
+                                    size: 12,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              Container(
-                                width: double.maxFinite,
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("Select Service",
+                              style: TextStyle(fontSize: 13)),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () =>
+                                selectServiceBottomSheet(context, index),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade400),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    service['selectedServiceName'] ?? "Select",
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down,
+                                      color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("Select Employee",
+                              style: TextStyle(fontSize: 13)),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: service['employees'].isNotEmpty
+                                ? () =>
+                                    selectEmployeeBottomSheet(context, index)
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 14),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade400),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    service['selectedEmployeeId'] == null
+                                        ? "Any Employee"
+                                        : (service['employees'] as List)
+                                                .firstWhere(
+                                                    (emp) =>
+                                                        emp["_id"] ==
+                                                        service[
+                                                            'selectedEmployeeId'],
+                                                    orElse: () => {
+                                                          "name": "Select"
+                                                        })["name"] ??
+                                            "Select",
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down,
+                                      color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (service['selectedEmployeeId'] != null ||
+                              service['employees'].isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            const Text("Select Date",
+                                style: TextStyle(fontSize: 13)),
+                            const SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () => _pickDateForService(context, index),
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 14),
                                 decoration: BoxDecoration(
@@ -524,88 +657,53 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                       Border.all(color: Colors.grey.shade400),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  "Select",
-                                  style: TextStyle(fontSize: 15),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                "Select Date",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              GestureDetector(
-                                onTap: () => _pickDate(context),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade400),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        selectedDate == null
-                                            ? "Select"
-                                            : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                                        style: const TextStyle(fontSize: 15),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      service['selectedDate'] == null
+                                          ? "Select"
+                                          : "${service['selectedDate'].day}/${service['selectedDate'].month}/${service['selectedDate'].year}",
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                    SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: SvgPicture.asset(
+                                        "assets/calendar.svg",
+                                        color: Colors.grey,
                                       ),
-                                      SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: SvgPicture.asset(
-                                          "assets/calendar.svg",
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  : const SizedBox(height: 12),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
 
               const SizedBox(height: 12),
-
-              /// Add Service Button
-              secondService
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            secondService = true;
-                          });
-                          // Debug print to check if the button works
-                          // You can remove this after confirming
-                          print(
-                              "Add Service tapped, secondService: $secondService");
-                        },
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text("Add Service"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                        ),
-                      ),
-                    )
-                  : const SizedBox(height: 12),
-
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: ElevatedButton.icon(
+                  onPressed: _addNewService,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text("Add Service"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
             ],
           ),
@@ -616,18 +714,57 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           padding: const EdgeInsets.all(14),
           child: ElevatedButton(
             onPressed: () {
-              if (unavailableDates.contains(selectedDate!.toString()) ||
-                  selectedDate!.isBefore(DateTime.now())) {
+              List<Map<String, dynamic>> allServicesData = [
+                {
+                  'serviceId': widget.consultations[selectedServiceIndex]
+                      ["_id"],
+                  'employeeId': selectedEmployeeId,
+                  'userId': selectedUserId,
+                  'date': selectedDate,
+                  'serviceName': serviceList[selectedServiceIndex],
+                }
+              ];
+
+              for (var service in additionalServices) {
+                allServicesData.add({
+                  'serviceId': service['selectedServiceId'],
+                  'employeeId': service['selectedEmployeeId'],
+                  'userId': service['selectedUserId'],
+                  'date': service['selectedDate'],
+                  'serviceName': service['selectedServiceName'],
+                });
+              }
+
+              bool hasUnavailableDate = false;
+
+              if (selectedDate != null &&
+                  (unavailableDates.contains(selectedDate!.toString()) ||
+                      selectedDate!.isBefore(DateTime.now()))) {
+                hasUnavailableDate = true;
+              }
+
+              for (int i = 0; i < additionalServices.length; i++) {
+                var service = additionalServices[i];
+                var serviceDate = service['selectedDate'];
+                var serviceUnavailableDates = service['unavailableDates'] ?? [];
+
+                if (serviceDate != null &&
+                    (serviceUnavailableDates.contains(serviceDate.toString()) ||
+                        serviceDate.isBefore(DateTime.now()))) {
+                  hasUnavailableDate = true;
+                  break;
+                }
+              }
+
+              if (hasUnavailableDate) {
                 SearchBottomSheet(context);
               } else {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => BookAppointmentScreen2(
-                              serviceId: serviceList[selectedServiceIndex],
-                              employeeId: selectedEmployeeId!,
-                              userId: selectedUserId!,
-                              date: selectedDate!,
+                              allServicesData: allServicesData,
+                              userId: selectedUserId ?? "",
                             )));
               }
             },
@@ -986,7 +1123,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       height: 220,
                     ),
                     const SizedBox(height: 20),
-
                     const Text(
                       "Please select another date",
                       textAlign: TextAlign.center,
@@ -997,7 +1133,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
                     const Text(
                       "There are no available appointments on this day, "
                       "but call us to check for any last minute openings.",
@@ -1008,7 +1143,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     GestureDetector(
                       onTap: () {},
                       child: const Text(
@@ -1021,8 +1155,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Next available date card
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 15, vertical: 12),
@@ -1075,16 +1207,36 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
+                              List<Map<String, dynamic>> allServicesData = [
+                                {
+                                  'serviceId':
+                                      widget.consultations[selectedServiceIndex]
+                                          ["_id"],
+                                  'employeeId': selectedEmployeeId,
+                                  'userId': selectedUserId,
+                                  'date': selectedDate,
+                                  'serviceName':
+                                      serviceList[selectedServiceIndex],
+                                }
+                              ];
+
+                              for (var service in additionalServices) {
+                                allServicesData.add({
+                                  'serviceId': service['selectedServiceId'],
+                                  'employeeId': service['selectedEmployeeId'],
+                                  'userId': service['selectedUserId'],
+                                  'date': service['selectedDate'],
+                                  'serviceName': service['selectedServiceName'],
+                                });
+                              }
+
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         BookAppointmentScreen2(
-                                      date: selectedDate ?? DateTime.now(),
-                                      serviceId:
-                                          serviceList[selectedServiceIndex],
-                                      employeeId: selectedEmployeeId!,
-                                      userId: selectedUserId!,
+                                      allServicesData: allServicesData,
+                                      userId: selectedUserId ?? "",
                                     ),
                                   ));
                             },
@@ -1114,6 +1266,346 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           );
         },
       ),
+    );
+  }
+
+  void selectServiceBottomSheet(BuildContext context, int serviceIndex) {
+    int tempSelectedIndex =
+        additionalServices[serviceIndex]['selectedServiceIndex'];
+
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      context: context,
+      builder: (context) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            color: Colors.white,
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 15),
+                      child: Text('Select Service',
+                          style: TextStyle(
+                              fontSize: 19,
+                              fontFamily: "Montserrat",
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black)),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child:
+                            const Icon(Icons.clear, color: Color(0xFFAFAFAF))),
+                    const SizedBox(width: 15)
+                  ],
+                ),
+                const SizedBox(height: 25),
+                Expanded(
+                  child: ListView.builder(
+                      itemCount: serviceList.length,
+                      itemBuilder: (BuildContext context, int pos) {
+                        return GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              tempSelectedIndex = pos;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                                top: 10, bottom: 10, left: 13, right: 10),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                tempSelectedIndex == pos
+                                    ? const Icon(Icons.radio_button_checked,
+                                        color: AppTheme.darkBrown)
+                                    : const Icon(Icons.radio_button_off,
+                                        color: Color(0xFF707070)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    serviceList[pos],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black.withOpacity(0.6),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                            height: 54,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFFE3E3E3)),
+                            child: const Center(
+                              child: Text("Back",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  )),
+                            )),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          setState(() {
+                            additionalServices[serviceIndex]
+                                ['selectedServiceIndex'] = tempSelectedIndex;
+                            additionalServices[serviceIndex]
+                                    ['selectedServiceId'] =
+                                widget.consultations[tempSelectedIndex]["_id"];
+                            additionalServices[serviceIndex]
+                                    ['selectedServiceName'] =
+                                serviceList[tempSelectedIndex];
+                            additionalServices[serviceIndex]
+                                ['selectedEmployeeId'] = null;
+                            additionalServices[serviceIndex]['selectedUserId'] =
+                                null;
+                            additionalServices[serviceIndex]['selectedDate'] =
+                                null;
+                          });
+                          await _loadServiceForAdditional(
+                              widget.consultations[tempSelectedIndex]["_id"],
+                              serviceIndex);
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                            height: 54,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFF662A09)),
+                            child: const Center(
+                              child: Text("Submit",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )),
+                            )),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  void selectEmployeeBottomSheet(BuildContext context, int serviceIndex) {
+    List<Map<String, dynamic>> serviceEmployees =
+        additionalServices[serviceIndex]['employees'] ?? [];
+    String? tempSelectedEmployeeId =
+        additionalServices[serviceIndex]['selectedEmployeeId'];
+
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      context: context,
+      builder: (context) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            color: Colors.white,
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 15),
+                      child: Text('Select Employee',
+                          style: TextStyle(
+                              fontSize: 19,
+                              fontFamily: "Montserrat",
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black)),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child:
+                            const Icon(Icons.clear, color: Color(0xFFAFAFAF))),
+                    const SizedBox(width: 15)
+                  ],
+                ),
+                const SizedBox(height: 25),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            tempSelectedEmployeeId = null;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.only(
+                              top: 10, bottom: 10, left: 13, right: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              tempSelectedEmployeeId == null
+                                  ? const Icon(Icons.radio_button_checked,
+                                      color: AppTheme.darkBrown)
+                                  : const Icon(Icons.radio_button_off,
+                                      color: Color(0xFF707070)),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  "Any Employee",
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.black54),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      ...serviceEmployees
+                          .map((emp) => GestureDetector(
+                                onTap: () {
+                                  setModalState(() {
+                                    tempSelectedEmployeeId = emp["_id"];
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.only(
+                                      top: 10, bottom: 10, left: 13, right: 10),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      tempSelectedEmployeeId == emp["_id"]
+                                          ? const Icon(
+                                              Icons.radio_button_checked,
+                                              color: AppTheme.darkBrown)
+                                          : const Icon(Icons.radio_button_off,
+                                              color: Color(0xFF707070)),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          emp["name"] ?? "Employee",
+                                          style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.black54),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                            height: 54,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFFE3E3E3)),
+                            child: const Center(
+                              child: Text("Back",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  )),
+                            )),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          setState(() {
+                            additionalServices[serviceIndex]
+                                ['selectedEmployeeId'] = tempSelectedEmployeeId;
+                            additionalServices[serviceIndex]['selectedUserId'] =
+                                tempSelectedEmployeeId != null
+                                    ? serviceEmployees.firstWhere((emp) =>
+                                        emp["_id"] ==
+                                        tempSelectedEmployeeId)["userId"]
+                                    : null;
+                          });
+
+                          // Fetch unavailable dates for this service
+                          await fetchUnavailableDatesForService(
+                            serviceId: additionalServices[serviceIndex]
+                                ['selectedServiceId'],
+                            employeeId: tempSelectedEmployeeId ?? "",
+                            userId: tempSelectedEmployeeId ?? "",
+                            date: DateTime.now()
+                                .toIso8601String()
+                                .substring(0, 10),
+                            serviceIndex: serviceIndex,
+                          );
+
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                            height: 54,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFF662A09)),
+                            child: const Center(
+                              child: Text("Submit",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )),
+                            )),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

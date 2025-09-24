@@ -698,17 +698,17 @@ class _BookClassScreenState extends State<BookClassScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        BookAppointmentScreen2(
-                                      date: selectedDate ?? DateTime.now(),
-                                      serviceId: "",
-                                      employeeId: "",
-                                      userId: "",
-                                    ),
-                                  ));
+                              // Navigator.push(
+                              //     context,
+                              //     MaterialPageRoute(
+                              //       builder: (context) =>
+                              //           BookAppointmentScreen2(
+                              //         date: selectedDate ?? DateTime.now(),
+                              //         serviceId: "",
+                              //         employeeId: "",
+                              //         userId: "",
+                              //       ),
+                              //     ));
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF662A09),

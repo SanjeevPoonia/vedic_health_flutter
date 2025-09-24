@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_family&friends_screen.dart';
-import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
-import 'package:vedic_health/views/appointments/book_appointment_screen2.dart';
 
 class SelectOtherPersonScreen extends StatefulWidget {
-  const SelectOtherPersonScreen({super.key});
+  final Map<String, dynamic> address;
+
+  const SelectOtherPersonScreen({super.key, required this.address});
 
   @override
   State<SelectOtherPersonScreen> createState() =>
@@ -19,46 +17,24 @@ class _SelectOtherPersonScreenState extends State<SelectOtherPersonScreen> {
   int selectedServiceIndex = 0;
   String selectedServiceDrop = "";
   bool secondService = false;
-
-  List customerList = [
-    "Smith Jhons  (Me)",
-    "Rachel Smith  (Spouse)",
-    "Jordan Houstan  (Child)",
-    "Case Richardson  (Friend)",
-    "Alexa Brown  (Parent)",
-    "Emilia Smith  (Sibling)",
-    "Lillie  (Pet)"
-  ];
-
-  Future<void> _pickDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2023),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
+  List<Map<String, dynamic>> customerList = [];
+  @override
+  void initState() {
+    super.initState();
+    customerList.add(widget.address);
   }
 
   String getInitials(String fullName) {
-    // Remove any suffix in parentheses
     String cleanedName = fullName.split("(")[0].trim();
 
-    // Split by spaces
     List<String> parts =
         cleanedName.split(" ").where((p) => p.isNotEmpty).toList();
 
     if (parts.isEmpty) return "";
 
     if (parts.length == 1) {
-      // Only one word -> take first letter
       return parts[0][0].toUpperCase();
     } else {
-      // First letter of first name + first letter of last name
       return parts[0][0].toUpperCase() + parts.last[0].toUpperCase();
     }
   }
@@ -140,6 +116,8 @@ class _SelectOtherPersonScreenState extends State<SelectOtherPersonScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: customerList.length,
                   itemBuilder: (BuildContext context, int pos) {
+                    final person = customerList[pos];
+                    final name = person["name"] ?? "Unknown";
                     return GestureDetector(
                       onTap: () {
                         setState(() {
@@ -158,30 +136,23 @@ class _SelectOtherPersonScreenState extends State<SelectOtherPersonScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: const Color(0xFFC7DEF3),
-                                    child: Text(
-                                      getInitials(customerList[pos]),
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    width: 20,
-                                  ),
-                                  Text(
-                                    customerList[pos],
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                ],
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFFC7DEF3),
+                                child: Text(
+                                  getInitials(name),
+                                  style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500),
                               ),
                               const Spacer(),
                               selectedServiceIndex == pos
@@ -196,6 +167,7 @@ class _SelectOtherPersonScreenState extends State<SelectOtherPersonScreen> {
                       ),
                     );
                   }),
+
               const SizedBox(height: 12),
 
               /// Date Picker

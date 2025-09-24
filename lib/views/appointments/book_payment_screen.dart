@@ -1,17 +1,20 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/selectotherperson_screen.dart';
 
 class BookPaymentScreen extends StatefulWidget {
   final DateTime date;
+  final String userId;
   final String name;
-  final String title;
 
   const BookPaymentScreen({
     super.key,
     required this.date,
+    required this.userId,
     required this.name,
-    required this.title,
   });
   @override
   State<BookPaymentScreen> createState() => _BookPaymentScreenState();
@@ -23,6 +26,61 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
   String _bookingFor = 'me'; // 'me' or 'other'
   final TextEditingController _specialRequestController =
       TextEditingController();
+  List<Map<String, dynamic>> userAddresses = [];
+  bool isLoading = false;
+  Map<String, dynamic>? selectedAddress;
+  @override
+  void initState() {
+    super.initState();
+    fetchUserAddresses(widget.userId);
+  }
+
+  Future<void> fetchUserAddresses(String userId) async {
+    setState(() {
+      isLoading = true;
+      userAddresses = [];
+    });
+
+    try {
+      // Prepare payload
+      var requestPayload = {
+        "user": userId,
+      };
+
+      var requestModel = {
+        "data": base64.encode(utf8.encode(json.encode(requestPayload))),
+      };
+
+      ApiBaseHelper helper = ApiBaseHelper();
+      var response = await helper.postAPI(
+        'users/all-address',
+        requestModel,
+        context,
+      );
+
+      var responseJSON = json.decode(response.toString());
+
+      if (responseJSON["data"] != null &&
+          responseJSON["data"]["data"] != null &&
+          responseJSON["data"]["data"].isNotEmpty) {
+        setState(() {
+          userAddresses = List<Map<String, dynamic>>.from(
+            responseJSON["data"]["data"],
+          );
+        });
+      } else {
+        setState(() {
+          userAddresses = [];
+        });
+      }
+    } catch (e) {
+      print("Error fetching addresses: $e");
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +161,7 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "${widget.name}, ${widget.title}",
+                              widget.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
@@ -140,7 +198,6 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
 
               const SizedBox(height: 20),
 
-              // Who Are You Booking For? Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
@@ -154,91 +211,76 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(
-                              width: 1,
-                              color: const Color(0xFFDBDBDB),
+                    if (isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (userAddresses.isEmpty)
+                      const Text("No saved addresses found.")
+                    else
+                      Column(
+                        children: userAddresses.map((address) {
+                          final fullName = address["name"] ?? "Unknown";
+                          final uniqueId = address["_id"];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                  width: 1, color: const Color(0xFFDBDBDB)),
+                              color: selectedAddress != null &&
+                                      selectedAddress!["_id"] == uniqueId
+                                  ? const Color.fromARGB(70, 243, 131, 40)
+                                  : Colors.white,
                             ),
-                            color: _bookingFor == 'me'
-                                ? const Color.fromARGB(70, 243, 131, 40)
-                                : Colors.white,
-                          ),
-                          child: Row(
-                            children: [
-                              Radio(
-                                activeColor: Color(0xFF865940),
-                                value: 'me',
-                                groupValue: _bookingFor,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _bookingFor = value.toString();
-                                  });
-                                },
-                              ),
-                              Text(
-                                "Smith Jhons (ME)",
-                                style: TextStyle(
-                                    fontWeight: _bookingFor == 'me'
-                                        ? FontWeight.bold
-                                        : FontWeight.w400),
-                              ),
-                              const SizedBox(
-                                width: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(
-                              width: 1,
-                              color: const Color(0xFFDBDBDB),
-                            ),
-                            color: _bookingFor == 'other'
-                                ? const Color.fromARGB(70, 243, 131, 40)
-                                : Colors.white,
-                          ),
-                          child: Row(
-                            children: [
-                              Radio(
-                                activeColor: Color(0xFF865940),
-                                value: 'other',
-                                groupValue: _bookingFor,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _bookingFor = value.toString();
-                                    Navigator.push(
+                            child: Row(
+                              children: [
+                                Radio(
+                                  activeColor: const Color(0xFF865940),
+                                  value: uniqueId,
+
+                                  // ignore: deprecated_member_use
+                                  groupValue: selectedAddress?["_id"],
+                                  // ignore: deprecated_member_use
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedAddress = address;
+                                    });
+
+                                    // If "Other" type, push SelectOtherPersonScreen
+                                    if (address["name"] == "Other Person") {
+                                      Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              const SelectOtherPersonScreen(),
-                                        ));
-                                  });
-                                },
-                              ),
-                              Text(
-                                "Other Person",
-                                style: TextStyle(
-                                    fontWeight: _bookingFor == 'other'
-                                        ? FontWeight.bold
-                                        : FontWeight.w400),
-                              ),
-                              const SizedBox(
-                                width: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                                              SelectOtherPersonScreen(
+                                            address:
+                                                address, // ✅ Pass selected address
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    child: Text(
+                                      "$fullName - ${address["city"]}, ${address["country"]}",
+                                      style: TextStyle(
+                                        fontWeight: selectedAddress != null &&
+                                                selectedAddress!["_id"] ==
+                                                    uniqueId
+                                            ? FontWeight.bold
+                                            : FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                   ],
                 ),
               ),

@@ -39,100 +39,13 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   List<dynamic> centers = [];
   List<dynamic> appointments = [];
   bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
     fetchAllCenters(1, 10, false);
     if (centers.isNotEmpty) {
       fetchAppointments(centers[0]["_id"]);
-    }
-  }
-
-  Future<void> fetchAllCenters(
-      int page, int pageSize, bool progressDialog) async {
-    if (progressDialog) {
-      APIDialog.showAlertDialog(context, "Please wait...");
-    } else {
-      setState(() => isLoading = true);
-    }
-
-    var data = {"page": page, "pageSize": pageSize};
-    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
-
-    ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPI(
-      'center_management/allCenterManagement',
-      requestModel,
-      context,
-    );
-
-    if (progressDialog) {
-      Navigator.pop(context);
-    } else {
-      setState(() => isLoading = false);
-    }
-
-    var responseJSON = json.decode(response.toString());
-    if (responseJSON["statusCode"] == 200 ||
-        responseJSON["statusCode"] == 201) {
-      setState(() {
-        centers = responseJSON["centers"];
-      });
-
-      // Fetch appointments for the first center by default
-      if (centers.isNotEmpty) {
-        fetchAppointments(centers[0]["_id"]);
-      }
-    } else {
-      print("Error: ${responseJSON["message"]}");
-    }
-  }
-
-  Future<void> fetchAppointments(String centerId) async {
-    setState(() => isLoading = true);
-
-    var data = {"page": 1, "pageSize": 30, "centerId": centerId};
-    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
-
-    ApiBaseHelper helper = ApiBaseHelper();
-    var response =
-        await helper.postAPI('service_type/getAll', requestModel, context);
-
-    setState(() => isLoading = false);
-
-    final responseJSON = json.decode(response.toString());
-    print("Appointments response: $responseJSON");
-
-    if (responseJSON["statusCode"] == 200) {
-      final List<Color> palette = [
-        const Color(0xFFB9E0EC),
-        const Color(0xFFDBD4F7),
-        const Color(0xFFFFE5AB),
-        const Color(0xFFBFF2C9),
-        const Color(0xFFB9E0EC),
-      ];
-      final List<dynamic> fetched =
-          List<dynamic>.from(responseJSON["data"] ?? []);
-      final List<AppointmentOption> mapped = [];
-
-      for (var i = 0; i < fetched.length; i++) {
-        final item = fetched[i] as Map<String, dynamic>;
-        mapped.add(AppointmentOption(
-          id: item['_id'] as String?,
-          title: item['name'] ?? 'No name',
-          description: item['description'] ?? '',
-          color: palette[i % palette.length],
-          services: List<dynamic>.from(
-              item['service'] ?? []), // <-- store services here
-        ));
-      }
-
-      setState(() {
-        appointmentOptions.clear();
-        appointmentOptions.addAll(mapped);
-      });
-    } else {
-      print("Error fetching appointments: ${responseJSON["message"]}");
     }
   }
 
@@ -357,17 +270,23 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
 
                     const SizedBox(height: 24),
 
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
-                      childAspectRatio: 0.75,
-                      children: appointmentOptions
-                          .map((option) => _buildAppointmentCard(option))
-                          .toList(),
-                    ),
+                    isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFF38328),
+                            ),
+                          )
+                        : GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 6,
+                            mainAxisSpacing: 6,
+                            childAspectRatio: 0.75,
+                            children: appointmentOptions
+                                .map((option) => _buildAppointmentCard(option))
+                                .toList(),
+                          ),
 
                     const SizedBox(height: 20),
                   ],
@@ -378,6 +297,94 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> fetchAllCenters(
+      int page, int pageSize, bool progressDialog) async {
+    if (progressDialog) {
+      APIDialog.showAlertDialog(context, "Please wait...");
+    } else {
+      setState(() => isLoading = true);
+    }
+
+    var data = {"page": page, "pageSize": pageSize};
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI(
+      'center_management/allCenterManagement',
+      requestModel,
+      context,
+    );
+
+    if (progressDialog) {
+      Navigator.pop(context);
+    } else {
+      setState(() => isLoading = false);
+    }
+
+    var responseJSON = json.decode(response.toString());
+    if (responseJSON["statusCode"] == 200 ||
+        responseJSON["statusCode"] == 201) {
+      setState(() {
+        centers = responseJSON["centers"];
+      });
+
+      // Fetch appointments for the first center by default
+      if (centers.isNotEmpty) {
+        fetchAppointments(centers[0]["_id"]);
+      }
+    } else {
+      print("Error: ${responseJSON["message"]}");
+    }
+  }
+
+  Future<void> fetchAppointments(String centerId) async {
+    setState(() => isLoading = true);
+
+    var data = {"page": 1, "pageSize": 30, "centerId": centerId};
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response =
+        await helper.postAPI('service_type/getAll', requestModel, context);
+
+    setState(() => isLoading = false);
+
+    final responseJSON = json.decode(response.toString());
+    print("Appointments response: $responseJSON");
+
+    if (responseJSON["statusCode"] == 200) {
+      final List<Color> palette = [
+        const Color(0xFFB9E0EC),
+        const Color(0xFFDBD4F7),
+        const Color(0xFFFFE5AB),
+        const Color(0xFFBFF2C9),
+        const Color(0xFFB9E0EC),
+      ];
+      final List<dynamic> fetched =
+          List<dynamic>.from(responseJSON["data"] ?? []);
+      final List<AppointmentOption> mapped = [];
+
+      for (var i = 0; i < fetched.length; i++) {
+        final item = fetched[i] as Map<String, dynamic>;
+        mapped.add(AppointmentOption(
+          id: item['_id'] as String?,
+          title: item['name'] ?? 'No name',
+          description: item['description'] ?? '',
+          color: palette[i % palette.length],
+          services: List<dynamic>.from(
+              item['service'] ?? []), // <-- store services here
+        ));
+      }
+
+      setState(() {
+        appointmentOptions.clear();
+        appointmentOptions.addAll(mapped);
+      });
+    } else {
+      print("Error fetching appointments: ${responseJSON["message"]}");
+    }
   }
 
   Widget _buildAppointmentCard(AppointmentOption option) {
