@@ -8,6 +8,8 @@ import 'package:lottie/lottie.dart';
 //import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vedic_health/views/appointments/appointment_home.dart';
+import 'package:vedic_health/views/appointments/my_appointment_screen.dart';
 import 'package:vedic_health/views/change_password_screen.dart';
 import 'package:vedic_health/views/my_orders.dart';
 import 'package:vedic_health/views/profile_screen.dart';
@@ -31,6 +33,7 @@ class MenuScreen extends StatefulWidget {
 class MenuState extends State<MenuScreen> {
   String emailID = '';
   String userName = '';
+  String id = '';
   String? profileImageUrl;
   @override
   Widget build(BuildContext context) {
@@ -212,6 +215,43 @@ class MenuState extends State<MenuScreen> {
                             },
                             child:
                                 SideBarWidget('Reviews', 'assets/review.png'),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                  .toggle();
+
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => MyAppointmentScreen(
+                                            id: id,
+                                          )));
+
+                              // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
+                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
+                            },
+                            child: SideBarWidget(
+                                'My Appointments', 'assets/review.png'),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                  .toggle();
+
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          AppointmentHomeScreen()));
+
+                              // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
+                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
+                            },
+                            child: SideBarWidget(
+                                'Book Appointments', 'assets/review.png'),
                           ),
                           InkWell(
                             onTap: () {
@@ -413,8 +453,10 @@ class MenuState extends State<MenuScreen> {
   Future<void> getValue() async {
     String? email = await MyUtils.getSharedPreferences("email");
     String? name = await MyUtils.getSharedPreferences("name");
+    String? id = await MyUtils.getSharedPreferences("_id");
     emailID = email ?? "NA";
     userName = name ?? "NA";
+    id = id ?? "NA";
     print(email);
     print(name);
   }

@@ -373,8 +373,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
           title: item['name'] ?? 'No name',
           description: item['description'] ?? '',
           color: palette[i % palette.length],
-          services: List<dynamic>.from(
-              item['service'] ?? []), // <-- store services here
+          services: List<dynamic>.from(item['service'] ?? []),
         ));
       }
 

@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
+import 'package:vedic_health/views/appointments/appointment_reschedule.dart';
 import 'package:vedic_health/views/profile_screen.dart';
 
 // Dummy data classes to make the UI work
@@ -37,43 +41,44 @@ class Practitioner {
   });
 }
 
-// Dummy data
-final Appointment upcomingAppointment = Appointment(
-  practitionerName: "Meena Sankar, AWP",
-  practitionerTitle: "Ayurvedic Consult for Chronic Conditions",
-  appointmentType: "Ayurvedic Consult for Chronic Conditions",
-  date: "Mon, May 05, 2025",
-  time: "12:00 PM",
-  price: 0.0,
-  imagePath: "assets/banner2.png",
-  centerName: "Vedic Health Center",
-);
+// // Dummy data
+// final Appointment upcomingAppointment = Appointment(
+//   practitionerName: "Meena Sankar, AWP",
+//   practitionerTitle: "Ayurvedic Consult for Chronic Conditions",
+//   appointmentType: "Ayurvedic Consult for Chronic Conditions",
+//   date: "Mon, May 05, 2025",
+//   time: "12:00 PM",
+//   price: 0.0,
+//   imagePath: "assets/banner2.png",
+//   centerName: "Vedic Health Center",
+// );
 
-final List<Appointment> allAppointments = [
-  Appointment(
-    practitionerName: "Om Sanduja, AWP",
-    practitionerTitle: "Ayurvedic Health Consult - Virtual Visit",
-    appointmentType: "Ayurvedic Consult for Chronic Conditions",
-    date: "Mon, May 05, 2025",
-    time: "12:00 PM",
-    price: 60.00,
-    imagePath: "assets/banner2.png",
-    centerName: "Vedic Health Ayurveda",
-  ),
-  Appointment(
-    practitionerName: "Meena Sankar, AWP",
-    practitionerTitle: "Ayurvedic Health Consult - Virtual Visit",
-    appointmentType: "Ayurvedic Consult for Chronic Conditions",
-    date: "Mon, May 05, 2025",
-    time: "12:00 PM",
-    price: 60.00,
-    imagePath: "assets/banner2.png",
-    centerName: "Vedic Health Ayurveda",
-  ),
-];
+// final List<Appointment> allAppointments = [
+//   Appointment(
+//     practitionerName: "Om Sanduja, AWP",
+//     practitionerTitle: "Ayurvedic Health Consult - Virtual Visit",
+//     appointmentType: "Ayurvedic Consult for Chronic Conditions",
+//     date: "Mon, May 05, 2025",
+//     time: "12:00 PM",
+//     price: 60.00,
+//     imagePath: "assets/banner2.png",
+//     centerName: "Vedic Health Ayurveda",
+//   ),
+//   Appointment(
+//     practitionerName: "Meena Sankar, AWP",
+//     practitionerTitle: "Ayurvedic Health Consult - Virtual Visit",
+//     appointmentType: "Ayurvedic Consult for Chronic Conditions",
+//     date: "Mon, May 05, 2025",
+//     time: "12:00 PM",
+//     price: 60.00,
+//     imagePath: "assets/banner2.png",
+//     centerName: "Vedic Health Ayurveda",
+//   ),
+// ];
 
 class MyAppointmentScreen extends StatefulWidget {
-  const MyAppointmentScreen({super.key});
+  final String id;
+  const MyAppointmentScreen({super.key, required this.id});
 
   @override
   State<MyAppointmentScreen> createState() => _MyAppointmentScreenState();
@@ -81,6 +86,9 @@ class MyAppointmentScreen extends StatefulWidget {
 
 class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
   String _selectedFilter = 'All Appointments';
+  bool isLoading = false;
+  List<Map<String, dynamic>> allAppointments = [];
+  Map<String, dynamic>? upcomingAppointment;
 
   final List<String> _filters = [
     'All Appointments',
@@ -88,6 +96,34 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     'Family & Friends',
     'Other',
   ];
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    final appointments =
+        await fetchUserAppointments("67f385744d5e4bbd8189e116"); // your userId
+    setState(() {
+      allAppointments = appointments;
+
+      // Find nearest upcoming appointment
+      final now = DateTime.now();
+      final futureAppointments = appointments.where((a) {
+        final date = DateTime.tryParse(a["dateTime"] ?? "");
+        return date != null && date.isAfter(now);
+      }).toList();
+
+      if (futureAppointments.isNotEmpty) {
+        futureAppointments.sort((a, b) => DateTime.parse(a["dateTime"])
+            .compareTo(DateTime.parse(b["dateTime"])));
+        upcomingAppointment = futureAppointments.first;
+      } else {
+        upcomingAppointment = null;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,6 +278,8 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
   }
 
   Widget _buildUpcomingAppointmentSection() {
+    if (upcomingAppointment == null) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -260,7 +298,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _buildUpcomingAppointmentCard(upcomingAppointment),
+        _buildUpcomingAppointmentCard(upcomingAppointment as Appointment),
       ],
     );
   }
@@ -353,7 +391,8 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                           const SizedBox(height: 25),
                                           Expanded(
                                             child: Container(
-                                                padding: EdgeInsets.all(5),
+                                                padding:
+                                                    const EdgeInsets.all(5),
                                                 // height: 150,
                                                 child: Column(
                                                   mainAxisAlignment:
@@ -476,14 +515,77 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     );
   }
 
+  Future<List<Map<String, dynamic>>> fetchUserAppointments(
+      String userId) async {
+    try {
+      setState(() => isLoading = true);
+
+      // Prepare request body (base64 encoding of {"_id": userId})
+      final requestModel = {
+        "data": base64.encode(utf8.encode(json.encode({"_id": userId})))
+      };
+
+      ApiBaseHelper helper = ApiBaseHelper();
+      final response = await helper.postAPI(
+        "appointment-management/findByUser", // API endpoint
+        requestModel,
+        context,
+      );
+
+      setState(() => isLoading = false);
+
+      final responseJSON = json.decode(response.toString());
+      print("Appointments response: $responseJSON");
+
+      if (responseJSON["statusCode"] == 200 &&
+          responseJSON["data"] != null &&
+          responseJSON["data"].isNotEmpty) {
+        // Return list of appointments
+        return List<Map<String, dynamic>>.from(responseJSON["data"]);
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      print("Error fetching appointments: $e");
+    }
+    return [];
+  }
+
   Widget _buildAppointmentList() {
-    // Determine which appointments to show based on the filter
-    final List<Appointment> filteredList;
-    if (_selectedFilter == 'All Appointments' ||
-        _selectedFilter == 'My Appointments') {
-      filteredList = allAppointments; // Using dummy data
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(color: Color(0xFFF38328)),
+        ),
+      );
+    }
+
+    if (allAppointments.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            "No appointments found",
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    // Filter logic
+    List<Map<String, dynamic>> filteredList;
+    if (_selectedFilter == 'All Appointments') {
+      filteredList = allAppointments;
+    } else if (_selectedFilter == 'My Appointments') {
+      filteredList = allAppointments
+          .where((a) => a["user"]["_id"] == "67f385744d5e4bbd8189e116")
+          .toList();
+    } else if (_selectedFilter == 'Family & Friends') {
+      filteredList = allAppointments
+          .where((a) => a["type"] == "family") // adjust based on your API data
+          .toList();
     } else {
-      filteredList = []; // No data for other tabs in this example
+      filteredList = [];
     }
 
     return Column(
@@ -493,55 +595,74 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     );
   }
 
-  Widget _buildAppointmentCard(Appointment appointment) {
+  Widget _buildAppointmentCard(Map<String, dynamic> appointment) {
+    final service = appointment["service"] ?? {};
+    final employee = appointment["employee"] ?? {};
+    final employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+
+    // Parse date + time
+    DateTime? dateTime;
+    try {
+      final dateStr = appointment["date"];
+      final timeStr = appointment["time"];
+
+      if (dateStr != null && timeStr != null) {
+        final parsedDate = DateTime.parse(dateStr);
+        final parsedTime = TimeOfDay(
+          hour: int.parse(timeStr.split(":")[0]),
+          minute: int.parse(timeStr.split(":")[1]),
+        );
+
+        dateTime = DateTime(
+          parsedDate.year,
+          parsedDate.month,
+          parsedDate.day,
+          parsedTime.hour,
+          parsedTime.minute,
+        );
+      }
+    } catch (e) {
+      print("Error parsing date/time: $e");
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Colors.grey.shade300, // Set border color
-            width: 1.0, // Set border width
-          )),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300, width: 1.0),
+      ),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 30,
-                backgroundImage: AssetImage(appointment.imagePath),
+                backgroundImage: AssetImage("assets/banner2.png"),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      appointment.practitionerName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(employeeName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        )),
                     const SizedBox(height: 4),
-                    Text(
-                      appointment.practitionerTitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    Text(service["description"] ?? "No description",
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black87)),
                     const SizedBox(height: 4),
-                    Text(
-                      appointment.centerName,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF865940),
-                      ),
-                    ),
+                    Text(service["name"] ?? "Vedic Health Center",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF865940),
+                        )),
                   ],
                 ),
               ),
@@ -599,7 +720,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                     const SizedBox(height: 25),
                                     Expanded(
                                       child: Container(
-                                          padding: EdgeInsets.all(5),
+                                          padding: const EdgeInsets.all(5),
                                           // height: 150,
                                           child: Column(
                                             mainAxisAlignment:
@@ -608,7 +729,18 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               TextButton(
-                                                  onPressed: () {},
+                                                  onPressed: () {
+                                                    Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              RescheduleAppointment(
+                                                            id: widget.id,
+                                                            centerId: employee[
+                                                                "centerId"][0],
+                                                          ),
+                                                        ));
+                                                  },
                                                   child: const Text(
                                                     "Reschedule",
                                                     style: TextStyle(
@@ -653,16 +785,13 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Date & Time",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black,
-                    ),
-                  ),
+                  const Text("Date & Time",
+                      style: TextStyle(fontSize: 12, color: Colors.black)),
                   const SizedBox(height: 4),
                   Text(
-                    "${appointment.date} - ${appointment.time}",
+                    dateTime != null
+                        ? "${dateTime.toLocal()}".split('.')[0]
+                        : "N/A",
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -673,16 +802,11 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
-                    "Starting at",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black,
-                    ),
-                  ),
+                  const Text("Starting at",
+                      style: TextStyle(fontSize: 12, color: Colors.black)),
                   const SizedBox(height: 4),
                   Text(
-                    "\$${appointment.price.toStringAsFixed(2)}",
+                    "\$${appointment["price"]?.toStringAsFixed(2) ?? "0.00"}",
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
