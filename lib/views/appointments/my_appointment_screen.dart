@@ -2,11 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:vedic_health/network/api_helper.dart';
-import 'package:vedic_health/views/appointments/appointment_home.dart';
 import 'package:vedic_health/views/appointments/appointment_reschedule.dart';
 import 'package:vedic_health/views/profile_screen.dart';
 
-// Dummy data classes to make the UI work
 class Appointment {
   final String practitionerName;
   final String practitionerTitle;
@@ -89,6 +87,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
   bool isLoading = false;
   List<Map<String, dynamic>> allAppointments = [];
   Map<String, dynamic>? upcomingAppointment;
+  String? selectedAppointmentId;
 
   final List<String> _filters = [
     'All Appointments',
@@ -298,12 +297,16 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _buildUpcomingAppointmentCard(upcomingAppointment as Appointment),
+        _buildUpcomingAppointmentCard(upcomingAppointment!),
       ],
     );
   }
 
-  Widget _buildUpcomingAppointmentCard(Appointment appointment) {
+  Widget _buildUpcomingAppointmentCard(Map<String, dynamic> appointment) {
+    final service = appointment["service"] ?? {};
+    final employee = appointment["employee"] ?? {};
+    final employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -313,9 +316,9 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 30,
-            backgroundImage: AssetImage(appointment.imagePath),
+            backgroundImage: AssetImage("assets/banner2.png"),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -326,7 +329,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      appointment.practitionerName,
+                      employeeName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -442,12 +445,12 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                   ],
                 ),
                 Text(
-                  appointment.practitionerTitle,
+                  service["description"] ?? "No description",
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "${appointment.date} - ${appointment.time}",
+                  service["name"] ?? "Vedic Health Center",
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -541,6 +544,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
           responseJSON["data"] != null &&
           responseJSON["data"].isNotEmpty) {
         // Return list of appointments
+        selectedAppointmentId = responseJSON["data"][0]["_id"];
         return List<Map<String, dynamic>>.from(responseJSON["data"]);
       }
     } catch (e) {
@@ -735,9 +739,20 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                                         MaterialPageRoute(
                                                           builder: (context) =>
                                                               RescheduleAppointment(
-                                                            id: widget.id,
-                                                            centerId: employee[
-                                                                "centerId"][0],
+                                                            id: selectedAppointmentId ??
+                                                                "",
+                                                            centerId: service[
+                                                                            "centerId"] !=
+                                                                        null &&
+                                                                    service["centerId"]
+                                                                        is List &&
+                                                                    (service["centerId"]
+                                                                            as List)
+                                                                        .isNotEmpty
+                                                                ? (service[
+                                                                        "centerId"]
+                                                                    as List)[0]
+                                                                : "",
                                                           ),
                                                         ));
                                                   },
