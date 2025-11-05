@@ -1,6 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
+
+import '../../network/Utils.dart';
+import '../../network/api_dialog.dart';
+import '../../network/api_helper.dart';
 
 class AddFamilyFriendScreen extends StatefulWidget {
   const AddFamilyFriendScreen({
@@ -11,16 +18,32 @@ class AddFamilyFriendScreen extends StatefulWidget {
 }
 
 class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
-  DateTime? selectedDate;
+
+  int selectedRelationPosition=0;
+  String selectedRelationType="Parent";
+
+  int selectedGenderIndex=0;
+  String selectedGenderType="Male";
+
+  var emailController=TextEditingController();
+  var phoneController=TextEditingController();
+  var firstNameController=TextEditingController();
+  var lastNameController=TextEditingController();
+  var speciesController=TextEditingController();
+  var weightController=TextEditingController();
+
+
+
   int selectedServiceIndex = 0;
   String selectedServiceDrop = "";
   bool secondService = false;
   int? selectedTimeIndex;
-  List relationList = ["Parent", "Spouse", "Child", "Sibling", "Friend"];
-  List genderList = ["Male", "Female", "Other"];
+  List relationList = ["Parent", "Spouse", "Child", "Sibling", "Friend","Pet"];
+  List genderList = ["Male", "Female"];
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return SafeArea(
         child: Scaffold(
       backgroundColor: Colors.white,
@@ -81,7 +104,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Relationship to John Smith",
+                          "Relationship",
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 15,
@@ -101,12 +124,12 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                                 border: Border.all(color: Colors.grey.shade400),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Row(
+                              child:  Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      "Select",
+                                      selectedRelationType.isEmpty?"Select":selectedRelationType,
                                       style: TextStyle(fontSize: 15),
                                     ),
                                     Icon(Icons.arrow_drop_down_rounded)
@@ -122,16 +145,26 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          width: double.maxFinite,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              width: 1,
+                              color: const Color(0xFFDBDBDB),
+                            ),
                           ),
-                          child: const Text(
-                            "Enter",
-                            style: TextStyle(fontSize: 15),
+                          child: TextField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                  color: Color.fromARGB(255, 116, 115, 115)),
+                              hintText:
+                              "Enter",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            maxLines: 1,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -151,36 +184,19 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                               color: const Color(0xFFDBDBDB),
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    left: 8.0, right: 8.0),
-                                child: Image.asset(
-                                  "assets/indiaflag.png",
-                                  width: 24,
-                                  height: 24,
-                                ),
-                              ),
-                              const Text("91+"),
-                              const SizedBox(width: 8),
-                              Container(
-                                height: 32,
-                                width: 1,
-                                color: const Color(0xFFDBDBDB),
-                              ),
-                              Expanded(
-                                child: TextFormField(
-                                  decoration: const InputDecoration(
-                                    hintText: "Enter",
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 12),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: TextField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                  color: Color.fromARGB(255, 116, 115, 115)),
+                              hintText:
+                              "Enter",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            maxLines: 1,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -193,16 +209,26 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          width: double.maxFinite,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              width: 1,
+                              color: const Color(0xFFDBDBDB),
+                            ),
                           ),
-                          child: const Text(
-                            "Enter",
-                            style: TextStyle(fontSize: 15),
+                          child: TextField(
+                            controller: firstNameController,
+                            keyboardType: TextInputType.name,
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                  color: Color.fromARGB(255, 116, 115, 115)),
+                              hintText:
+                              "Enter",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            maxLines: 1,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -215,19 +241,105 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          width: double.maxFinite,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              width: 1,
+                              color: const Color(0xFFDBDBDB),
+                            ),
                           ),
-                          child: const Text(
-                            "Enter",
-                            style: TextStyle(fontSize: 15),
+                          child: TextField(
+                            controller: lastNameController,
+                            keyboardType: TextInputType.name,
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                  color: Color.fromARGB(255, 116, 115, 115)),
+                              hintText:
+                              "Enter",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            maxLines: 1,
                           ),
                         ),
                         const SizedBox(height: 12),
+                        selectedRelationType=="Pet"?
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Species/Breed",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      width: 1,
+                                      color: const Color(0xFFDBDBDB),
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: speciesController,
+                                    keyboardType: TextInputType.name,
+                                    decoration: const InputDecoration(
+                                      hintStyle: TextStyle(
+                                          color: Color.fromARGB(255, 116, 115, 115)),
+                                      hintText:
+                                      "Enter",
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 12),
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  "Weight",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      width: 1,
+                                      color: const Color(0xFFDBDBDB),
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: weightController,
+                                    keyboardType: TextInputType.name,
+                                    decoration: const InputDecoration(
+                                      hintStyle: TextStyle(
+                                          color: Color.fromARGB(255, 116, 115, 115)),
+                                      hintText:
+                                      "Enter weight(lbs)",
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 12),
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                              ],
+                            ):Container(
+
+                        ),
+
+
+
                         const Text(
                           "Gender",
                           style: TextStyle(
@@ -248,11 +360,11 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                               border: Border.all(color: Colors.grey.shade400),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Row(
+                            child:  Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "Select",
+                                  selectedGenderType.isEmpty?"Select":selectedGenderType,
                                   style: TextStyle(fontSize: 15),
                                 ),
                                 Icon(Icons.arrow_drop_down_rounded)
@@ -282,11 +394,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddToWaitlistScreen(),
-                          ));
+                      Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE3E3E3),
@@ -308,7 +416,9 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      addFamilyFriend();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF662A09),
                       shape: RoundedRectangleBorder(
@@ -364,7 +474,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                       children: [
                         const Padding(
                           padding: EdgeInsets.only(left: 15),
-                          child: Text('Change Service',
+                          child: Text('Select Relation',
                               style: TextStyle(
                                   fontSize: 19,
                                   fontFamily: "Montserrat",
@@ -393,7 +503,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                               return GestureDetector(
                                 onTap: () {
                                   setModalState(() {
-                                    selectedServiceIndex = pos;
+                                    selectedRelationPosition = pos;
                                   });
                                 },
                                 child: Container(
@@ -403,7 +513,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      selectedServiceIndex == pos
+                                      selectedRelationPosition == pos
                                           ? const Icon(
                                               Icons.radio_button_checked,
                                               color: AppTheme.darkBrown)
@@ -454,7 +564,12 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+                              setState(() {
+                                selectedRelationType=relationList[selectedRelationPosition];
+                              });
+                              Navigator.pop(context);
+                            },
                             child: Container(
                                 height: 54,
                                 margin:
@@ -484,7 +599,6 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
       }),
     );
   }
-
   void genderBottomSheet(BuildContext context) {
     showModalBottomSheet(
       // isScrollControlled: true,
@@ -515,7 +629,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                       children: [
                         const Padding(
                           padding: EdgeInsets.only(left: 15),
-                          child: Text('Change Service',
+                          child: Text('Select Gender',
                               style: TextStyle(
                                   fontSize: 19,
                                   fontFamily: "Montserrat",
@@ -544,7 +658,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                               return GestureDetector(
                                 onTap: () {
                                   setModalState(() {
-                                    selectedServiceIndex = pos;
+                                    selectedGenderIndex = pos;
                                   });
                                 },
                                 child: Container(
@@ -554,7 +668,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      selectedServiceIndex == pos
+                                      selectedGenderIndex == pos
                                           ? const Icon(
                                               Icons.radio_button_checked,
                                               color: AppTheme.darkBrown)
@@ -605,7 +719,13 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+
+                              setState(() {
+                                selectedGenderType=genderList[selectedGenderIndex];
+                              });
+                              Navigator.of(context).pop();
+                            },
                             child: Container(
                                 height: 54,
                                 margin:
@@ -635,4 +755,86 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
       }),
     );
   }
+
+  Future<void> addFamilyFriend() async {
+
+    if(selectedRelationType.isEmpty){
+      Toast.show("Please select Relationship",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }else if(emailController.text.isEmpty){
+      Toast.show("Please Enter Email",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }else if(phoneController.text.isEmpty){
+      Toast.show("Please Enter Phone Number",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }else if(firstNameController.text.isEmpty){
+      Toast.show("Please Enter First Name",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }else if(lastNameController.text.isEmpty){
+      Toast.show("Please Enter Last Name",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }else if(selectedRelationType=="pet"){
+      if(speciesController.text.isEmpty){
+        Toast.show("Please Enter First Name",duration: Toast.lengthLong,backgroundColor: Colors.red);
+        return ;
+      }else if(weightController.text.isEmpty){
+        Toast.show("Please Enter Weight",duration: Toast.lengthLong,backgroundColor: Colors.red);
+        return ;
+      }
+    }else if(selectedGenderType.isEmpty){
+      Toast.show("Please Select Gender",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return ;
+    }
+    APIDialog.showAlertDialog(context, "Please Wait...");
+    String userId= await MyUtils.getSharedPreferences("user_id")??"";
+    try {
+      // Prepare payload
+      var requestPayload = {
+        "relation":selectedRelationType,
+        "email":emailController.text,
+        "phone":phoneController.text,
+        "firstName":firstNameController.text,
+        "lastName":lastNameController.text,
+        "gender":selectedGenderType,
+        "species":speciesController.text,
+        "weight":weightController.text,
+        "userId":userId
+      };
+      var requestModel = {
+        "data": base64.encode(utf8.encode(json.encode(requestPayload))),
+      };
+      ApiBaseHelper helper = ApiBaseHelper();
+      var response = await helper.postAPI(
+        'user-family/create',
+        requestModel,
+        context,
+      );
+      var responseJSON = json.decode(response.toString());
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
+
+      if(responseJSON['statusCode']==201){
+        Toast.show(responseJSON['message']?.toString()??"Family Added Successfully",
+            duration: Toast.lengthLong,backgroundColor: Colors.green);
+        Navigator.of(context).pop();
+      }else{
+        Toast.show(responseJSON['message']?.toString()??"Failed to create family",
+            duration: Toast.lengthLong,backgroundColor: Colors.red);
+      }
+
+
+
+
+    } catch (e) {
+      print("Error fetching addresses: $e");
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
+    }
+
+
+  }
+
+
 }

@@ -33,7 +33,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 top: 0,
                 left: 24,
                 child: Image.asset(
-                  'assets/auth_image/yoga_vertical_bar.png',
+                  'assets/yoga_vertical_bar.png',
                   height: 220,
                   fit: BoxFit.contain,
                 ),
@@ -43,7 +43,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 top: 10,
                 right: 0,
                 child: Image.asset(
-                  'assets/auth_image/top_right_flower.png',
+                  'assets/top_right_flower.png',
                   height: 150,
                   fit: BoxFit.contain,
                 ),
@@ -53,7 +53,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 bottom: 0,
                 left: 0,
                 child: Image.asset(
-                  'assets/auth_image/bottom_left_flower.png',
+                  'assets/bottom_left_flower.png',
                   height: 80,
                   fit: BoxFit.contain,
                 ),
@@ -68,7 +68,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                       const SizedBox(height: 20),
                       // Logo
                       Image.asset(
-                        'assets/auth_image/vedic_health_logo.png',
+                        'assets/vedic_health_logo.png',
                         height: 35,
                       ),
                       const SizedBox(height: 230),

@@ -10,9 +10,13 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
 import 'package:vedic_health/views/appointments/my_appointment_screen.dart';
+import 'package:vedic_health/views/appointments/my_appointment_waitlist_screen.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/change_password_screen.dart';
+import 'package:vedic_health/views/events/booked_eventlist_screen.dart';
 import 'package:vedic_health/views/my_orders.dart';
 import 'package:vedic_health/views/profile_screen.dart';
+import 'package:vedic_health/views/yoga_classes/yoga_classes_screen.dart';
 
 import '../widgets/drawer/zoom_scaffold.dart' as MEN;
 
@@ -21,6 +25,7 @@ import '../network/Utils.dart';
 import '../network/api_helper.dart';
 import '../utils/app_theme.dart';
 import '../widgets/sidebar_widget.dart';
+import 'events/event_home_screen.dart';
 import 'login_screen.dart';
 import 'my_reviews_screen.dart';
 import 'order_history_screen.dart';
@@ -143,8 +148,8 @@ class MenuState extends State<MenuScreen> {
                         child: ListView(
                             padding: EdgeInsets.symmetric(horizontal: 12),
                             children: [
-                          SizedBox(height: 40),
-                          InkWell(
+                              SizedBox(height: 40),
+                              InkWell(
                             onTap: () {
                               Provider.of<MEN.MenuController>(context,
                                       listen: false)
@@ -162,7 +167,7 @@ class MenuState extends State<MenuScreen> {
                             child: SideBarWidget(
                                 'My Profile ', 'assets/nav_profile.png'),
                           ),
-                          InkWell(
+                              InkWell(
                             onTap: () {
                               Provider.of<MEN.MenuController>(context,
                                       listen: false)
@@ -199,7 +204,7 @@ class MenuState extends State<MenuScreen> {
                               ),
 */
 
-                          InkWell(
+                              InkWell(
                             onTap: () {
                               Provider.of<MEN.MenuController>(context,
                                       listen: false)
@@ -216,7 +221,7 @@ class MenuState extends State<MenuScreen> {
                             child:
                                 SideBarWidget('Reviews', 'assets/review.png'),
                           ),
-                          InkWell(
+                              InkWell(
                             onTap: () {
                               Provider.of<MEN.MenuController>(context,
                                       listen: false)
@@ -235,53 +240,99 @@ class MenuState extends State<MenuScreen> {
                             child: SideBarWidget(
                                 'My Appointments', 'assets/review.png'),
                           ),
-                          InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
                                       listen: false)
-                                  .toggle();
+                                      .toggle();
 
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          AppointmentHomeScreen()));
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              AppointmentHomeScreen()));
 
-                              // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child: SideBarWidget(
-                                'Book Appointments', 'assets/review.png'),
-                          ),
-                          InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
+                                  // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
+                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
+                                },
+                                child: SideBarWidget(
+                                    'Book Appointments', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
                                       listen: false)
-                                  .toggle();
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          ChangePasswordScreen()));
+                                      .toggle();
 
-                              //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SubmitAuditListScreen()));
-                            },
-                            child: SideBarWidget(
-                                'Password Change', 'assets/password.png'),
-                          ),
-                          InkWell(
-                            onTap: () {
-                              _modalBottomLogout();
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              MyAppointmentWaitlistScreen()));
 
-                              /*   Provider.of<MEN.MenuController>(context,
+                                  // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
+                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
+                                },
+                                child: SideBarWidget(
+                                    'My Waitlist', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
                                       listen: false)
-                                      .toggle();*/
-                              //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: ChangePasswordScreen()));
+                                      .toggle();
 
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child: SideBarWidget('Logout', 'assets/power.png'),
-                          ),
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => EventHomeScreen()));
+                                },
+                                child: SideBarWidget(
+                                    'Events', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => YogaClassesScreen()));
+                                },
+                                child: SideBarWidget(
+                                    'Yoga', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                          listen: false)
+                                      .toggle();
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              ChangePasswordScreen()));
+
+                                  //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SubmitAuditListScreen()));
+                                },
+                                child: SideBarWidget(
+                                    'Change Password', 'assets/password.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  _modalBottomLogout();
+
+                                  /*   Provider.of<MEN.MenuController>(context,
+                                          listen: false)
+                                          .toggle();*/
+                                  //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: ChangePasswordScreen()));
+
+                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
+                                },
+                                child: SideBarWidget('Logout', 'assets/power.png'),
+                              ),
                         ])),
 
                     const SizedBox(height: 22),
@@ -405,8 +456,9 @@ class MenuState extends State<MenuScreen> {
                         await MyUtils.removePrefs("token");
                         await MyUtils.removePrefs("access_token");
 
-                        Route route = MaterialPageRoute(
-                            builder: (context) => LoginScreen());
+                        //Route route = MaterialPageRoute(builder: (context) => LoginScreen());
+                        Route route = MaterialPageRoute(builder: (context) => VedicHealthLoginScreen());
+
                         Navigator.pushAndRemoveUntil(
                             context, route, (Route<dynamic> route) => false);
                         Toast.show("Logged out successfully!",
@@ -453,8 +505,8 @@ class MenuState extends State<MenuScreen> {
   Future<void> getValue() async {
     String? email = await MyUtils.getSharedPreferences("email");
     String? name = await MyUtils.getSharedPreferences("name");
-    String? id = await MyUtils.getSharedPreferences("_id");
-    emailID = email ?? "NA";
+    String? id = await MyUtils.getSharedPreferences("user_id");
+    emailID = email ?? "";
     userName = name ?? "NA";
     id = id ?? "NA";
     print(email);
@@ -533,9 +585,7 @@ class MenuState extends State<MenuScreen> {
     await preferences.remove("email");
     await preferences.remove("auth_key");
     await preferences.remove("token");
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-        (Route<dynamic> route) => false);
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => VedicHealthLoginScreen()), (Route<dynamic> route) => false);
+    //Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen()), (Route<dynamic> route) => false);
   }
 }

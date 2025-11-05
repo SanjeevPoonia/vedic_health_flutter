@@ -9,8 +9,8 @@ import 'package:toast/toast.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
-import 'package:vedic_health/views/appointments/events/event_home_screen.dart';
 import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/invoices_screen.dart';
 import 'package:vedic_health/views/my_profile_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
@@ -19,6 +19,7 @@ import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
 import 'change_password_screen.dart';
+import 'events/event_home_screen.dart';
 import 'login_screen.dart';
 import 'my_reviews_screen.dart';
 
@@ -69,6 +70,11 @@ class _MyHomePageState extends State<ProfileScreen> {
   bool isLoading = false;
   List<dynamic> addressList = [];
   List<dynamic> centersList = [];
+
+  String? name;
+  String? email;
+  String? userId;
+
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +149,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                   children: [
                     Stack(
                       children: [
-                        Container(
+                        /*Container(
                           width: 88,
                           height: 88,
                           decoration: BoxDecoration(
@@ -163,6 +169,51 @@ class _MyHomePageState extends State<ProfileScreen> {
                                       fit: BoxFit.cover,
                                       image: NetworkImage(
                                           profileImage.toString())),
+                            ),
+                          ),
+                        ),*/
+                        profileImage == null || profileImage!.isEmpty
+                            ? Container(
+                            width: 88,
+                            height: 88,
+
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.orange[300], // Custom background color
+                            ),
+                          child: Center(
+                            child: Text(
+                              (name != null && name!.isNotEmpty)
+                                  ? name![0].toUpperCase() // First letter of name
+                                  : "?",
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                            : ClipOval(
+                          child: Image.network(
+                            profileImage.toString(),
+                            width: 88,
+                            height: 88,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.orange[300],
+                              child: Center(
+                                child: Text(
+                                  (name != null && name!.isNotEmpty)
+                                      ? name![0].toUpperCase()
+                                      : "?",
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -190,19 +241,19 @@ class _MyHomePageState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                     Expanded(
                         child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("John Smith",
-                            style: TextStyle(
+                        Text(name??"NA",
+                            style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
                               color: Colors.black,
                             )),
-                        SizedBox(height: 5),
-                        Text("johnsmith@gmail.com",
-                            style: TextStyle(
+                        const SizedBox(height: 5),
+                        Text(email??"NA",
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF9D9CA0),
                             )),
@@ -213,17 +264,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                 const SizedBox(height: 30),
                 GestureDetector(
                   onTap: () async {
-                    Navigator.push(
+                    /*Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const MyProfileScreen()));
+                            builder: (context) => const MyProfileScreen()));*/
 
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 7, top: 7),
@@ -251,12 +297,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -283,18 +324,14 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    Navigator.push(
+
+                  /*  Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                const AppointmentHomeScreen()));
+                                const AppointmentHomeScreen()));*/
 
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -322,18 +359,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
-
-                    Navigator.push(
+                  /*  Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const JoinMembershipScreen(),
-                        ));
+                        ));*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -361,12 +392,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -394,18 +420,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    Navigator.push(
+                    /*Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                const AppointmentHomeScreen()));
+                                const AppointmentHomeScreen()));*/
 
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
-
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -433,13 +453,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                  
-                }*/
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -473,17 +487,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                   onTap: () {
                     print("Invoices tapped");
 
-                    Navigator.push(
+                  /*  Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => InvoicesScreen()));
+                            builder: (context) => InvoicesScreen()));*/
 
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -511,16 +520,11 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
-                    Navigator.push(
+                   /* Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => MyReviewScreen()));
+                            builder: (context) => MyReviewScreen()));*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -548,17 +552,12 @@ class _MyHomePageState extends State<ProfileScreen> {
                 Divider(color: Colors.grey.withOpacity(0.2)),
                 GestureDetector(
                   onTap: () async {
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
 
-                    Navigator.push(
+                    /*Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => ChangePasswordScreen()));
+                            builder: (context) => ChangePasswordScreen()));*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -587,12 +586,7 @@ class _MyHomePageState extends State<ProfileScreen> {
                 GestureDetector(
                   onTap: () async {
                     _modalBottomLogout();
-                    /*  final data = await Navigator.push(context, MaterialPageRoute(builder: (context)=>SchoolDetailsScreen(profileData["school"][0],profileData["additional_data"][0],profileData["user"][0])));
 
-                if(data!=null)
-                {
-                  fetchSchoolProfile();
-                }*/
                   },
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -627,18 +621,25 @@ class _MyHomePageState extends State<ProfileScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    fetchUserDetails();
+  }
+
+  fetchUserDetails() async {
+    name = await MyUtils.getSharedPreferences("name");
+    email = await MyUtils.getSharedPreferences("email");
+    userId = await MyUtils.getSharedPreferences("user_id");
+
+    setState(() {});
   }
 
   // Successurl
-  //http://vedic.qdegrees.com:3008/order-management/paymentSuccess/682dff96a56e642c84ea1a4f
   fetchAddress() async {
     setState(() {
       isLoading = true;
     });
 
-    String? userId = await MyUtils.getSharedPreferences("user_id");
+
     var data = {"user": userId.toString()};
 
     print(data.toString());
@@ -770,8 +771,8 @@ class _MyHomePageState extends State<ProfileScreen> {
                       onTap: () {
                         ToastContext().init(context);
                         Navigator.of(ctx).pop();
-                        Route route = MaterialPageRoute(
-                            builder: (context) => const LoginScreen());
+                        //Route route = MaterialPageRoute(builder: (context) => const LoginScreen());
+                        Route route = MaterialPageRoute(builder: (context) => const VedicHealthLoginScreen());
                         Navigator.pushAndRemoveUntil(
                             context, route, (Route<dynamic> route) => false);
                         Toast.show("Logged out successfully!",

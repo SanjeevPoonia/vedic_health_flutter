@@ -3,13 +3,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
+import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/views/appointments/appointment_detail.dart';
 import 'package:vedic_health/views/appointments/book_classes/select_class_screen.dart';
 import 'package:vedic_health/views/appointments/detox_programs/detox_programs_home.dart';
-import 'package:vedic_health/views/appointments/events/event_home_screen.dart';
 import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
-import 'package:vedic_health/views/appointments/yoga_classes/yoga_classes_screen.dart';
 import 'package:vedic_health/views/menu_screen.dart';
+
+import '../events/event_home_screen.dart';
+import '../yoga_classes/yoga_classes_screen.dart';
 
 class AppointmentOption {
   final String title;
@@ -40,12 +42,16 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   List<dynamic> appointments = [];
   bool isLoading = false;
 
+  int pageNo=1;
+  int pageSize=100;
+
+
   @override
   void initState() {
     super.initState();
-    fetchAllCenters(1, 10, false);
+    fetchAllCenters(pageNo, pageSize, false);
     if (centers.isNotEmpty) {
-      fetchAppointments(centers[0]["_id"]);
+      fetchAppointments(centers[selectedCenter]["_id"]);
     }
   }
 
@@ -80,13 +86,13 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
-                    // GestureDetector(
-                    //     onTap: () {
-                    //       Navigator.pop(context);
-                    //     },
-                    //     child: Icon(Icons.arrow_back_ios_new_sharp,
-                    //         size: 17, color: Colors.black)),
                     GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: Icon(Icons.arrow_back_ios_new_sharp,
+                            size: 17, color: Colors.black)),
+                    /*GestureDetector(
                       onTap: () {
                         // TODO: Open menu drawer if needed
                         Navigator.pop(context);
@@ -96,7 +102,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         width: 22,
                         height: 22,
                       ),
-                    ),
+                    ),*/
                     const Expanded(
                       child: Center(
                         child: Padding(
@@ -110,7 +116,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         ),
                       ),
                     ),
-                    GestureDetector(
+                    /*GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
@@ -124,7 +130,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         width: 32,
                         height: 32,
                       ),
-                    ),
+                    ),*/
                   ],
                 ),
               ),
@@ -232,14 +238,13 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                         child: Row(
                           children: List.generate(centers.length, (index) {
                             var center = centers[index];
+                            String centerId=center['_id']?.toString()??"";
+                            String centerName=center['centerName']?.toString()??"Unknown";
                             return GestureDetector(
                               onTap: () {
                                 setState(() => selectedCenter = index);
+                               fetchAppointments(centerId);
 
-                                if (centers.isNotEmpty) {
-                                  fetchAppointments(centers[0]["_id"]);
-                                }
-                                fetchAppointments(center["_id"]);
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -253,7 +258,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Text(
-                                  center["centerName"] ?? "Unknown",
+                                  centerName,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: selectedCenter == index
@@ -271,12 +276,18 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                     const SizedBox(height: 24),
 
                     isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFFF38328),
-                            ),
+                        ?  Center(
+                            child: Loader(),
                           )
-                        : GridView.count(
+                        :appointmentOptions.isEmpty?const Center(child: Padding(padding: EdgeInsets.all(16),
+                      child: Text("Currently, there are no services available at this center. Please change the center or visit again later",
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey
+                        ),),
+
+                    ),): GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
@@ -299,8 +310,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
     );
   }
 
-  Future<void> fetchAllCenters(
-      int page, int pageSize, bool progressDialog) async {
+  Future<void> fetchAllCenters(int page, int pageSize, bool progressDialog) async {
     if (progressDialog) {
       APIDialog.showAlertDialog(context, "Please wait...");
     } else {
@@ -329,10 +339,8 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
       setState(() {
         centers = responseJSON["centers"];
       });
-
-      // Fetch appointments for the first center by default
       if (centers.isNotEmpty) {
-        fetchAppointments(centers[0]["_id"]);
+        fetchAppointments(centers[selectedCenter]["_id"]);
       }
     } else {
       print("Error: ${responseJSON["message"]}");
@@ -342,18 +350,13 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   Future<void> fetchAppointments(String centerId) async {
     setState(() => isLoading = true);
 
-    var data = {"page": 1, "pageSize": 30, "centerId": centerId};
+    var data = {"page": 1, "pageSize": 100, "centerId": centerId};
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
-
     ApiBaseHelper helper = ApiBaseHelper();
-    var response =
-        await helper.postAPI('service_type/getAll', requestModel, context);
-
+    var response = await helper.postAPI('service_type/getAll', requestModel, context);
     setState(() => isLoading = false);
-
     final responseJSON = json.decode(response.toString());
     print("Appointments response: $responseJSON");
-
     if (responseJSON["statusCode"] == 200) {
       final List<Color> palette = [
         const Color(0xFFB9E0EC),
@@ -466,6 +469,19 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                 width: 100,
                 child: ElevatedButton(
                   onPressed: () {
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AppointmentDetail(
+                          consultations: option.services ?? [],
+                          title: option.title,
+                        ),
+                      ),
+                    );
+
+
+                    /*
                     switch (option.title) {
                       case "Yoga Classes":
                         Navigator.push(
@@ -507,7 +523,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                           ),
                         );
                         break;
-                    }
+                    }*/
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF38328),

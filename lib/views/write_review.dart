@@ -1,15 +1,25 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:toast/toast.dart';
+
+import '../network/Utils.dart';
+import '../network/api_dialog.dart';
+import '../network/api_helper.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   final String productName;
   final String brandName;
-  final String? productImage;
+  final String productImage;
+  final String productId;
 
   const WriteReviewScreen({
     super.key,
     required this.productName,
     required this.brandName,
-    this.productImage,
+    required this.productImage,
+    required this.productId
   });
 
   @override
@@ -23,10 +33,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return SafeArea(
         child: Scaffold(
             backgroundColor: Colors.white,
-            body: Column(children: [
+            body: SingleChildScrollView(child: Column(children: [
               // App Bar
               Card(
                 elevation: 2,
@@ -76,173 +87,183 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // How was the product?
-                      const Text(
-                        'How was the product?',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      Card(
-                        elevation: 1,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: widget.productImage != null
-                                        ? Image.asset(
-                                            widget.productImage!,
-                                            width: 60,
-                                            height: 60,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Container(
-                                            width: 60,
-                                            height: 60,
-                                            color: Colors.grey[200],
-                                          ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          widget.productName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          widget.brandName,
-                                          style: const TextStyle(
-                                              color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
 
-                              // Star Rating
-                              Row(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: List.generate(5, (index) {
-                                      return IconButton(
-                                        icon: Icon(
-                                          index < _rating
-                                              ? Icons.star
-                                              : Icons.star_border,
-                                          size: 32,
-                                          color: Colors.amber,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _rating = index + 1.0;
-                                          });
-                                        },
-                                      );
-                                    }),
-                                  ),
-                                  const Spacer(),
-                                  TextButton(
-                                    onPressed: () {
-                                      _reviewController.clear();
-                                      _titleController.clear();
-                                      setState(() => _rating = 0);
-                                    },
-                                    child: const Text(
-                                      'Clear',
-                                      style: TextStyle(color: Colors.orange),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // How was the product?
+                    const Text(
+                      'How was the product?',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 1,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 8),
-                      // Write a Review
-                      const Text(
-                        'Write a Review',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _reviewController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Enter about product',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Share a video or photo
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                           children: [
-                            Icon(Icons.image_outlined, color: Colors.grey),
-                            SizedBox(width: 8),
-                            Text(
-                              'Share a video or photo',
-                              style: TextStyle(color: Colors.grey),
+                            Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: widget.productImage != null
+                                      ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(16), // rounded corners
+                                    child: CachedNetworkImage(
+                                      height: 80,
+                                      width: 80,
+                                      imageUrl: widget.productImage??"",
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error, color: Colors.red),
+                                    ),
+                                  )
+                                      : Container(
+                                    width: 60,
+                                    height: 60,
+                                    color: Colors.grey[200],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.productName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.brandName,
+                                        style: const TextStyle(
+                                            color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Star Rating
+                            Row(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: List.generate(5, (index) {
+                                    return IconButton(
+                                      icon: Icon(
+                                        index < _rating
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        size: 32,
+                                        color: Colors.amber,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _rating = index + 1.0;
+                                        });
+                                      },
+                                    );
+                                  }),
+                                ),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: () {
+                                    _reviewController.clear();
+                                    _titleController.clear();
+                                    setState(() => _rating = 0);
+                                  },
+                                  child: const Text(
+                                    'Clear',
+                                    style: TextStyle(color: Colors.orange),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // Title your Review
-                      const Text(
-                        'Title your Review',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          contentPadding: const EdgeInsets.all(16),
+                    ),
+                    const SizedBox(height: 8),
+                    // Write a Review
+                    const Text(
+                      'Write a Review',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _reviewController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Enter about product',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        contentPadding: const EdgeInsets.all(16),
                       ),
-                      const Spacer(),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    /*// Share a video or photo
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image_outlined, color: Colors.grey),
+                          SizedBox(width: 8),
+                          Text(
+                            'Share a video or photo',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),*/
+                    // Title your Review
+                    /*const Text(
+                      'Title your Review',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                    ),*/
+
+                  ],
                 ),
               ),
 
@@ -279,9 +300,15 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                               ),
                             );
                             return;
+                          }else if(_reviewController.text.isEmpty){
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please write your review'),
+                              ),
+                            );
+                            return;
                           }
-                          // Process review submission
-                          Navigator.pop(context);
+                          writeOrder();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5A2D0C),
@@ -297,6 +324,43 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ],
                 ),
               ),
-            ])));
+            ]),)));
+  }
+  writeOrder() async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    if (userId == null) {
+      return;
+    }
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "rating": _rating,
+      "review": _reviewController.text,
+      "product_id": widget.productId,
+      "user_id": userId // Assuming default page size
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('product/add-review', resModel, context);
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }
+    var responseJSON= json.decode(response.toString());
+    print(responseJSON);
+    if(responseJSON["statusCode"]==200||responseJSON["statusCode"]==201){
+      Toast.show(responseJSON['message']?.toString()??"Review submitted Successfully!",duration: Toast.lengthLong,backgroundColor: Colors.green);
+      _finishScreen();
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }
+
+
+
+  }
+  _finishScreen(){
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }
   }
 }

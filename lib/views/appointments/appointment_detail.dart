@@ -76,8 +76,9 @@ class AppointmentDetail extends StatelessWidget {
                         final title = service['name'] ?? 'No name';
                         final description = service['description'] ?? '';
                         final price = service.containsKey('price')
-                            ? '₹${service['price']}'
+                            ? '\$${service['price']}'
                             : '';
+                        final serviceId=service['_id']?.toString()??"";
 
                         return Column(
                           children: [
@@ -155,7 +156,9 @@ class AppointmentDetail extends StatelessWidget {
                                                             BookAppointmentScreen(
                                                                 title: title,
                                                                 consultations:
-                                                                    consultations),
+                                                                    consultations,
+                                                              selectedServiceId: serviceId,
+                                                            ),
                                                       ));
                                                 },
                                                 style: ElevatedButton.styleFrom(

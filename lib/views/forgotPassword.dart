@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:toast/toast.dart';
 import 'package:vedic_health/utils/validators.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/login_screen.dart';
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
@@ -313,8 +314,8 @@ class ForgotPasswordState extends State<ForgotPassword> {
     print("klklkl");
     if (responseJSONs['statusCode'] == 200 ||
         responseJSONs['statusCode'] == 201) {
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()));
+      //Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const VedicHealthLoginScreen()));
     } else {
       Toast.show(responseJSONs['message'],
           duration: Toast.lengthLong,

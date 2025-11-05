@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:vedic_health/utils/app_theme.dart';
-import 'package:vedic_health/views/appointments/events/continue_bottom_sheet.dart';
+
+import 'continue_bottom_sheet.dart';
 
 class TicketFormScreen extends StatefulWidget {
   const TicketFormScreen({super.key});

@@ -281,20 +281,24 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
     final firstDate = now;
     final lastDate = DateTime(now.year, now.month + 3, now.day);
 
-    DateTime candidate = selectedDate ?? now;
+   // DateTime candidate = selectedDate ?? now;
+    DateTime initialDate = selectedDate != null && selectedDate!.isAfter(firstDate)
+        ? selectedDate!
+        : firstDate;
+
 
     String formatDate(DateTime d) => "${d.year.toString().padLeft(4, '0')}-"
         "${d.month.toString().padLeft(2, '0')}-"
         "${d.day.toString().padLeft(2, '0')}";
 
-    while (unavailableDates.contains(formatDate(candidate)) &&
-        candidate.isBefore(lastDate)) {
-      candidate = candidate.add(const Duration(days: 1));
+    while (unavailableDates.contains(formatDate(initialDate)) &&
+        initialDate.isBefore(lastDate)) {
+      initialDate = initialDate.add(const Duration(days: 1));
     }
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: candidate,
+      initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
       selectableDayPredicate: (day) {
@@ -1434,11 +1438,12 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
+                              final List<Map<String, dynamic>> allServicesDatas=[];
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const AddToWaitlistScreen(),
+                                        AddToWaitlistScreen(allServicesData: allServicesDatas,),
                                   ));
                             },
                             style: ElevatedButton.styleFrom(

@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/login_screen.dart';
 
 import 'home_screen.dart';
@@ -50,7 +51,8 @@ class SplashState extends State<SplashScreen>
         Timer(
             Duration(seconds: 2),
                 () => Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (BuildContext context) => LoginScreen())));
+                builder: (BuildContext context) => VedicHealthLoginScreen()
+                )));
       }
 
   }

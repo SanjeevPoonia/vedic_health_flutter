@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:toast/toast.dart';
 import 'package:vedic_health/network/api_helper.dart';
+import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_payment_screen.dart';
+
+import '../../network/Utils.dart';
+import 'my_appointment_screen.dart';
 
 class RescheduleAppointment2 extends StatefulWidget {
   final List<Map<String, dynamic>> allServicesData;
@@ -154,6 +159,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -296,11 +302,8 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                           children: [
                             Row(
                               children: [
-                                const CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: NetworkImage(
-                                      "https://randomuser.me/api/portraits/men/78.jpg"),
-                                ),
+                                NameAvatar(fullName:  employeeData["userDetails"]["name"] ??
+                                    "N/A",size: 70,),
                                 const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,17 +319,17 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                     const Row(
                                       children: [
                                         Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
+                                            color: Colors.grey, size: 18),
                                         Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
+                                            color: Colors.grey, size: 18),
                                         Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
+                                            color: Colors.grey, size: 18),
                                         Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
-                                        Icon(Icons.star_half,
-                                            color: Colors.amber, size: 18),
+                                            color: Colors.grey, size: 18),
+                                        Icon(Icons.star,
+                                            color: Colors.grey, size: 18),
                                         SizedBox(width: 5),
-                                        Text("(8)"),
+                                        Text("(0)"),
                                       ],
                                     ),
                                     const SizedBox(height: 5),
@@ -363,7 +366,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                           children: List.generate(slots.length, (index) {
                             final slot = slots[index];
                             final start = DateTime.parse(slot["startTime"]);
-                            final time = DateFormat("hh:mm a").format(start);
+                            final time = formatDateUtc(slot["startTime"]);
 
                             final isSelected =
                                 selectedSlots[serviceId] == index;
@@ -425,11 +428,15 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+
+
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AddToWaitlistScreen(),
+                              builder: (context) =>
+                                  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
                             ));
+
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF38328),
@@ -454,7 +461,9 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                       onPressed: () async {
                         // Build appointments from selected slots
                         List<Map<String, dynamic>> appointments = [];
-
+                        double totalPrice=0.0;
+                        String? userId = await MyUtils.getSharedPreferences("user_id");
+                        List<Map<String,dynamic>> selectedEmpList=[];
                         selectedSlots.forEach((serviceKey, slotIndex) {
                           if (slotIndex != null) {
                             final selectedServiceData =
@@ -465,16 +474,25 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                 selectedServiceData['allServiceData'];
                             final serviceDetails =
                                 selectedServiceData['serviceDetails'];
+                            final employeeData = selectedServiceData['employeeData'];
+                            String empName=employeeData["userDetails"]["name"] ?? "N/A";
+                            String empId=allServiceData['employeeId'];
+                            double price=double.parse(serviceDetails['price']?.toString() ?? "0");
+                            final empData={
+                              "emp_name":empName,
+                              "price":price,
+                              "empId":empId
+                            };
+                            selectedEmpList.add(empData);
 
                             final appointment = {
                               "serviceId": allServiceData['serviceId'],
                               "employeeId": allServiceData['employeeId'],
-                              "userId": allServiceData['userId'],
+                              "userId": userId,
+                              //"userId": allServiceData['userId'],
                               "note": "test",
-                              "date": DateFormat('yyyy-MM-dd')
-                                  .format(selectedDate!),
-                              "time": DateFormat('HH:mm')
-                                  .format(DateTime.parse(slot['startTime'])),
+                              "date": DateFormat('yyyy-MM-dd').format(selectedDate!),
+                              "time": formatDateUtc24(slot['startTime']?.toString()??""),
                               "deposit": 0,
                               "repeat": "Off",
                               "file": "",
@@ -484,7 +502,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                   60,
                               "price": serviceDetails['price'] ?? 0,
                             };
-
+                            totalPrice += serviceDetails['price'] ?? 0;
                             appointments.add(appointment);
                           }
                         });
@@ -501,12 +519,14 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                         try {
                           // Build edit payload
                           final payload = {
-                            "appointmentId": widget.appointmentId,
+                            "_id": widget.appointmentId,
                             "appointments": appointments,
                           };
 
                           final result = await editAppointment(payload);
                           if (result != null) {
+
+                           /* List<String> appointIds=[(widget.appointmentId)];
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -516,9 +536,20 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                   name: servicesWithSlots[
                                           selectedSlots.keys.first]
                                       ['employeeData']['userDetails']['name'],
+                                  price: totalPrice,
+                                  allServicesData: widget.allServicesData,
+                                  empData: selectedEmpList,
+                                  appointIds: appointIds,
                                 ),
                               ),
-                            );
+                            );*/
+                            Toast.show(result['message']?.toString()??"Appointment Rescheduled Successfully.",duration: Toast.lengthLong,backgroundColor: Colors.green);
+                            Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                    builder: (context) => MyAppointmentScreen(id: '',)),
+                                    (Route<dynamic> route) => false);
+
+
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -559,5 +590,22 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
         ),
       ),
     );
+  }
+  String formatDateUtc(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      return date;
+    }
+  }
+ 
+  String formatDateUtc24(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return date;
+    }
   }
 }

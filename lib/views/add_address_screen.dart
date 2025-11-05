@@ -148,7 +148,7 @@ class _MyHomePageState extends State<AddAddressScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 9),
                   children: [
                     SizedBox(height: 15),
-                    Row(
+                    /*Row(
                       children: [
                         Icon(Icons.my_location_sharp,
                             color: AppTheme.darkBrown),
@@ -161,7 +161,7 @@ class _MyHomePageState extends State<AddAddressScreen> {
                             )),
                       ],
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 20),*/
                     Text("Name",
                         style: TextStyle(
                           fontSize: 15,
@@ -586,7 +586,7 @@ class _MyHomePageState extends State<AddAddressScreen> {
             countryController.text.toString() +
             "-" +
             zipcodeController.text.toString() +
-            "&key=AIzaSyDg2z9b58is8H3h_SNNpQTzMMl7Ma18Zac",
+            "&key=AIzaSyA8l9u2VyQTXNDh-fjLXAxTOMNmUQAWCG0",
         context);
 
     var responseJSON = json.decode(response.body);

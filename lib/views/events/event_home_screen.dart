@@ -1,17 +1,42 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:vedic_health/views/appointments/events/event_detail_screen.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/constants.dart';
+import 'package:vedic_health/network/loader.dart';
+
+import '../../network/Utils.dart';
+import '../../network/api_helper.dart';
+import 'event_detail_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 
 class EventHomeScreen extends StatefulWidget {
   const EventHomeScreen({super.key});
-
   @override
   State<EventHomeScreen> createState() => _EventHomeScreenState();
 }
 
 class _EventHomeScreenState extends State<EventHomeScreen> {
+  bool isLoading=false;
+  int currentPage=1;
+  int pageSize=20;
+  int totalPage=1;
+  int totalSize=0;
+  List<dynamic> eventList=[];
+
+  String eventBannerImage="";
+  String eventName="";
+  bool isRSVP=false;
+  String eventDate="";
+  String eventTime="";
+  String eventAddress="";
+
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -63,8 +88,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
               const SizedBox(
                 height: 12,
               ),
-
-              const Padding(
+             /* const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -83,9 +107,10 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                     ],
                   ),
                 ),
-              ),
-
+              ),*/
               /// Container
+              isLoading?Center(child: Loader(),):
+              eventList.isNotEmpty?
               Container(
                 padding: const EdgeInsets.all(12),
                 width: double.maxFinite,
@@ -98,9 +123,25 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: Image.asset(
-                          "assets/banner2.png",
+                        child: CachedNetworkImage(
+                          imageUrl: eventBannerImage,
+                          height: 200,
+                          width: double.infinity,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            height: 250,
+                            width: double.infinity,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            height: 200,
+                            width: double.infinity,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.broken_image, color: Colors.grey),
+                          ),
                         ),
                       ),
                       // Shadow overlay
@@ -121,11 +162,11 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                         ),
                       ),
                       // Text on top left
-                      const Positioned(
+                       Positioned(
                         top: 16,
                         left: 16,
                         child: Text(
-                          "Create your own Yantra: Journey\ninto Sacred Geomtery",
+                          eventName,
                           maxLines: 2,
                           style: TextStyle(
                             color: Colors.white,
@@ -134,6 +175,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                           ),
                         ),
                       ),
+                      isRSVP?
                       Positioned(
                         top: 16,
                         right: 16,
@@ -152,7 +194,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      ):Container(),
                       Positioned(
                         bottom: 16,
                         left: 16,
@@ -175,7 +217,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                                 ),
                               ),
                               child: Text(
-                                "May\n27",
+                                eventDate,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     fontSize: 13,
@@ -188,7 +230,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "Tue, 6:45 PM - 7:45 PM",
+                                  eventTime,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w400,
@@ -199,12 +241,13 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                                   height: 5,
                                 ),
                                 Text(
-                                  "Vedic Health Center",
+                                  eventAddress,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w400,
                                     fontSize: 14,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -214,7 +257,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                     ],
                   ),
                 ),
-              ),
+              ):Container(),
 
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -227,42 +270,135 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                 ),
               ),
 
-              ListView(
+              isLoading?Center(child: Loader(),):
+                  eventList.isNotEmpty?
+              ListView.builder(
                 shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(12),
-                children: [
-                  EventCard(
-                    imagePath: "assets/banner1.png",
-                    title: "Ayurvedic Spring'25 Group Detox",
-                    timing: "Thu, May 22 | Vedic Health Center",
+                physics: NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: eventList.length,
+
+                itemBuilder: (context, index) {
+                  String eventId=eventList[index]['_id']?.toString()??"";
+                  bool isRsvp=eventList[index]['is_rsvp']??false;
+                  String title= eventList[index]['eventname']?.toString()??"";
+                  String imagePath= eventList[index]['coverImage']?.toString()??"";
+                  String icon_file= eventList[index]['icon_file']?.toString()??"";
+                  String eventImage="";
+                  if(icon_file.isNotEmpty){
+                    eventImage=AppConstant.appBaseURL+icon_file;
+                  }else if(imagePath.isNotEmpty){
+                    eventImage=AppConstant.appBaseURL+imagePath;
+                  }
+                  String address=eventList[index]['address']?.toString()??"";
+                  String eventD=eventList[index]['date']?.toString()??"";
+                  String eventDate=formatDateUtc(eventD);
+                  String timing= "$eventDate | $address";
+
+                  return Padding(padding: EdgeInsets.symmetric(horizontal: 10,vertical: 5),
+                  child: EventCard(
+                    imagePath: eventImage,
+                    title: title,
+                    timing: timing,
                     onRSVP: () {},
-                  ),
-                  EventCard(
-                    imagePath: "assets/banner2.png",
-                    title: "Yantras : Key to Cosmic Consciousness",
-                    timing: "Thu, May 29 | Vedic Health Center",
-                    onRSVP: () {},
-                  ),
-                  EventCard(
-                    imagePath: "assets/banner2.png",
-                    title: "Seminar: Dosha Series - Explore Pitta Dosha",
-                    timing: "Mon, Jul 21 | Jain Yoga Studio",
-                    onRSVP: () {},
-                  ),
-                  EventCard(
-                    imagePath: "assets/banner2.png",
-                    title: "Group Hiking and Yoga at Great Falls",
-                    timing: "Mon, Jul 21 | Jain Yoga Studio",
-                    onRSVP: () {},
-                  ),
-                ],
-              )
+                    isRsvp: isRsvp,
+                    eventId: eventId,
+                  ),);
+                },
+              ):Center(child: Padding(padding: EdgeInsets.all(16),
+                    child: Text("Currently, there are no events available. Please visit again later for upcoming events.",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey
+                      ),),
+
+                  ),)
+
             ],
           ),
         ),
       ),
     );
+  }
+  @override
+  void initState() {
+    super.initState();
+    fetchEvents();
+  }
+  String formatDateUtc(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      return DateFormat('dd MMM, yyyy').format(dateTime);
+    } catch (e) {
+      return date;
+    }
+  }
+  String formatDateUtcForBanner(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      String dd= DateFormat('dd').format(dateTime);
+      String MMM= DateFormat('MMM').format(dateTime);
+      return '$dd\n$MMM';
+    } catch (e) {
+      return date;
+    }
+  }
+  fetchEvents() async {
+    setState(() {
+      isLoading = true;
+    });
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    if (userId == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "user": userId,
+      "page": currentPage, // Assuming default page number
+      "pageSize": pageSize // Assuming default page size
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI(
+        'event_management/all', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==200){
+      List<dynamic>evList=(responseJSON['events'] as List?) ?? [];
+      totalPage=responseJSON['totalPages']??1;
+      totalSize=responseJSON['totalCount']??0;
+      eventList.addAll(evList);
+
+      if(eventList.isNotEmpty){
+        String eventId=eventList[0]['_id']?.toString()??"";
+        isRSVP=eventList[0]['is_rsvp']??false;
+        eventName= eventList[0]['eventname']?.toString()??"";
+        String imagePath= eventList[0]['coverImage']?.toString()??"";
+        String icon_file= eventList[0]['icon_file']?.toString()??"";
+        if(imagePath.isNotEmpty){
+          eventBannerImage=AppConstant.appBaseURL+imagePath;
+        }else if(icon_file.isNotEmpty){
+          eventBannerImage=AppConstant.appBaseURL+icon_file;
+        }
+        eventAddress=eventList[0]['address']?.toString()??"";
+        String eventD=eventList[0]['date']?.toString()??"";
+        eventDate=formatDateUtcForBanner(eventD);
+        eventTime=eventList[0]['time']?.toString()??"";
+      }
+
+
+
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }
+    setState(() {
+      isLoading = false;
+    });
   }
 }
 
@@ -271,6 +407,8 @@ class EventCard extends StatelessWidget {
   final String title;
   final String timing;
   final VoidCallback onRSVP;
+  final bool isRsvp;
+  final String eventId;
 
   const EventCard({
     super.key,
@@ -278,6 +416,8 @@ class EventCard extends StatelessWidget {
     required this.title,
     required this.timing,
     required this.onRSVP,
+    required this.isRsvp,
+    required this.eventId
   });
 
   @override
@@ -287,7 +427,7 @@ class EventCard extends StatelessWidget {
         Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const EventDetailScreen(),
+              builder: (context) =>  EventDetailScreen(eventId),
             ));
       },
       child: Container(
@@ -313,11 +453,25 @@ class EventCard extends StatelessWidget {
             /// Image
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                imagePath,
+              child: CachedNetworkImage(
+                imageUrl: imagePath,
                 height: 120,
                 width: 120,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 120,
+                  width: 120,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 120,
+                  width: 120,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -353,6 +507,8 @@ class EventCard extends StatelessWidget {
                                 height: 1.4,
                                 color: Colors.black,
                                 fontWeight: FontWeight.w500),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ]),
@@ -360,7 +516,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   /// Read More Button
-                  Align(
+                  isRsvp?Align(
                     alignment: Alignment.centerLeft,
                     child: InkWell(
                       onTap: onRSVP,
@@ -380,7 +536,7 @@ class EventCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
+                  ):Container(),
                 ],
               ),
             ),

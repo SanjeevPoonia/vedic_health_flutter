@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
@@ -10,9 +12,10 @@ import 'dart:convert';
 class BookAppointmentScreen extends StatefulWidget {
   final List<dynamic> consultations;
   final String title;
+  final String selectedServiceId;
 
   const BookAppointmentScreen(
-      {super.key, required this.consultations, required this.title});
+      {super.key, required this.consultations, required this.title,required this.selectedServiceId});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -24,23 +27,22 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   List<Map<String, dynamic>> employees = [];
   String? selectedEmployeeId;
   String? selectedUserId;
-
   List<Map<String, dynamic>> additionalServices = [];
-
   bool isLoading = false;
   List<String> unavailableDates = [];
   List serviceList = [];
-
+  String selectedServiceTitle="";
+  String selectedServiceId="";
   @override
   void initState() {
     super.initState();
+    selectedServiceTitle=widget.title;
+    selectedServiceId=widget.selectedServiceId;
     serviceList = widget.consultations.map((e) => e["name"] ?? "").toList();
-
-    if (widget.consultations.isNotEmpty) {
-      _loadService(widget.consultations[0]["_id"]);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadService(selectedServiceId);
+    });
   }
-
   Future<void> _loadService(String serviceId) async {
     final data = await fetchServiceDetail(serviceId);
     if (data != null) {
@@ -49,9 +51,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
         selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
       });
+      fetchUnavailableDates(
+        serviceId: selectedServiceId,
+        employeeId: selectedEmployeeId ?? "",
+        userId: selectedEmployeeId ?? "",
+        date: DateTime.now().toIso8601String().substring(0, 10),
+      );
     }
   }
-
   Future<void> _pickDate(BuildContext context) async {
     final now = DateTime.now();
     final firstDate = now;
@@ -83,13 +90,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       setState(() => selectedDate = picked);
     }
   }
-
-  Future<void> fetchUnavailableDates({
-    required String serviceId,
-    required String employeeId,
-    required String userId,
-    required String date,
-  }) async {
+  Future<void> fetchUnavailableDates({required String serviceId, required String employeeId, required String userId, required String date,}) async {
     await fetchUnavailableDatesForService(
       serviceId: serviceId,
       employeeId: employeeId,
@@ -98,9 +99,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       serviceIndex: null, // null for main service
     );
   }
-
-  Future<void> _loadServiceForAdditional(
-      String serviceId, int serviceIndex) async {
+  Future<void> _loadServiceForAdditional(String serviceId, int serviceIndex) async {
     final data = await fetchServiceDetail(serviceId);
     if (data != null) {
       setState(() {
@@ -117,15 +116,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       });
     }
   }
+  Future<void> fetchUnavailableDatesForService({required String serviceId, required String employeeId, required String userId, required String date, int? serviceIndex,}) async {
 
-  Future<void> fetchUnavailableDatesForService({
-    required String serviceId,
-    required String employeeId,
-    required String userId,
-    required String date,
-    int? serviceIndex,
-  }) async {
-    setState(() => isLoading = true);
+    APIDialog.showAlertDialog(context, "Please Wait...");
 
     var data = {
       "slotsPayload": [
@@ -149,7 +142,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       context,
     );
 
-    setState(() => isLoading = false);
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }
 
     final responseJSON = json.decode(response.toString());
     print("Unavailable Dates response: $responseJSON");
@@ -172,7 +167,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       }
     }
   }
-
   void _addNewService() {
     setState(() {
       additionalServices.add({
@@ -187,15 +181,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       });
     });
   }
-
   void _removeService(int index) {
     setState(() {
       additionalServices.removeAt(index);
     });
   }
-
-  Future<void> _pickDateForService(
-      BuildContext context, int? serviceIndex) async {
+  Future<void> _pickDateForService(BuildContext context, int? serviceIndex) async {
     final now = DateTime.now();
     final firstDate = now;
     final lastDate = DateTime(now.year, now.month + 3, now.day);
@@ -240,10 +231,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       });
     }
   }
-
   Future<Map<String, dynamic>?> fetchServiceDetail(String serviceId) async {
     try {
-      setState(() => isLoading = true);
+      APIDialog.showAlertDialog(context, "Please wait...");
 
       final requestModel = {
         "data": base64.encode(utf8.encode(json.encode({"id": serviceId})))
@@ -256,7 +246,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         context,
       );
 
-      setState(() => isLoading = false);
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
 
       final responseJSON = json.decode(response.toString());
       print("Service detail response: $responseJSON");
@@ -272,7 +264,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
     return null;
   }
-
   Future<Map<String, dynamic>?> searchSlots(String serviceId) async {
     try {
       setState(() => isLoading = true);
@@ -309,9 +300,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
     return null;
   }
-
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -388,7 +379,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.title,
+                            selectedServiceTitle,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -445,12 +436,13 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     isSelected: selectedEmployeeId == null,
                     onTap: () {
                       setState(() {
-                        selectedEmployeeId = null;
-                        selectedUserId = null;
+                        /*selectedEmployeeId = null;
+                        selectedUserId = null;*/
+                        selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
+                        selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
                       });
                       fetchUnavailableDates(
-                        serviceId: widget.consultations[selectedServiceIndex]
-                            ["_id"],
+                        serviceId: selectedServiceId,
                         employeeId: selectedEmployeeId ?? "",
                         userId: selectedUserId ?? "",
                         date: DateTime.now().toIso8601String().substring(0, 10),
@@ -467,8 +459,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           selectedUserId = emp["userId"];
                         });
                         fetchUnavailableDates(
-                          serviceId: widget.consultations[selectedServiceIndex]
-                              ["_id"],
+                          serviceId: selectedServiceId,
                           employeeId: selectedEmployeeId ?? "",
                           userId: selectedEmployeeId ?? "",
                           date:
@@ -644,7 +635,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           if (service['selectedEmployeeId'] != null ||
                               service['employees'].isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            const Text("Select Date",
+                           /* const Text("Select Date",
                                 style: TextStyle(fontSize: 13)),
                             const SizedBox(height: 10),
                             GestureDetector(
@@ -678,7 +669,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                   ],
                                 ),
                               ),
-                            ),
+                            ),*/
                           ],
                         ],
                       ),
@@ -714,10 +705,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           padding: const EdgeInsets.all(14),
           child: ElevatedButton(
             onPressed: () {
+
+              if(selectedDate==null){
+                Toast.show("Please select your date",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                return;
+              }
               List<Map<String, dynamic>> allServicesData = [
                 {
-                  'serviceId': widget.consultations[selectedServiceIndex]
-                      ["_id"],
+                  'serviceId': selectedServiceId,
                   'employeeId': selectedEmployeeId,
                   'userId': selectedUserId,
                   'date': selectedDate,
@@ -725,12 +720,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 }
               ];
 
+
+
               for (var service in additionalServices) {
+
+
+
+
                 allServicesData.add({
                   'serviceId': service['selectedServiceId'],
                   'employeeId': service['selectedEmployeeId'],
                   'userId': service['selectedUserId'],
-                  'date': service['selectedDate'],
+                  //'date': service['selectedDate'],
+                  'date': selectedDate,
                   'serviceName': service['selectedServiceName'],
                 });
               }
@@ -757,7 +759,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               }
 
               if (hasUnavailableDate) {
-                SearchBottomSheet(context);
+                SearchBottomSheet(context,allServicesData);
               } else {
                 Navigator.push(
                     context,
@@ -784,7 +786,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       ),
     );
   }
-
   void changeServiceBottomSheet(BuildContext context) {
     showModalBottomSheet(
       // isScrollControlled: true,
@@ -907,9 +908,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
-                              final selectedService =
-                                  widget.consultations[selectedServiceIndex];
-                              await _loadService(selectedService["_id"]);
+
+                              final selectedService = widget.consultations[selectedServiceIndex];
+                              selectedServiceTitle=selectedService['name']?.toString()??"";
+                              selectedServiceId=selectedService['_id']?.toString()??"";
+                              _loadService(selectedServiceId);
                               Navigator.pop(context);
                             },
                             child: Container(
@@ -941,7 +944,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       }),
     );
   }
-
   void selectsecondServiceBottomSheet(BuildContext context) {
     showModalBottomSheet(
       // isScrollControlled: true,
@@ -1064,9 +1066,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
-                              final selectedService =
-                                  widget.consultations[selectedServiceIndex];
-                              await _loadService(selectedService["_id"]);
+                              await _loadService(selectedServiceId);
                               Navigator.pop(context);
                             },
                             child: Container(
@@ -1098,8 +1098,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       }),
     );
   }
-
-  void SearchBottomSheet(BuildContext context) {
+  void SearchBottomSheet(BuildContext context, List<Map<String, dynamic>> allServicesData) {
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
       context: context,
@@ -1155,7 +1154,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
+                    /*Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 15, vertical: 12),
                       decoration: BoxDecoration(
@@ -1172,7 +1171,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    ),*/
                     const Spacer(),
                     Row(
                       children: [
@@ -1183,7 +1182,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const AddToWaitlistScreen(),
+                                         AddToWaitlistScreen(allServicesData: allServicesData,),
                                   ));
                             },
                             style: ElevatedButton.styleFrom(
@@ -1209,14 +1208,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                             onPressed: () {
                               List<Map<String, dynamic>> allServicesData = [
                                 {
-                                  'serviceId':
-                                      widget.consultations[selectedServiceIndex]
-                                          ["_id"],
+                                  'serviceId':selectedServiceId,
                                   'employeeId': selectedEmployeeId,
                                   'userId': selectedUserId,
                                   'date': selectedDate,
-                                  'serviceName':
-                                      serviceList[selectedServiceIndex],
+                                  'serviceName': serviceList[selectedServiceIndex],
                                 }
                               ];
 
@@ -1268,7 +1264,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       ),
     );
   }
-
   void selectServiceBottomSheet(BuildContext context, int serviceIndex) {
     int tempSelectedIndex =
         additionalServices[serviceIndex]['selectedServiceIndex'];
@@ -1419,7 +1414,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       }),
     );
   }
-
   void selectEmployeeBottomSheet(BuildContext context, int serviceIndex) {
     List<Map<String, dynamic>> serviceEmployees =
         additionalServices[serviceIndex]['employees'] ?? [];

@@ -16,6 +16,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:convert' show base64, json, utf8;
 
 import '../network/api_helper.dart';
+import 'address_details_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productID;
@@ -233,9 +234,7 @@ class ProductState extends State<ProductDetailScreen> {
                                             color: Colors.black,
                                           ))),
                                   Text(
-                                      "\$" +
-                                          productData["discounted_price"]
-                                              .toString(),
+                                      "\$${productData["discounted_price"]?.toString()??productData["price"]?.toString()??""}",
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -247,15 +246,14 @@ class ProductState extends State<ProductDetailScreen> {
                               Row(
                                 children: [
                                   StarRating(
-                                    rating: double.parse(
-                                        ratingData['averageRating']),
+                                    rating: double.parse(ratingData['averageRating']?.toString() ?? '0'),
                                     allowHalfRating: true,
                                     color: Color(0xFFF4AB3E),
                                     onRatingChanged: (rating) =>
                                         setState(() => this.rating = rating),
                                   ),
                                   SizedBox(width: 5),
-                                  Text(ratingData['averageRating'],
+                                  Text(ratingData['averageRating']?.toString()??"",
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -279,8 +277,7 @@ class ProductState extends State<ProductDetailScreen> {
                                   )),
                               SizedBox(height: 7),
                               ReadMoreText(
-                                text: productData["product_description"]
-                                    .toString(),
+                                text: productData["product_description"].toString(),
                                 maxLines: 4, // or 10 as you want initially
                                 style: TextStyle(
                                     fontSize: 14.5, color: Color(0xFF696969)),
@@ -327,9 +324,8 @@ class ProductState extends State<ProductDetailScreen> {
                                   ),
                                   Expanded(
                                     child: Text(
-                                        ((productData["weight"]))
-                                                .toStringAsFixed(2) +
-                                            " Grams",
+                                        productData["weight"]!=null?
+                                        ((productData["weight"])).toStringAsFixed(2) + " Grams":"NA",
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.black,
@@ -350,7 +346,7 @@ class ProductState extends State<ProductDetailScreen> {
                                         )),
                                   ),
                                   Expanded(
-                                    child: Text(productData["itemTypeName"],
+                                    child: Text(productData["itemTypeName"]?.toString()??"",
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.black,
@@ -372,10 +368,8 @@ class ProductState extends State<ProductDetailScreen> {
                                   ),
                                   Expanded(
                                     child: Text(
-                                        productData["ingredients"].length != 0
-                                            ? productData["ingredients"][0]
-                                                    ["name"]
-                                                .toString()
+                                        (productData["ingredients"]!=null&&productData["ingredients"].length != 0)
+                                            ? productData["ingredients"][0].toString()
                                             : "NA",
                                         style: TextStyle(
                                           fontSize: 13,
@@ -406,17 +400,9 @@ class ProductState extends State<ProductDetailScreen> {
                                               Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          ProductDetailScreen(
-                                                              similarProducts[
-                                                                          index]
-                                                                      ["_id"]
-                                                                  .toString(),
-                                                              similarProducts[
-                                                                          index]
-                                                                      [
-                                                                      "category"]
-                                                                  .toString())));
+                                                      builder: (context) => ProductDetailScreen(
+                                                              similarProducts[index]["_id"].toString(),
+                                                              similarProducts[index]["category"].toString())));
                                             },
                                             child: Container(
                                               padding: EdgeInsets.all(5),
@@ -490,13 +476,8 @@ class ProductState extends State<ProductDetailScreen> {
                                                     child: Row(
                                                       children: [
                                                         Text(
-                                                            "\$" +
-                                                                similarProducts[
-                                                                            index]
-                                                                        [
-                                                                        "discounted_price"]
-                                                                    .toString(),
-                                                            style: TextStyle(
+                                                            "\$${similarProducts[index]["discounted_price"]?.toString()??similarProducts[index]["price"]?.toString()??""}",
+                                                            style: const TextStyle(
                                                               fontSize: 16,
                                                               fontWeight:
                                                                   FontWeight
@@ -526,28 +507,28 @@ class ProductState extends State<ProductDetailScreen> {
                                                         const EdgeInsets.all(
                                                             3.0),
                                                     child: Text(
-                                                        similarProducts[index]
-                                                            ["productName"],
-                                                        style: TextStyle(
+                                                        similarProducts[index]["productName"],
+                                                        style: const TextStyle(
                                                           fontSize: 13,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           color: AppTheme
                                                               .darkBrown,
                                                         ),
-                                                        maxLines: 2),
+                                                        maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
                                                   ),
 
-                                                  SizedBox(height: 3),
+                                                  const SizedBox(height: 3),
 
                                                   Padding(
                                                     padding:
                                                         const EdgeInsets.all(
                                                             3.0),
                                                     child: Text(
-                                                        similarProducts[index]
-                                                            ["brandName"],
-                                                        style: TextStyle(
+                                                        similarProducts[index]["brandName"]?.toString()??"",
+                                                        style: const TextStyle(
                                                           fontSize: 12,
                                                           fontWeight:
                                                               FontWeight.w500,
@@ -592,8 +573,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                 MainAxisAlignment.center,
                                             children: [
                                               Text(
-                                                  ratingData["averageRating"]
-                                                      .toString(),
+                                                  ratingData["averageRating"]?.toString()??"",
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
@@ -611,8 +591,7 @@ class ProductState extends State<ProductDetailScreen> {
                                         SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                              ratingData["totalReviews"]
-                                                      .toString() +
+                                              ratingData["totalReviews"]?.toString()??"" +
                                                   " reviews",
                                               style: TextStyle(
                                                 fontSize: 13,
@@ -650,8 +629,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                        reviewsList[pos]
-                                                            ["userName"],
+                                                        reviewsList[pos]["userName"]?.toString()??"",
                                                         style: TextStyle(
                                                           fontSize: 13,
                                                           fontWeight:
@@ -662,9 +640,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                         )),
                                                     SizedBox(height: 3),
                                                     Text(
-                                                        "Reviewed on " +
-                                                            reviewsList[pos]
-                                                                ["date"],
+                                                        "Reviewed on ${reviewsList[pos]["date"]?.toString()??""}",
                                                         style: TextStyle(
                                                           fontSize: 11,
                                                           color:
@@ -676,9 +652,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                 )),
                                                 SizedBox(width: 5),
                                                 StarRating(
-                                                  rating: double.parse(
-                                                      reviewsList[pos]["rating"]
-                                                          .toString()),
+                                                  rating: double.parse(reviewsList[pos]["rating"]?.toString()??"0"),
                                                   allowHalfRating: true,
                                                   color: Color(0xFFF4AB3E),
                                                   borderColor:
@@ -693,9 +667,7 @@ class ProductState extends State<ProductDetailScreen> {
                                             Container(
                                               padding: EdgeInsets.symmetric(
                                                   horizontal: 5),
-                                              child: reviewsList[pos]["review"]
-                                                          .length >
-                                                      150
+                                              child: reviewsList[pos]["review"].length > 150
                                                   ? ReadMoreText(
                                                       text: reviewsList[pos]
                                                           ["review"],
@@ -774,7 +746,7 @@ class ProductState extends State<ProductDetailScreen> {
                 Expanded(
                     child: GestureDetector(
                       onTap: () {
-                        addProductToCart();
+                        addProductToCart(false);
                       },
                       child: Container(
                         height: 54,
@@ -802,10 +774,7 @@ class ProductState extends State<ProductDetailScreen> {
                 Expanded(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => CartScreen()));
+                        addProductToCart(true);
                       },
                       child: Container(
                         height: 54,
@@ -869,7 +838,7 @@ class ProductState extends State<ProductDetailScreen> {
     }
   }
 
-  addProductToCart() async {
+  addProductToCart(bool isBuyNow) async {
     APIDialog.showAlertDialog(context, "Adding to cart...");
 
     String? userId = await MyUtils.getSharedPreferences("user_id");
@@ -892,18 +861,80 @@ class ProductState extends State<ProductDetailScreen> {
 
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-    if (responseJSON['message'] == "Cart successfully added!") {
+    if (responseJSON['statusCode'] == 201 ||responseJSON['statusCode'] == 200 ) {
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
+      if(isBuyNow){
+        /*Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => CartScreen()));*/
+
+        if(responseJSON['data']!=null){
+          var da=responseJSON['data'];
+          if(da['createdCartManagement']!=null){
+            var createdCartManagement=da['createdCartManagement'];
+            String cartId=createdCartManagement['_id']?.toString()??"";
+            int quantity=createdCartManagement['quantity']??1;
+            if(quantity<2){
+              if(cartId.isNotEmpty){
+                placeOrder(cartId);
+              }
+            }else{
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => CartScreen()));
+            }
+
+          }else{
+            Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
+                duration: Toast.lengthLong,
+                gravity: Toast.bottom,
+                backgroundColor: Colors.red);
+          }
+        }else{
+          Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
+              duration: Toast.lengthLong,
+              gravity: Toast.bottom,
+              backgroundColor: Colors.red);
+        }
+
+
+      }
     } else {
-      Toast.show(responseJSON['message'],
+      Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
     }
 
+    setState(() {});
+  }
+
+
+
+  placeOrder(String cartId) async {
+
+    APIDialog.showAlertDialog(context, "Please wait...");
+
+    String? userId=await MyUtils.getSharedPreferences("user_id");
+    List<String> cartIDs=[];
+    cartIDs.add(cartId);
+    var data ={"ids":cartIDs,"user":userId.toString()};
+    print(data.toString());
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    print(requestModel);
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI('cart_management/selectItems', requestModel, context);
+    Navigator.pop(context);
+
+    var responseJSON = json.decode(response.toString());
+    print(response.toString());
+
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen(cartIDs)));
     setState(() {});
   }
 
@@ -916,7 +947,6 @@ class ProductState extends State<ProductDetailScreen> {
     fetchProductsReviews();
     fetchProductsRatings();
   }
-
   fetchSimilarProducts() async {
     List<String> catList = [];
     catList.add(widget.catID.toString());
@@ -953,7 +983,6 @@ class ProductState extends State<ProductDetailScreen> {
 
     setState(() {});
   }
-
   fetchProductsReviews() async {
     setState(() {
       isLoading = true;
@@ -979,7 +1008,6 @@ class ProductState extends State<ProductDetailScreen> {
 
     setState(() {});
   }
-
   fetchProductsRatings() async {
     setState(() {
       isLoading = true;

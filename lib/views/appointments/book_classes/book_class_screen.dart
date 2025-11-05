@@ -670,11 +670,12 @@ class _BookClassScreenState extends State<BookClassScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
+                              final List<Map<String, dynamic>> allServicesDatas=[];
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const AddToWaitlistScreen(),
+                                         AddToWaitlistScreen(allServicesData: allServicesDatas,),
                                   ));
                             },
                             style: ElevatedButton.styleFrom(

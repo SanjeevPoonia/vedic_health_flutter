@@ -755,23 +755,26 @@ class _MyHomePageState extends State<AddressScreen> {
                                     child: Row(
                                       children: [
                                         SizedBox(width: 13),
-                                        Text(
-                                            selectedShippingDrop ==
-                                                    "Select Shipping method"
-                                                ? "Select Shipping method"
-                                                : selectedShippingDrop
-                                                    .toString(),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                              color: selectedShippingDrop ==
-                                                      "Select Shipping method"
-                                                  ? Color(0xFFA0A0A0)
-                                                      .withOpacity(0.92)
-                                                  : Colors.black
-                                                ..withOpacity(0.92),
-                                            )),
-                                        Spacer(),
+                                        Expanded(child: Text(
+                                          selectedShippingDrop ==
+                                              "Select Shipping method"
+                                              ? "Select Shipping method"
+                                              : selectedShippingDrop
+                                              .toString(),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: selectedShippingDrop ==
+                                                "Select Shipping method"
+                                                ? Color(0xFFA0A0A0)
+                                                .withOpacity(0.92)
+                                                : Colors.black
+                                              ..withOpacity(0.92),
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),),
+
                                         Icon(Icons.keyboard_arrow_down_outlined,
                                             size: 23, color: Colors.black),
                                         SizedBox(width: 12),
@@ -920,7 +923,7 @@ class _MyHomePageState extends State<AddressScreen> {
                                 color: Colors.black,
                               )),
                           SizedBox(height: 18),
-                          Row(
+                          selectedTab==1?Row(
                             children: [
                               GestureDetector(
                                   onTap: () {
@@ -967,7 +970,7 @@ class _MyHomePageState extends State<AddressScreen> {
                                     color: Colors.black,
                                   )),
                             ],
-                          ),
+                          ):Container(),
                           SizedBox(height: 18),
                           Row(
                             children: [
@@ -1347,6 +1350,8 @@ class _MyHomePageState extends State<AddressScreen> {
 
     String? userId = await MyUtils.getSharedPreferences("user_id");
 
+   
+
     var data;
     if (selectedTab == 2) {
       data = {
@@ -1360,14 +1365,18 @@ class _MyHomePageState extends State<AddressScreen> {
       };
     }
     if (selectedTab == 1) {
+      double? valueDelivery=double.tryParse(ratesList[selectedShippingIndex]["amount"]);
+      
       data = {
         "cartIds": widget.cartIDs,
         "userId": userId.toString(),
-        "deliveryCharge": ratesList[selectedShippingIndex]["amount"],
+        "deliveryCharge": valueDelivery??int.tryParse(ratesList[selectedShippingIndex]["amount"]),
         "carrier": ratesList[selectedShippingIndex]["provider"],
         "coupanId": "",
         "shippingId": ratesList[selectedShippingIndex]["object_id"].toString(),
-        "addressId": addressList[selectedAddressIndex]["_id"].toString()
+        "addressId": addressList[selectedAddressIndex]["_id"].toString(),
+        "billingAddress1":addressLine1Controller.text,
+        "billingAddress2":addressLine2Controller.text
       };
     }
 
@@ -1384,21 +1393,22 @@ class _MyHomePageState extends State<AddressScreen> {
     var responseJSON = json.decode(response.toString());
     print(response.toString());
 
-    if (responseJSON['message'] == "Order placed") {
-      Toast.show(responseJSON['message'],
+    if (responseJSON['statusCode'] == 200) {
+      Toast.show(responseJSON['message'].toString(),
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
 
       String paymentUrl = responseJSON["paymentUrl"].toString();
+      String orderId= responseJSON["orderId"]?.toString()??"NA";
 
       // Navigate to payment gateway
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => WebViewWordDoc(paymentUrl, "")));
+              builder: (context) => WebViewWordDoc(paymentUrl, orderId)));
     } else {
-      Toast.show(responseJSON['message'],
+      Toast.show(responseJSON['messages'].toString(),
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);

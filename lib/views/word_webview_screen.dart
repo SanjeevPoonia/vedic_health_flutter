@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:toast/toast.dart';
+import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/views/payment_success_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -26,41 +27,27 @@ class PrivacyPolicyState extends State<WebViewWordDoc> {
     return SafeArea(
       child: WillPopScope(
         onWillPop: () {
-
           Navigator.pop(context);
-
-
           return Future.value(false);
         },
         child: Scaffold(
          // backgroundColor: Colors.transparent,
           body:
-
           Column(
             children: [
-
-
               AppBarWidget("Payment"),
-
-
-
               Expanded(
                 child:
                 isLoading?
                 Center(
                   child: Loader(),
                 ):
-
-
                 WebViewWidget(
                   controller: _controller,
                 ),
               ),
             ],
           ),
-
-
-
         ),
       ),
     );
@@ -101,7 +88,7 @@ class PrivacyPolicyState extends State<WebViewWordDoc> {
             print(request.url.toString());
 
 
-            if (request.url.toString().startsWith("http://vedic.qdegrees.com:3008/order-management/paymentSuccess")) {
+            if (request.url.toString().startsWith("${AppConstant.appBaseURL}order-management/paymentSuccess")) {
 
               ToastContext().init(context);
 
@@ -112,11 +99,33 @@ class PrivacyPolicyState extends State<WebViewWordDoc> {
               Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                       builder: (context) =>
-                          PaymentSuccessScreen(widget.orderID)),
+                          PaymentSuccessScreen(widget.orderID,0)),
                       (Route<dynamic> route) => false);
 
 
 
+              return NavigationDecision.prevent;
+            }else if(request.url.toString().startsWith("${AppConstant.appBaseURL}event_management/eventPaymentSuccess")){
+              ToastContext().init(context);
+              Toast.show('Payment Successful',
+                  duration: Toast.lengthShort,
+                  gravity: Toast.bottom,
+                  backgroundColor: Colors.green);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PaymentSuccessScreen(widget.orderID,1)),
+                      (Route<dynamic> route) => false);
+
+
+
+              return NavigationDecision.prevent;
+            }else if(request.url.toString().startsWith("${AppConstant.appBaseURL}Shop/thankYou")){
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PaymentSuccessScreen(widget.orderID,2)),
+                      (Route<dynamic> route) => false);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;

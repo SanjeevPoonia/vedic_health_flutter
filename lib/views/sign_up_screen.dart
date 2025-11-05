@@ -24,6 +24,7 @@ class SignUpScreen extends StatefulWidget {
 
 class LoginState extends State<SignUpScreen> {
   bool isObscure = true;
+  bool isObscureConfirm = true;
   bool termsChecked = false;
   bool checkToggle = false;
   final otpController = TextEditingController();
@@ -98,8 +99,8 @@ class LoginState extends State<SignUpScreen> {
                     Center(
                       child: Image.asset(
                         'assets/vedic_health.png',
-                        width: 100,
-                        height: 100,
+                        width: 200,
+                        height: 150,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -220,7 +221,7 @@ class LoginState extends State<SignUpScreen> {
                               child: TextFormField(
                                   validator: checkPasswordValidator,
                                   controller: confirmPasswordController,
-                                  obscureText: isObscure,
+                                  obscureText: isObscureConfirm,
                                   style: const TextStyle(
                                     fontSize: 15.0,
                                     height: 1.6,
@@ -232,7 +233,7 @@ class LoginState extends State<SignUpScreen> {
                                       const EdgeInsets.fromLTRB(
                                           0.0, 20.0, 0.0, 10.0),*/
                                     suffixIcon: IconButton(
-                                      icon: isObscure
+                                      icon: isObscureConfirm
                                           ? const Icon(
                                               Icons.visibility_off,
                                               size: 20,
@@ -245,10 +246,10 @@ class LoginState extends State<SignUpScreen> {
                                             ),
                                       onPressed: () {
                                         Future.delayed(Duration.zero, () async {
-                                          if (isObscure) {
-                                            isObscure = false;
+                                          if (isObscureConfirm) {
+                                            isObscureConfirm = false;
                                           } else {
-                                            isObscure = true;
+                                            isObscureConfirm = true;
                                           }
 
                                           setState(() {});

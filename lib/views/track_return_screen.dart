@@ -255,8 +255,8 @@ class TrackReturnScreen extends StatelessWidget {
                                                   productName:
                                                       order.items[0].name,
                                                   brandName: 'Rasa Herbs',
-                                                  productImage:
-                                                      order.items[0].imageUrl,
+                                                  productImage: '',
+                                                      productId:"",
                                                 ),
                                               ),
                                             );

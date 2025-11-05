@@ -8,8 +8,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:toast/toast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedic_health/network/Utils.dart';
 import 'package:vedic_health/network/constants.dart';
@@ -17,11 +15,13 @@ import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/menu_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
+import 'package:vedic_health/views/search_product_screen.dart';
 
 import '../network/api_helper.dart';
 import '../widgets/drawer/zoom_scaffold.dart' as MEN;
+import 'appointments/book_classes/select_class_screen.dart';
 import 'category_wise_products.dart';
-import 'login_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
@@ -29,10 +29,11 @@ class HomeScreen extends StatefulWidget {
 
 class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
   bool isLoading = false;
+  bool isPopularLoading=false;
   List<dynamic> categoryList = [];
   MEN.MenuController? menuController;
-
   List<dynamic> productList = [];
+  List<dynamic> popularProductList = [];
   String? name;
   final GlobalKey<ScaffoldState> _key = GlobalKey();
   final ApiBaseHelper helper = ApiBaseHelper();
@@ -79,94 +80,75 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                             name == null
                                                 ? Container()
                                                 : Text(
-                                                    "Hello, " + name.toString(),
-                                                    style: TextStyle(
+                                                    "Hello, $name",
+                                                    style: const TextStyle(
                                                       fontSize: 17,
                                                       fontWeight:
                                                           FontWeight.w600,
                                                       color: Colors.black,
                                                     )),
-
-                                            /*   SizedBox(height: 3),
-
-                              Text("Lorem Ipsum Dummy Text here",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFFB8B8B8),
-                                  )),
-                  */
                                           ],
                                         ),
                                       ),
-                                      SizedBox(
-                                        width: 71,
-                                        height: 71,
-                                        child: Lottie.asset(
-                                            "assets/lotus_pose.json"),
+                                      SizedBox(width: 71, height: 71, child: Lottie.asset("assets/lotus_pose.json"),
                                       )
                                     ],
                                   ),
                                 ),
-                                SizedBox(height: 16),
-                                Container(
-                                  height: 52,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(77.0),
-                                            borderSide: BorderSide.none),
-                                        filled: true,
-                                        hintStyle: TextStyle(
-                                            color: Color(0xFF707070)
-                                                .withOpacity(0.5),
-                                            fontSize: 14),
-                                        hintText: "Search Products",
-                                        fillColor: Color(0xFFEFEEF1),
-                                        prefixIcon: Icon(Icons.search,
-                                            color: Color(0xFF707070))),
+                                const SizedBox(height: 16),
+                                InkWell(
+                                  onTap: (){
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => SearchPage(categoryList)));
+                                  },
+                                  child: Container(
+                                    height: 52,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: TextField(
+                                      enabled: false,
+                                      decoration: InputDecoration(
+                                          border: OutlineInputBorder(
+                                              borderRadius:
+                                              BorderRadius.circular(77.0),
+                                              borderSide: BorderSide.none),
+                                          filled: true,
+                                          hintStyle: TextStyle(
+                                              color: Color(0xFF707070)
+                                                  .withOpacity(0.5),
+                                              fontSize: 14),
+                                          hintText: "Search Products",
+                                          fillColor: Color(0xFFEFEEF1),
+                                          prefixIcon: const Icon(Icons.search,
+                                              color: Color(0xFF707070))),
+                                    ),
                                   ),
                                 ),
-                                SizedBox(height: 22),
+                                const SizedBox(height: 22),
                                 Stack(
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
                                       child: Image.asset("assets/banner1.png"),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.only(left: 26),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          SizedBox(height: 10),
-                                          Text(
-                                              "The Combination of\nNature and Science",
+                                          const SizedBox(height: 10),
+                                          const Text("The Combination of\nNature and Science",
                                               style: TextStyle(
                                                 fontSize: 17,
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.white,
                                               )),
-                                          SizedBox(height: 9),
+                                          const SizedBox(height: 9),
                                           Container(
                                             width: 108,
                                             height: 37,
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(77),
-                                                color: Colors.white),
-                                            child: Center(
-                                              child: Text("Shop Now",
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: AppTheme.greenColor,
-                                                  )),
+                                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(77), color: Colors.white),
+                                            child: const Center(
+                                              child: Text("Shop Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.greenColor,)),
                                             ),
                                           )
                                         ],
@@ -174,13 +156,13 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                     )
                                   ],
                                 ),
-                                SizedBox(height: 22),
+                                const SizedBox(height: 22),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12),
                                   child: Row(
                                     children: [
-                                      Text("CATEGORIES",
+                                      const Text("CATEGORIES",
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
@@ -191,7 +173,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                         onTap: () {
                                           allCategoryBottomSheet(context);
                                         },
-                                        child: Text("See all",
+                                        child: const Text("See all",
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
@@ -212,22 +194,13 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                           scrollDirection: Axis.horizontal,
                                           itemBuilder:
                                               (BuildContext context, int pos) {
+                                            String categoryName=categoryList[pos]["cat_name"]?.toString()??"";
+                                            String categoryId=categoryList[pos]["cat_id"]?.toString()??"";
                                             return Row(
                                               children: [
                                                 GestureDetector(
                                                   onTap: () {
-                                                    Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                            builder: (context) => CategoryWiseProducts(
-                                                                categoryList[
-                                                                        pos][
-                                                                    "cat_name"],
-                                                                categoryList[
-                                                                            pos]
-                                                                        [
-                                                                        "cat_id"]
-                                                                    .toString())));
+                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryWiseProducts(categoryName,categoryId)));
                                                   },
                                                   child: SizedBox(
                                                     height: 84,
@@ -238,8 +211,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                             "assets/grid1.png"),
                                                         Center(
                                                           child: Text(
-                                                              categoryList[pos]
-                                                                  ["cat_name"],
+                                                              categoryName,
                                                               style: TextStyle(
                                                                 fontSize: 12,
                                                                 fontWeight:
@@ -284,19 +256,35 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                         : productList.length,
                                     // Total number of classes
                                     itemBuilder: (context, index) {
+                                      String productId=productList[index]["_id"]?.toString()??"";
+                                      String categoryId=productList[index]["category_id"]?.toString()??"";
+                                      String coverImage=productList[index]["coverImage"]?.toString()??"";
+                                      String price=productList[index]["price"]?.toString()??"";
+                                      String mrp=productList[index]['mrp']?.toString()??"";
+                                      String productName=productList[index]["productName"]?.toString()??"";
+                                      String brandName=productList[index]["brand"]?.toString()??"";
+                                      String discountedPrice=productList[index]["discounted_price"]?.toString()??"";
+                                      String productImage="";
+                                      String productprice="";
+                                      if(discountedPrice.isNotEmpty){
+                                        productprice=discountedPrice;
+                                      }else {
+                                        productprice=price;
+                                      }
+                                      if(coverImage.isNotEmpty){
+                                        productImage=AppConstant.appBaseURL+coverImage;
+                                      }
+
+
+
+                                      print("product price $productprice");
+                                      print("price $price");
+                                      print("discounted $discountedPrice");
                                       return GestureDetector(
                                         onTap: () {
                                           Navigator.push(
                                               context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ProductDetailScreen(
-                                                          productList[index]
-                                                                  ["_id"]
-                                                              .toString(),
-                                                          productList[index][
-                                                                  "category_id"]
-                                                              .toString())));
+                                              MaterialPageRoute(builder: (context) => ProductDetailScreen(productId,categoryId)));
                                         },
                                         child: Container(
                                           padding: EdgeInsets.all(5),
@@ -315,29 +303,15 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 height: 135,
                                                 child: Stack(
                                                   children: [
-                                                    Center(
-                                                        child: Image.network(AppConstant
-                                                                .appBaseURL +
-                                                            productList[index][
-                                                                    "coverImage"]
-                                                                .toString())),
+                                                    Center(child: Image.network(productImage)),
                                                     Row(
                                                       children: [
                                                         Spacer(),
                                                         GestureDetector(
                                                           onTap: () {
-                                                            _showShareOptions(
-                                                                context,
-                                                                productList[
-                                                                        index]
-                                                                    ['_id']);
+                                                            _showShareOptions(context, productId);
                                                           },
-                                                          child: Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                                    top: 4,
-                                                                    right: 4),
+                                                          child: Padding(padding: const EdgeInsets.only(top: 4, right: 4),
                                                             child: Image.asset(
                                                                 "assets/arrow_right.png",
                                                                 width: 34,
@@ -349,9 +323,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   ],
                                                 ),
                                               ),
-
                                               //  SizedBox(height: 8),
-
                                               Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -359,11 +331,8 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 child: Row(
                                                   children: [
                                                     Text(
-                                                        "\$" +
-                                                            productList[index][
-                                                                    "discounted_price"]
-                                                                .toString(),
-                                                        style: TextStyle(
+                                                        "\$$productprice",
+                                                        style: const TextStyle(
                                                           fontSize: 16,
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -378,15 +347,16 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 padding:
                                                     const EdgeInsets.all(3.0),
                                                 child: Text(
-                                                    productList[index]
-                                                            ["productName"]
-                                                        .toString(),
-                                                    style: TextStyle(
+                                                    productName,
+                                                    style: const TextStyle(
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       color: AppTheme.darkBrown,
-                                                    )),
+                                                    ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                               ),
 
                                               SizedBox(height: 3),
@@ -395,8 +365,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 padding:
                                                     const EdgeInsets.all(3.0),
                                                 child: Text(
-                                                    productList[index]["brand"]
-                                                        .toString(),
+                                                    brandName,
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -447,24 +416,34 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       color: Colors.black,
                                                     )),
                                                 SizedBox(height: 10),
-                                                Container(
-                                                  width: 108,
-                                                  height: 37,
-                                                  decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              77),
-                                                      color: Colors.white),
-                                                  child: Center(
-                                                    child: Text("Book Now",
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: Colors.black,
-                                                        )),
-                                                  ),
-                                                )
+                                                InkWell(
+                                                  onTap: (){
+                                                    Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                          const SelectClassScreen(),
+                                                        ));
+                                                  },
+                                                  child:Container(
+                                                    width: 108,
+                                                    height: 37,
+                                                    decoration: BoxDecoration(
+                                                        borderRadius:
+                                                        BorderRadius.circular(
+                                                            77),
+                                                        color: Colors.white),
+                                                    child: Center(
+                                                      child: Text("Book Now",
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                            FontWeight.w500,
+                                                            color: Colors.black,
+                                                          )),
+                                                    ),
+                                                  ) ,
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -510,43 +489,48 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                                 SizedBox(height: 28),
-                                Stack(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
-                                      child: Image.asset("assets/banner_3.png"),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 26),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          SizedBox(height: 10),
-                                          Text("Want it today?",
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              )),
-                                          SizedBox(height: 5),
-                                          Text(
-                                              "Visit the Shop at our center, or call us at 240-753-0151 .",
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.white,
-                                              ),
-                                              textAlign: TextAlign.center),
-                                        ],
+                                InkWell(
+                                  onTap: (){
+                                    launchPhoneCall();
+                                  },
+                                  child: Stack(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: Image.asset("assets/banner_3.png"),
                                       ),
-                                    )
-                                  ],
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 26),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                          children: [
+                                            SizedBox(height: 10),
+                                            Text("Want it today?",
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                )),
+                                            SizedBox(height: 5),
+                                            Text(
+                                                "Visit the Shop at our center, or call us at 240-753-0151 .",
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                ),
+                                                textAlign: TextAlign.center),
+                                          ],
+                                        ),
+                                      )
+                                    ],
+                                  ) ,
                                 ),
                                 SizedBox(height: 20),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
                                       horizontal: 12),
                                   child: Row(
                                     children: [
@@ -557,16 +541,23 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                             color: Colors.black,
                                           )),
                                       Spacer(),
-                                      Text("See all",
+                                      /*Text("See all",
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                             color: Color(0XFF3E99C4),
-                                          )),
+                                          )),*/
                                     ],
                                   ),
                                 ),
                                 SizedBox(height: 16),
+                                isPopularLoading?Container(
+                                  color: Colors.white,
+                                  child: Center(
+                                    child: Loader(),
+                                  ),
+                                ):
+
                                 SizedBox(
                                   child: GridView.builder(
                                     shrinkWrap: true,
@@ -583,12 +574,41 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                       childAspectRatio:
                                           1.1 / 1.6, // Width to height ratio
                                     ),
-                                    itemCount: 4,
+                                    itemCount: popularProductList.length > 4
+                                        ? 4
+                                        : popularProductList.length,
                                     // Total number of classes
                                     itemBuilder: (context, index) {
+                                      String productId=popularProductList[index]["_id"]?.toString()??"";
+                                      String categoryId=popularProductList[index]["category"]?.toString()??"";
+                                      String coverImage=popularProductList[index]["coverImage"]?.toString()??"";
+                                      String price=popularProductList[index]["price"]?.toString()??"";
+                                      String mrp=popularProductList[index]['mrp']?.toString()??"";
+                                      String productName=popularProductList[index]["productName"]?.toString()??"";
+                                      String brandName=popularProductList[index]["brandName"]?.toString()??"";
+                                      String discountedPrice=popularProductList[index]["discounted_price"]?.toString()??"";
+                                      String productImage="";
+                                      String productprice="";
+                                      if(discountedPrice.isNotEmpty){
+                                        productprice=discountedPrice;
+                                      }else {
+                                        productprice=price;
+                                      }
+                                      if(coverImage.isNotEmpty){
+                                        productImage=AppConstant.appBaseURL+coverImage;
+                                      }
+
+
+
+                                      print("product price $productprice");
+                                      print("price $price");
+                                      print("discounted $discountedPrice");
+
                                       return GestureDetector(
                                         onTap: () {
-                                          //  Navigator.push(context, MaterialPageRoute(builder: (context)=>ViewPDFScreen(AppConstant.digitalContentBaseURL+chapterList[currentChapter]["resources"][index]["attachment_file"])));
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => ProductDetailScreen(productId,categoryId)));
                                         },
                                         child: Container(
                                           padding: EdgeInsets.all(5),
@@ -604,40 +624,37 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Container(
-                                                height: 138,
+                                                height: 135,
                                                 child: Stack(
                                                   children: [
-                                                    Image.asset(
-                                                        "assets/banner4.png"),
+                                                    Center(child: Image.network(productImage)),
                                                     Row(
                                                       children: [
                                                         Spacer(),
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .only(
-                                                                  top: 4,
-                                                                  right: 4),
-                                                          child: Image.asset(
-                                                              "assets/arrow_right.png",
-                                                              width: 34,
-                                                              height: 26),
+                                                        GestureDetector(
+                                                          onTap: () {
+                                                            _showShareOptions(context, productId);
+                                                          },
+                                                          child: Padding(padding: const EdgeInsets.only(top: 4, right: 4),
+                                                            child: Image.asset(
+                                                                "assets/arrow_right.png",
+                                                                width: 34,
+                                                                height: 26),
+                                                          ),
                                                         ),
                                                       ],
                                                     ),
                                                   ],
                                                 ),
                                               ),
-
                                               //  SizedBox(height: 8),
-
                                               Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 5),
                                                 child: Row(
                                                   children: [
-                                                    Text("\$15.00",
+                                                    Text("\$$productprice",
                                                         style: TextStyle(
                                                           fontSize: 16,
                                                           fontWeight:
@@ -645,7 +662,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                           color: AppTheme
                                                               .darkBrown,
                                                         )),
-                                                    Spacer(),
+                                                  /*  Spacer(),
                                                     Image.asset(
                                                         "assets/star_ic.png",
                                                         width: 13,
@@ -657,7 +674,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                           fontWeight:
                                                               FontWeight.w500,
                                                           color: Colors.black,
-                                                        )),
+                                                        )),*/
                                                   ],
                                                 ),
                                               ),
@@ -667,13 +684,16 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                               Padding(
                                                 padding:
                                                     const EdgeInsets.all(3.0),
-                                                child: Text("Amalaki Powder",
-                                                    style: TextStyle(
+                                                child: Text(productName,
+                                                    style: const TextStyle(
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       color: AppTheme.darkBrown,
-                                                    )),
+                                                    ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 2,
+                                                ),
                                               ),
 
                                               SizedBox(height: 3),
@@ -681,7 +701,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                               Padding(
                                                 padding:
                                                     const EdgeInsets.all(3.0),
-                                                child: Text("Rasa Herbs",
+                                                child: Text(brandName,
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -711,97 +731,114 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       context: context,
-      builder: (context) => StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-        return Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
+      builder: (bottomSheetContext) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Container(
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20)),
-            color: Colors.white,
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height - 150,
-            child: Stack(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 15),
-                          child: Text('Categories',
+                bottomRight: Radius.circular(20),
+              ),
+              color: Colors.white,
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height - 150,
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 15),
+                            child: Text(
+                              'Categories',
                               style: TextStyle(
-                                  fontSize: 19,
-                                  fontFamily: "Montserrat",
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black)),
-                        ),
-                        const Spacer(),
-                        GestureDetector(
+                                fontSize: 19,
+                                fontFamily: "Montserrat",
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
                             onTap: () {
-                              Navigator.pop(context);
+                              Navigator.pop(bottomSheetContext);
                             },
-                            child: Icon(
+                            child: const Icon(
                               Icons.clear,
                               color: Color(0xFFAFAFAF),
-                            )),
-                        const SizedBox(width: 15)
-                      ],
-                    ),
-                    SizedBox(height: 25),
-                    Expanded(
-                      child: GridView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 25),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2, // Number of columns
-                                crossAxisSpacing: 35, // Horizontal spacing
-                                mainAxisSpacing: 14, // Vertical spacing
-                                childAspectRatio: 1 / 1 // Width to height ratio
-                                ),
-                        itemCount: 8, // Total number of classes
-                        itemBuilder: (context, index) {
-                          return GestureDetector(
-                            onTap: () {
-                              //    Navigator.push(context,MaterialPageRoute(builder: (context)=>CategoryWiseProducts()));
-                            },
-                            child: SizedBox(
-                              height: 84,
-                              width: 95,
-                              child: Stack(
-                                children: [
-                                  Image.asset("assets/grid1.png"),
-                                  Center(
-                                    child: Text("Ayurvedic Herbals",
-                                        style: TextStyle(
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                        ],
+                      ),
+                      const SizedBox(height: 25),
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 25),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 35,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 1 / 1,
+                          ),
+                          itemCount: categoryList.length,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              onTap: () {
+
+                                Navigator.pop(bottomSheetContext);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CategoryWiseProducts(
+                                      categoryList[index]["cat_name"],
+                                      categoryList[index]["cat_id"].toString(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 84,
+                                width: 95,
+                                child: Stack(
+                                  children: [
+                                    Image.asset("assets/grid1.png"),
+                                    Center(
+                                      child: Text(
+                                        categoryList[index]["cat_name"].toString(),
+                                        style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                           color: Colors.white,
                                         ),
-                                        textAlign: TextAlign.center),
-                                  )
-                                ],
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ],
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 
@@ -833,7 +870,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     }
 
-    if (categoryIDs.length != 0) {
+    if (categoryIDs.isNotEmpty) {
       productList = responseJSON["data"][categoryIDs[0].toString()]["products"];
     }
 
@@ -843,7 +880,6 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
 
     setState(() {});
   }
-
   void _showShareOptions(BuildContext context, id) {
     showModalBottomSheet(
       context: context,
@@ -913,7 +949,6 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       },
     );
   }
-
   @override
   void initState() {
     // TODO: implement initState
@@ -923,11 +958,57 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
     )..addListener(() => setState(() {}));
     fetchCategories();
     fetchUserName();
+    fetchProducts();
   }
-
   fetchUserName() async {
     name = await MyUtils.getSharedPreferences("name");
 
     setState(() {});
+  }
+  Future<void> fetchProducts() async {
+    setState(() {
+      isPopularLoading = true;
+    });
+    var data = {
+      "title": "",
+      "page":1,
+      "pageSize":10,
+      "category":[],
+      "subcategory":[],
+      "brand":[],
+      "sortBy":"buy_count",
+      "sortOrder":"desc"
+    };
+    print("Request Params $data");
+
+    // Encode the data object into a Base64 string
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI('product/allProducts', requestModel, context);
+    var responseJSON = json.decode(response.toString());
+    popularProductList = (responseJSON["productsWithUrls"] as List?)??[];
+    setState(() {
+      isPopularLoading = false;
+    });
+
+  }
+
+  Future<void> launchPhoneCall() async {
+
+    final Uri callUri = Uri.parse('tel:2407530151');
+
+
+    try {
+      if (await canLaunchUrl(callUri)) {
+        await launchUrl(
+          callUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        print('Could not launch phone dialer');
+      }
+    } catch (e) {
+      print('Error launching call: $e');
+    }
   }
 }

@@ -1,10 +1,11 @@
 import 'dart:convert';
-
+import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:toast/toast.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
@@ -12,6 +13,7 @@ import '../network/api_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/validators.dart';
 import '../widgets/appbar_widget.dart';
+import 'login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   AddressDetailsState createState() => AddressDetailsState();
@@ -26,16 +28,18 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
   bool isObscureConfirm = true;
   bool isObscureNew = true;
   String? landingUI;
+  String emailID = '';
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return Scaffold(
       backgroundColor: Color(0xFFF7F9FB),
       body: Column(
         children: [
           SizedBox(height: 22),
 
-          AppBarWidget("Password Change"),
+          AppBarWidget("Change Password"),
           Expanded(
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 10),
@@ -49,7 +53,7 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                       SizedBox(height: 10),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text("Current Password",
+                        child: Text("Email",
                             style: TextStyle(
                                 fontSize: 15,
                                 fontFamily: "Montserrat",
@@ -61,10 +65,16 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: TextFormField(
                           controller: currentPasswordController,
-                          validator: checkPasswordValidator,
+                         // validator: checkPasswordValidator,
                           keyboardType: TextInputType.text,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontFamily: "Montserrat",
+                          ),
+                          enabled: false,
                           decoration: InputDecoration(
-                            suffixIcon: IconButton(
+                            /*suffixIcon: IconButton(
                               icon: isObscureCurrent
                                   ? const Icon(
                                       Icons.visibility_off,
@@ -83,7 +93,7 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                                   });
                                 });
                               },
-                            ),
+                            ),*/
                             isDense: true,
                             // Added this
                             contentPadding: EdgeInsets.all(14),
@@ -135,7 +145,8 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                         child: TextFormField(
                           controller: newPasswordController,
                           validator: checkPasswordValidator,
-                          keyboardType: TextInputType.text,
+                          keyboardType: TextInputType.visiblePassword,
+                          obscureText: isObscureNew,
                           decoration: InputDecoration(
                             suffixIcon: IconButton(
                               icon: isObscureNew
@@ -206,8 +217,10 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: TextFormField(
+                          obscureText: isObscureConfirm,
                           controller: confirmPasswordController,
-                          keyboardType: TextInputType.text,
+                          validator: confirmPasswordValidator,
+                          keyboardType: TextInputType.visiblePassword,
                           decoration: InputDecoration(
                             suffixIcon: IconButton(
                               icon: isObscureConfirm
@@ -323,22 +336,11 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
                                     ),
                                   ),
                                 ),
-
-
-
                                 flex: 1),
                           ],
                         ),
                       ),
                       SizedBox(height: 22),
-
-
-                      landingUI=="mittbunny"?
-
-                      Container(
-                          padding: EdgeInsets.only(top: 120),
-                          child: Lottie.asset("assets/kid_playing.json")):Container()
-
                     ],
                   ),
                 )),
@@ -353,17 +355,35 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
       return;
     }
     _formKey.currentState!.save();
-    //updatePasswordProfile();
+
+    updatePassword();
   }
 
   String? checkPasswordValidator(String? value) {
-    if (value!.length < 6) {
+    if (value == null || value.isEmpty) {
       return 'Password is required';
+    }
+    if (value.length < 5) {
+      return 'Password must be at least 6 characters long';
+    }
+    return null;
+  }
+  String? confirmPasswordValidator(String? value) {
+    String newPass = newPasswordController.text.trim();
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (newPass != value) {
+      return 'New password and confirm password must match';
     }
     return null;
   }
   fetchUserUI()async{
+    String? email = await MyUtils.getSharedPreferences("email");
+    String? name = await MyUtils.getSharedPreferences("name");
+    emailID = email ?? "";
 
+    currentPasswordController.text=emailID;
     landingUI=await MyUtils.getSharedPreferences("landing_ui");
     setState(() {
 
@@ -371,47 +391,62 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
   }
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     fetchUserUI();
   }
 
- /* updatePasswordProfile() async {
+  updatePassword() async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+    String? userId = await MyUtils.getSharedPreferences("user_id");
 
-    APIDialog.showAlertDialog(context, "Updating Password...");
-    var data={
-      "password":currentPasswordController.text,
-      "newpassword":newPasswordController.text,
-      "newpassword_confirmation":confirmPasswordController.text,
+    // Create the data object with the userId
+    var data = {"email":emailID,
+      "password":newPasswordController.text.toString(),
+      "confirmPassword":confirmPasswordController.text.toString()
     };
 
+    // Encode the data object into a Base64 string
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+
     ApiBaseHelper helper = ApiBaseHelper();
-    var response = await helper.postAPIWithHeader("change-password",data,context);
-    var responseJSON = json.decode(response.body);
-    print(responseJSON);
+    var response =
+    await helper.postAPI('users/changePassword', requestModel, context);
+    print(response.toString());
+    var responseJSON = json.decode(response.toString());
 
-
-    Navigator.pop(context);
-
-
-    if (responseJSON['success']) {
-      Toast.show(responseJSON['message'],
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.greenAccent);
-
-
-
-      Navigator.pop(context);
-
-    } else {
-      Toast.show(responseJSON['message'],
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.red);
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
     }
 
+    if(responseJSON['statusCode']!=null && responseJSON['statusCode']==200){
+      Toast.show(responseJSON['message']?.toString()??"Password Changed Successfully",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      _forceLogout();
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong. Please try Again",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+    }
 
-    setState(() {});
-  }*/
+    
+    
+  }
+
+  _forceLogout() async{
+
+
+    await MyUtils.removePrefs("user_id");
+    await MyUtils.removePrefs("email");
+    await MyUtils.removePrefs("auth_key");
+    await MyUtils.removePrefs("token");
+    await MyUtils.removePrefs("access_token");
+    Navigator.of(context).pop();
+    //Route route = MaterialPageRoute(builder: (context) => LoginScreen());
+    Route route = MaterialPageRoute(builder: (context) => VedicHealthLoginScreen());
+    Navigator.pushAndRemoveUntil(
+        context, route, (Route<dynamic> route) => false);
+  }
 }

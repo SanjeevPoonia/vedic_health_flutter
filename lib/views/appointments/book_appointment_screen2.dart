@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
+import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_payment_screen.dart';
+
+import '../../network/Utils.dart';
 
 class BookAppointmentScreen2 extends StatefulWidget {
   final List<Map<String, dynamic>> allServicesData;
   final String userId;
-
-  const BookAppointmentScreen2(
-      {super.key, required this.allServicesData, required this.userId});
-
+  const BookAppointmentScreen2({super.key, required this.allServicesData, required this.userId});
   @override
   State<BookAppointmentScreen2> createState() => _BookAppointmentScreen2State();
 }
@@ -19,9 +20,7 @@ class BookAppointmentScreen2 extends StatefulWidget {
 class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
   DateTime? selectedDate;
   Map<String, int?> selectedSlots = {};
-
   bool isLoading = true;
-
   Map<String, dynamic> servicesWithSlots = {};
 
   @override
@@ -175,10 +174,10 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                 ),
 
               if (!isLoading && servicesWithSlots.isEmpty)
-                const Center(
+                Center(
                   child: Padding(
                     padding: EdgeInsets.all(20.0),
-                    child: Text("No available services or slots found."),
+                    child: Text("No slots available for this date"),
                   ),
                 ),
 
@@ -186,7 +185,9 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                 final serviceData = servicesWithSlots[serviceId];
                 final employeeData = serviceData['employeeData'];
                 final serviceDetails = serviceData['serviceDetails'];
-                final slots = serviceData['slots'];
+                List<dynamic> slots = serviceData['slots'];
+
+                print("slots $slots");
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -256,11 +257,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                           children: [
                             Row(
                               children: [
-                                const CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: NetworkImage(
-                                      "https://randomuser.me/api/portraits/men/78.jpg"),
-                                ),
+                                NameAvatar(fullName: employeeData["userDetails"]["name"] ?? "N/A",size: 70,),
                                 const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,18 +272,13 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                     ),
                                     const Row(
                                       children: [
-                                        Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.amber, size: 18),
-                                        Icon(Icons.star_half,
-                                            color: Colors.amber, size: 18),
+                                        Icon(Icons.star, color: Colors.grey, size: 18),
+                                        Icon(Icons.star, color: Colors.grey, size: 18),
+                                        Icon(Icons.star, color: Colors.grey, size: 18),
+                                        Icon(Icons.star, color: Colors.grey, size: 18),
+                                        Icon(Icons.star, color: Colors.grey, size: 18),
                                         SizedBox(width: 5),
-                                        Text("(8)"),
+                                        Text("(0)"),
                                       ],
                                     ),
                                     const SizedBox(height: 5),
@@ -314,6 +306,69 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                         ),
                       ),
 
+                      /* slots.isEmpty?
+                          Column(
+
+                            children: [
+                              const Center(
+                                  child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: Text("No available services or slots found."),
+                                  )
+                              ),
+                              SizedBox(height: 15,),
+                              Row(
+                                children: [
+                                  Expanded(flex:1,child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF8F2F1E),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 15),
+                                    ),
+                                    child: const Text(
+                                      "GO TO DATE",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )),
+                                  SizedBox(width: 10,),
+                                  Expanded(flex:1,child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
+                                          ));
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFF38328),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 15),
+                                    ),
+                                    child: const Text(
+                                      "Add to waitlist",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ))
+                                ],
+                              )
+
+                            ],
+                          ):*/
                       /// Time Slots
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -323,10 +378,11 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                           children: List.generate(slots.length, (index) {
                             final slot = slots[index];
                             final start = DateTime.parse(slot["startTime"]);
-                            final time = DateFormat("hh:mm a").format(start);
+                            //final time = DateFormat("hh:mm a").format(start);
 
-                            final isSelected =
-                                selectedSlots[serviceId] == index;
+                            String time=formatDateUtc(slot['startTime']?.toString()??"");
+
+                            final isSelected = selectedSlots[serviceId] == index;
 
                             return GestureDetector(
                               onTap: () {
@@ -370,7 +426,9 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
         ),
 
         /// Sticky Bottom Search Button
-        bottomNavigationBar: Padding(
+        bottomNavigationBar:
+
+          Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -380,6 +438,58 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                 color: Colors.grey,
               ),
               const SizedBox(height: 10),
+              servicesWithSlots.isEmpty?
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Expanded(flex:1,child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8F2F1E),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          child: const Text(
+                            "GO TO DATE",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )),
+                        SizedBox(width: 10,),
+                        Expanded(flex:1,child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
+                                ));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF38328),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          child: const Text(
+                            "Add to waitlist",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ))
+                      ],
+                    ),
+                  ):
               Row(
                 children: [
                   Expanded(
@@ -388,7 +498,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AddToWaitlistScreen(),
+                              builder: (context) =>  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
                             ));
                       },
                       style: ElevatedButton.styleFrom(
@@ -414,7 +524,9 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                       onPressed: () async {
                         // Build appointments from selected slots
                         List<Map<String, dynamic>> appointments = [];
-
+                        String? userId = await MyUtils.getSharedPreferences("user_id");
+                        double totalPrice=0.0;
+                        List<Map<String,dynamic>> selectedEmpList=[];
                         selectedSlots.forEach((serviceKey, slotIndex) {
                           if (slotIndex != null) {
                             final selectedServiceData =
@@ -425,16 +537,26 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                 selectedServiceData['allServiceData'];
                             final serviceDetails =
                                 selectedServiceData['serviceDetails'];
+                            final employeeData = selectedServiceData['employeeData'];
+                            String empName=employeeData["userDetails"]["name"] ?? "N/A";
+                            String empId=allServiceData['employeeId'];
+                            double price=double.parse(serviceDetails['price']?.toString() ?? "0");
+                            final empData={
+                              "emp_name":empName,
+                              "price":price,
+                              "empId":empId
+                            };
+                            selectedEmpList.add(empData);
+
 
                             final appointment = {
                               "serviceId": allServiceData['serviceId'],
                               "employeeId": allServiceData['employeeId'],
-                              "userId": allServiceData['userId'],
+                              "userId": userId,
+                              //"userId": allServiceData['userId'],
                               "note": "test",
-                              "date": DateFormat('yyyy-MM-dd')
-                                  .format(selectedDate!),
-                              "time": DateFormat('HH:mm')
-                                  .format(DateTime.parse(slot['startTime'])),
+                              "date": DateFormat('yyyy-MM-dd').format(selectedDate!),
+                              "time": formatDateUtc24(slot['startTime']?.toString()??""),
                               "deposit": 0,
                               "repeat": "Off",
                               "file": "",
@@ -444,6 +566,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                   60,
                               "price": serviceDetails['price'] ?? 0,
                             };
+                            totalPrice += serviceDetails['price'] ?? 0;
 
                             appointments.add(appointment);
                           }
@@ -459,6 +582,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                         }
 
                         try {
+                          APIDialog.showAlertDialog(context, "Please wait...");
                           ApiBaseHelper helper = ApiBaseHelper();
 
                           // ✅ Encode same as checkAvailableSlot
@@ -473,22 +597,52 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                             context,
                           );
 
+                          if(Navigator.canPop(context)){
+                            Navigator.of(context).pop();
+                          }
+
                           var responseJSON = json.decode(response.toString());
 
                           if (responseJSON["statusCode"] == 201) {
-                            // success → navigate
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BookPaymentScreen(
-                                  date: selectedDate!,
-                                  userId: widget.userId,
-                                  name: servicesWithSlots[
-                                          selectedSlots.keys.first]
-                                      ['employeeData']['userDetails']['name'],
+
+
+                            List<dynamic> data=responseJSON['data'] ??[];
+                            List<String> appointIds=[];
+                            for(var da in data){
+                              String appId=da['_id']?.toString()??"";
+                              if(appId.isNotEmpty){
+                                appointIds.add(appId);
+                              }
+                            }
+
+                            if(appointIds.isNotEmpty){
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BookPaymentScreen(
+                                    date: selectedDate!,
+                                    userId: widget.userId,
+                                    name: servicesWithSlots[
+                                    selectedSlots.keys.first]
+                                    ['employeeData']['userDetails']['name'],
+                                    price: totalPrice,
+                                    allServicesData: widget.allServicesData,
+                                    empData: selectedEmpList,
+                                    appointIds: appointIds,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }else{
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(responseJSON["message"] ?? "Failed to book appointment,Missing appointment id")),
+                              );
+                            }
+
+
+
+                            // success → navigate
+
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -529,5 +683,22 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
         ),
       ),
     );
+  }
+
+  String formatDateUtc(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      return date;
+    }
+  }
+  String formatDateUtc24(String date) {
+    try {
+      DateTime dateTime = DateTime.parse(date).toLocal();
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return date;
+    }
   }
 }

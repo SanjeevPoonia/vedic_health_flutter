@@ -7,62 +7,28 @@ import 'package:flutter_rating/flutter_rating.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:toast/toast.dart';
+import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+
 
 class MyReviewScreen extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyReviewScreen> {
-  int selectedIndex = 0;
-  int selectedSortIndex = 0;
-  var selectDOB = TextEditingController();
-  var addressLine1Controller = TextEditingController();
-  var addressLine2Controller = TextEditingController();
-  String? profileImage = "";
+
+  bool isLoading=false;
   List<dynamic> reviewList = [];
-
-  String selectedAddressID = "";
-  final List<String> tabs = ["Category", "Brand"];
-
-  List<bool> categoryCheckList = [false, false, false, false];
-  List<bool> brandCheckList = [false, false, false, false];
-
-  List<String> categoryList = [
-    "All Categories (390)",
-    "Health & Beauty (195)",
-    "Health Care (195)",
-    "Personal Care (0)"
-  ];
-  int selectedTab = 1;
-
-  List<String> brandList = [
-    "Auromere",
-    "Thorne",
-    "J. Crow's",
-    "Kerala Ayurveda"
-  ];
-  List<String> sortList = [
-    "Most Popular",
-    "High to Low",
-    "Low to High",
-    "Highly Rated"
-  ];
-  double shippingCost = 0;
-
-  int selectedRadioButton = 0;
-
-  bool checkToggle = false;
-
-  bool isLoading = false;
-  List<dynamic> addressList = [];
-  List<dynamic> centersList = [];
+  String nameStr="";
+  String emailIdStr="";
+  String userIdStr="";
 
   @override
   Widget build(BuildContext context) {
@@ -114,27 +80,38 @@ class _MyHomePageState extends State<MyReviewScreen> {
                         ),
                       ),
                     ),
-
-/*
-
-                    GestureDetector(
-                      onTap: (){
-
-
-                      },
-                      child: Image.asset("assets/cart_bag.png",width: 39,height: 39)
-                    )
-*/
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Expanded(
+            isLoading? Center(child: Loader(),):
+            reviewList.isEmpty?
+                Padding(padding: EdgeInsets.all(10),
+                  child: Center(
+                      child: Text("Looks like you haven’t added a review yet. Write one to share your experience!",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.grey),)
+                  ),
+                )
+                :
+                Expanded(
                 child: ListView.builder(
                     itemCount: reviewList.length,
                     padding: EdgeInsets.symmetric(horizontal: 10),
                     itemBuilder: (BuildContext context, int pos) {
+
+                      String date=reviewList[pos]['date']?.toString()??"";
+                      String reviewDate=formatDate(date);
+
+                      double rating = (reviewList[pos]['rating'] is int)
+                          ? (reviewList[pos]['rating'] as int).toDouble()
+                          : double.tryParse(reviewList[pos]['rating'].toString()) ?? 0.0;
+
+                      String reviewtext=reviewList[pos]['review']?.toString()??"";
+                      List<String> uploadedImageList = [];
+                      List<dynamic> imlist= (reviewList[pos]['additionalImages'] as List?) ?? [];
+                      uploadedImageList.addAll(imlist.map((e) =>  e.toString()
+                      ));
+
                       return Column(
                         children: [
                           Column(
@@ -153,7 +130,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text("Smith Jhons",
+                                        Text(nameStr,
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -162,7 +139,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
                                             )),
                                         SizedBox(height: 3),
                                         Text(
-                                            "Reviewed on Reviewed on 18 July 2022",
+                                            reviewDate,
                                             style: TextStyle(
                                               fontSize: 11,
                                               color: Color(0xFF898989)
@@ -177,7 +154,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
                                 Row(
                                   children: [
                                     StarRating(
-                                      rating: 4.5,
+                                      rating: rating,
                                       allowHalfRating: true,
                                       color: Color(0xFFF4AB3E),
                                       borderColor: Color(0xFFF4AB3E),
@@ -189,42 +166,43 @@ class _MyHomePageState extends State<MyReviewScreen> {
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 5),
                                   child: Text(
-                                      "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.",
+                                      reviewtext,
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.black.withOpacity(0.92),
                                       )),
                                 ),
                                 SizedBox(height: 22),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 68,
-                                      height: 68,
-                                      decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(3),
-                                          image: DecorationImage(
-                                              fit: BoxFit.cover,
-                                              image: AssetImage(
-                                                "assets/banner2.png",
-                                              ))),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Container(
-                                      width: 68,
-                                      height: 68,
-                                      decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(3),
-                                          image: DecorationImage(
-                                              fit: BoxFit.cover,
-                                              image: AssetImage(
-                                                "assets/banner2.png",
-                                              ))),
-                                    ),
-                                  ],
-                                ),
+                                uploadedImageList.isNotEmpty?
+                                GridView.builder(
+                                  shrinkWrap: true, // important
+                                  physics: const NeverScrollableScrollPhysics(), // ListView scroll handle karega
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2, // 2 columns
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 1, // square look
+                                  ),
+                                  itemCount: uploadedImageList.length,
+                                  itemBuilder: (context, index) {
+                                    final url = AppConstant.appBaseURL+uploadedImageList[index];
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(16), // rounded corners
+                                      child: CachedNetworkImage(
+                                        imageUrl: url,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error, color: Colors.red),
+                                      ),
+                                    );
+                                  },
+                                ):Container(),
                                 SizedBox(height: 22)
                               ]),
                           SizedBox(height: 12)
@@ -240,52 +218,29 @@ class _MyHomePageState extends State<MyReviewScreen> {
   @override
   void initState() {
     super.initState();
-    fetchMyReviews();
+    _fetchUserDetails();
   }
 
-  // Successurl
-  //http://vedic.qdegrees.com:3008/order-management/paymentSuccess/682dff96a56e642c84ea1a4f
-  // fetchAddress() async {
-  //   setState(() {
-  //     isLoading = true;
-  //   });
+  _fetchUserDetails()async{
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    String? name = await MyUtils.getSharedPreferences("name");
+    String? email = await MyUtils.getSharedPreferences("email");
 
-  //   String? userId = await MyUtils.getSharedPreferences("user_id");
-  //   var data = {"user": userId.toString()};
+    userIdStr=userId??"";
+    nameStr=name??"NA";
+    emailIdStr=email??"";
 
-  //   print(data.toString());
-  //   var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
-  //   print(requestModel);
-
-  //   ApiBaseHelper helper = ApiBaseHelper();
-  //   var response =
-  //       await helper.postAPI('product/get-reviews', , context);
-
-  //   setState(() {
-  //     isLoading = false;
-  //   });
-
-  //   var responseJSON = json.decode(response.toString());
-  //   print(response.toString());
-
-  //   addressList = responseJSON["data"]["data"];
-
-  //   if (addressList.length != 0) {
-  //     selectedAddressID = addressList[0]["_id"].toString();
-  //   }
-
-  //   setState(() {});
-  // }
-
+    fetchMyReviews();
+  }
   fetchMyReviews() async {
     setState(() {
       isLoading = true;
     });
 
-    String? userId = await MyUtils.getSharedPreferences("user_id");
+
 
     // Create the data object with the userId
-    var data = {"user": userId.toString()};
+    var data = {"user_id": userIdStr};
 
     // Encode the data object into a Base64 string
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
@@ -304,5 +259,18 @@ class _MyHomePageState extends State<MyReviewScreen> {
     reviewList = responseJSON["data"];
 
     setState(() {});
+  }
+  String formatDate(String dateStr) {
+    try {
+      // Input format -> 28/03/2025, 17:48:02
+      final inputFormat = DateFormat("dd/MM/yyyy, HH:mm:ss");
+      final dateTime = inputFormat.parse(dateStr);
+
+      // Output format -> dd MMM, yyyy hh:mm a
+      final outputFormat = DateFormat("dd MMM, yyyy hh:mm a");
+      return outputFormat.format(dateTime);
+    } catch (e) {
+      return dateStr; // अगर parsing fail हो जाए तो original string return
+    }
   }
 }

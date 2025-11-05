@@ -1,8 +1,3 @@
-
-
-
-
-
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -30,18 +25,15 @@ class _MyHomePageState extends State<CartScreen> {
   int selectedIndex = 0;
   int selectedSortIndex = 0;
   final List<String> tabs = ["Category", "Brand"];
-
   double subTotalAmount=0;
   List<bool> categoryCheckList=[false,false,false,false];
   List<bool> brandCheckList=[false,false,false,false];
-
   List<String> categoryList=[
     "All Categories (390)",
     "Health & Beauty (195)",
     "Health Care (195)",
     "Personal Care (0)"
   ];
-
   List<String> brandList=[
     "Auromere",
     "Thorne",
@@ -54,14 +46,9 @@ class _MyHomePageState extends State<CartScreen> {
     "Low to High",
     "Highly Rated"
   ];
-
   bool isLoading=false;
   List<dynamic> cartList=[];
-
-
   List<bool> cartSelectedItems=[];
-
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -139,10 +126,7 @@ class _MyHomePageState extends State<CartScreen> {
                 ),
               ),
             ),
-
             SizedBox(height: 16),
-
-
             Expanded(child:
             isLoading?
 
@@ -151,8 +135,6 @@ class _MyHomePageState extends State<CartScreen> {
                 ):
 
                 cartList.length==0?
-
-
             Center(
               child: Container(
                 child: Column(
@@ -201,11 +183,6 @@ class _MyHomePageState extends State<CartScreen> {
                 ),
               ),
             ):
-
-
-
-
-
             ListView(
               padding: EdgeInsets.symmetric(horizontal: 12),
               children: [
@@ -291,6 +268,13 @@ class _MyHomePageState extends State<CartScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     itemBuilder: (BuildContext context,int pos)
                 {
+
+                  String cartId=cartList[pos]['_id']?.toString()??"";
+                  int maxOrderQuantity=cartList[pos]['productDetails']['maxOrderQuantity']??0;
+                  int currentQuantity=cartList[pos]["quantity"]??0;
+                  int stock=cartList[pos]['productDetails']['stock']??0;
+
+
                   return Column(
                     children: [
 
@@ -330,7 +314,6 @@ class _MyHomePageState extends State<CartScreen> {
 
                                   ),
                                 ),
-
                                 GestureDetector(
                                     onTap: (){
 
@@ -379,8 +362,6 @@ class _MyHomePageState extends State<CartScreen> {
 
 
                                 ),
-
-
                               ],
                             ),
 
@@ -407,7 +388,16 @@ class _MyHomePageState extends State<CartScreen> {
                                       ),
 
 
-                                      Image.asset("assets/delete_ic.png",width: 14.42,height: 18.14)
+                                      InkWell(
+                                        onTap: (){
+                                          if(cartId.isNotEmpty){
+                                            _modelDeleteConfirmation(context, cartId);
+                                          }
+
+                                        },
+                                        child: Image.asset("assets/delete_ic.png",width: 14.42,height: 18.14),
+                                      ),
+
 
 
 
@@ -415,18 +405,13 @@ class _MyHomePageState extends State<CartScreen> {
 
                                     ],
                                   ),
-
                                   SizedBox(height: 6),
-
                                   Text("Brand: "+cartList[pos]["productDetails"]["brand_name"],
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFFA3A3A3),
                                       )),
-
                                   SizedBox(height: 6),
-
-
                                   Row(
                                     children: [
                                       Text("\$"+cartList[pos]["productDetails"]["price"].toString(),
@@ -440,39 +425,71 @@ class _MyHomePageState extends State<CartScreen> {
 
                                       Spacer(),
 
-
-                               /*       Container(
-                                        width: 49,
-                                        height: 25,
-                                        decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(40),
-                                            color: Color(0xFFF8B84E)
-                                        ),
-
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-
-                                            Text("4.5",
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          if (currentQuantity > 1)
+                                            GestureDetector(
+                                              onTap: () {
+                                                updateCartProduct(cartList[pos]["productId"].toString(), false);
+                                              },
+                                              child: Container(
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.red, // Red circle background
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                padding: const EdgeInsets.all(6),
+                                                child: Image.asset(
+                                                  "assets/minus_ic.png",
+                                                  width: 11,
+                                                  height: 11,
+                                                  color: Colors.white, // white icon inside red circle
+                                                ),
+                                              ),
+                                            ),
+                                          SizedBox(width: 5,),
+                                          Container(
+                                            //width: 68,
+                                            height: 26,
+                                            padding: EdgeInsets.symmetric(horizontal: 10),
+                                            decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(30),
+                                                color: Color(0xFFF5F5F5)
+                                            ),
+                                            child: Center(child: Text(cartList[pos]["quantity"].toString(),
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                )),
+                                                  color: Colors.black,
+                                                )),),
 
-                                            SizedBox(width: 2),
+                                          ),
+                                          SizedBox(width: 5,),
+                                          if (stock > currentQuantity && currentQuantity < maxOrderQuantity)
+                                            GestureDetector(
+                                              onTap: () {
+                                                updateCartProduct(cartList[pos]["productId"].toString(), true);
+                                              },
+                                              child: Container(
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.green, // Green circle background
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                padding: const EdgeInsets.all(6),
+                                                child: Image.asset(
+                                                  "assets/plus_ic.png",
+                                                  width: 11,
+                                                  height: 11,
+                                                  color: Colors.white, // white icon inside green circle
+                                                ),
+                                              ),
+                                            ),
 
-                                            Icon(Icons.star,color: Colors.white,size: 12,)
-
-
-                                          ],
-                                        ),
+                                        ],
                                       ),
 
-                                      Spacer(),*/
 
-
-                                      Container(
+                                     /* Container(
                                         //width: 68,
                                         height: 26,
                                         padding: EdgeInsets.symmetric(horizontal: 10),
@@ -485,16 +502,35 @@ class _MyHomePageState extends State<CartScreen> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
 
+                                           *//* currentQuantity>1?
                                             GestureDetector(
                                               onTap:(){
-
                                                 updateCartProduct(cartList[pos]["productId"].toString(), false);
-                                      },
+                                              },
                                               child: Padding(
                                                 padding: const EdgeInsets.all(8.0),
                                                 child: Image.asset("assets/minus_ic.png",width: 9,height: 9,),
                                               ),
-                                            ),
+                                            ):Container(),*//*
+                                            if (currentQuantity > 1)
+                                              GestureDetector(
+                                                onTap: () {
+                                                  updateCartProduct(cartList[pos]["productId"].toString(), false);
+                                                },
+                                                child: Container(
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.red, // Red circle background
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Image.asset(
+                                                    "assets/minus_ic.png",
+                                                    width: 9,
+                                                    height: 9,
+                                                    color: Colors.white, // white icon inside red circle
+                                                  ),
+                                                ),
+                                              ),
 
                                             Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -506,23 +542,40 @@ class _MyHomePageState extends State<CartScreen> {
                                                   )),
                                             ),
 
+                                          *//*  stock>currentQuantity&&currentQuantity<maxOrderQuantity?
                                             GestureDetector(
                                               onTap:(){
-
                                                 updateCartProduct(cartList[pos]["productId"].toString(), true);
                                               },
-
-
                                               child: Padding(
                                                 padding: const EdgeInsets.all(8.0),
                                                 child: Image.asset("assets/plus_ic.png",width: 9,height: 9,),
                                               ),
-                                            ),
+                                            ):Container(),*//*
+                                            if (stock > currentQuantity && currentQuantity < maxOrderQuantity)
+                                              GestureDetector(
+                                                onTap: () {
+                                                  updateCartProduct(cartList[pos]["productId"].toString(), true);
+                                                },
+                                                child: Container(
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.green, // Green circle background
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Image.asset(
+                                                    "assets/plus_ic.png",
+                                                    width: 9,
+                                                    height: 9,
+                                                    color: Colors.white, // white icon inside green circle
+                                                  ),
+                                                ),
+                                              ),
 
 
                                           ],
                                         ),
-                                      ),
+                                      ),*/
 
 
 
@@ -532,7 +585,6 @@ class _MyHomePageState extends State<CartScreen> {
 
                                     ],
                                   ),
-
                                   SizedBox(height: 15),
 
                                 ],
@@ -606,7 +658,9 @@ class _MyHomePageState extends State<CartScreen> {
 
 
                   ],
-                )
+                ),
+
+                SizedBox(height: 20,),
 
 
 
@@ -733,7 +787,6 @@ class _MyHomePageState extends State<CartScreen> {
       ),
     );
   }
-
   void allCategoryBottomSheet(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -855,7 +908,6 @@ class _MyHomePageState extends State<CartScreen> {
           }),
     );
   }
-
   void _modalBottomSheetFilterMenu(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -1115,8 +1167,6 @@ class _MyHomePageState extends State<CartScreen> {
           }),
     );
   }
-
-
   void _modalBottomSortFilterMenu(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -1234,7 +1284,6 @@ class _MyHomePageState extends State<CartScreen> {
           }),
     );
   }
-
   fetchCartItems(bool progressDialog) async {
 
     if(progressDialog)
@@ -1315,55 +1364,31 @@ class _MyHomePageState extends State<CartScreen> {
 
     setState(() {});
   }
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     fetchCartItems(false);
   }
-
-
   updateCartProduct(String productID,bool addMore) async {
 
     APIDialog.showAlertDialog(context, "Please wait...");
-
     String? userId=await MyUtils.getSharedPreferences("user_id");
-
-
-
-
     var data = {"productId": productID,"userId":userId.toString(),"quantity":addMore?1:-1};
-
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
-
     ApiBaseHelper helper = ApiBaseHelper();
     var response = await helper.postAPI('cart_management/addCart', requestModel, context);
-
-
     Navigator.pop(context);
-
-
-
     var responseJSON = json.decode(response.toString());
     print(response.toString());
     if (responseJSON['message'] == "Cart successfully added!") {
-
-   /*   Toast.show(responseJSON['message'],
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.green);*/
-
       fetchCartItems(true);
-
-
-
     }
     else
     {
-      Toast.show(responseJSON['message'],
+      Toast.show("${responseJSON['message'].toString()} Error: ${responseJSON['error'].toString()}",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
@@ -1372,8 +1397,6 @@ class _MyHomePageState extends State<CartScreen> {
 
     setState(() {});
   }
-
-
   placeOrder() async {
 
     APIDialog.showAlertDialog(context, "Please wait...");
@@ -1422,8 +1445,6 @@ class _MyHomePageState extends State<CartScreen> {
 
     setState(() {});
   }
-
-
   deleteCartProduct(String cartID) async {
 
     APIDialog.showAlertDialog(context, "Removing item...");
@@ -1472,5 +1493,140 @@ class _MyHomePageState extends State<CartScreen> {
 
     setState(() {});
   }
-
+  void _modelDeleteConfirmation(BuildContext context,String id) {
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                    bottomLeft: Radius.circular(15),
+                    bottomRight: Radius.circular(15)),
+                color: Colors.white,
+              ),
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 25),
+                  Row(
+                    children: [
+                      const Spacer(),
+                      GestureDetector(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                          },
+                          child: Image.asset(
+                            'assets/close_icc.png',
+                            width: 14,
+                            height: 14,
+                          )),
+                      const SizedBox(width: 20)
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Column(
+                    children: [
+                      Lottie.asset('assets/yoga.json', height: 120, width: 120),
+                      const SizedBox(height: 5),
+                      Text(
+                        "Are you sure?",
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontFamily: "Montserrat",
+                            fontWeight: FontWeight.w600,
+                            fontSize: 24),
+                      ),
+                      SizedBox(
+                        height: 18,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "You want to remove this item",
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: "Montserrat",
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(
+                    height: 35,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                          },
+                          child: Container(
+                            height: 50,
+                            margin: EdgeInsets.only(left: 16),
+                            padding: const EdgeInsets.only(left: 4, right: 4),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.rectangle,
+                                borderRadius: BorderRadius.circular(10),
+                                color: Color(0xFFE3E3E3)),
+                            child: Center(
+                              child: Text(
+                                "No",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Montserrat",
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        flex: 1,
+                        child: GestureDetector(
+                          onTap: () async {
+                            Navigator.of(ctx).pop();
+                            deleteCartProduct(id);
+                          },
+                          child: Container(
+                            height: 50,
+                            margin: EdgeInsets.only(right: 16),
+                            padding: const EdgeInsets.only(left: 4, right: 4),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.rectangle,
+                                borderRadius: BorderRadius.circular(10),
+                                color: AppTheme.darkBrown),
+                            child: Center(
+                              child: Text(
+                                "Yes",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Montserrat",
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          }),
+    );
+  }
 }

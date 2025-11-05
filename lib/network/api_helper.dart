@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
+import 'package:vedic_health/views/authentication/login_screen.dart';
 import '../utils/app_modal.dart';
 import '../views/login_screen.dart';
 import 'app_exceptions.dart';
@@ -50,6 +51,21 @@ class ApiBaseHelper {
       });
       log(response.body.toString());
       responseJson = _returnResponse2(response, context);
+    } on SocketException {
+      throw FetchDataException('No Internet connection');
+    }
+    return responseJson;
+  }
+  Future<dynamic> getAPIForNormalResponse(String url, BuildContext context) async {
+    print(_baseUrl + url + '  API CALLED');
+    var responseJson;
+    try {
+      final response = await http.get(Uri.parse(_baseUrl + url), headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      });
+      log(response.body.toString());
+      responseJson = _returnResponse(response, context);
     } on SocketException {
       throw FetchDataException('No Internet connection');
     }
@@ -176,7 +192,8 @@ class ApiBaseHelper {
         backgroundColor: Colors.blue);
     Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+        MaterialPageRoute(builder: (context) => VedicHealthLoginScreen()),
         (Route<dynamic> route) => false);
+
   }
 }

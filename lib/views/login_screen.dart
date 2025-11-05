@@ -70,12 +70,12 @@ getRemeberedPassword()async{
                 key: _formKey,
                 child: Column(
                   children: [
-                    const SizedBox(height: 45),
+                    const SizedBox(height: 20),
                     Center(
                       child: Image.asset(
                         'assets/vedic_health.png',
-                        width: 100,
-                        height: 100,
+                        width: 200,
+                        height: 150,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -338,7 +338,7 @@ getRemeberedPassword()async{
 
   String? emailValidator(String? value) {
     if (value!.isEmpty ||
-        !RegExp(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+        !RegExp(r"[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?")
             .hasMatch(value)) {
       return 'Email should be valid Email address.';
     }
@@ -409,6 +409,8 @@ getRemeberedPassword()async{
      }
       MyUtils.saveSharedPreferences(
           'name', responseJSON['data']['name'].toString());
+      MyUtils.saveSharedPreferences(
+          'email', responseJSON['data']['email'].toString());
       MyUtils.saveSharedPreferences(
           'user_id', responseJSON['data']['_id'].toString());
 
