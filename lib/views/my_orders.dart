@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../network/Utils.dart';
 import '../network/api_helper.dart';
+import '../widgets/notification_bar_widget.dart';
 
 const Map<String, Map<String, dynamic>> orderStatusMap = {
   'delivered': {
@@ -47,11 +48,15 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
 
   List<dynamic> allOrderDynamicList=[];
   List<dynamic> notShippedDynamicList=[];
+  List<dynamic> outForDeliveryDynamicList=[];
+  List<dynamic> deliveredDynamicList=[];
   List<dynamic> returnDynamicList=[];
   List<dynamic> cancelledDynamicList=[];
 
   List<orderListModel> allOrderList=[];
   List<orderListModel> notShippedList=[];
+  List<orderListModel> outForDeliveryList=[];
+  List<orderListModel> deliveredList=[];
   List<orderListModel> returnOrderList=[];
   List<orderListModel> cancelledOrderList=[];
 
@@ -66,6 +71,11 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
   _addFilterList(){
     filterList.add(orderFilterList("All Order", "all", true));
     filterList.add(orderFilterList("Not Yet Shipped", "not_shipped", false));
+    filterList.add(orderFilterList("Delivered", "order_delivered", false));
+
+    //filterList.add(orderFilterList("Out For Delivery", "order_shipped", false));
+
+
     filterList.add(orderFilterList("Return Orders", "return_orders", false));
     filterList.add(orderFilterList("Cancelled Orders", "cancelled_orders", false));
   }
@@ -103,6 +113,8 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
     allOrderDynamicList.clear();
     notShippedDynamicList.clear();
     notShippedList.clear();
+    outForDeliveryDynamicList.clear();
+    deliveredList.clear();
 
     allOrderDynamicList=(responseJSON['data'] as List?) ?? [];
     for(int i=0;i<allOrderDynamicList.length;i++){
@@ -145,12 +157,67 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
       String shippedDate=allOrderDynamicList[i]['deliveryDates']?['shippedDate']?.toString()??"";
       String outForDelivery=allOrderDynamicList[i]['deliveryDates']?['outForDeliveryDate']?.toString()??"";
       String deliveryDate=allOrderDynamicList[i]['deliveryDates']?['deliveredDate']?.toString()??"";
+
+      String orderDeliveryDate=allOrderDynamicList[i]['deliveryDates']?.toString()??"";
+      String orderPackDate=allOrderDynamicList[i]['orderPackDate']?.toString()??"";
+      String orderReadyDate=allOrderDynamicList[i]['orderReadyDate']?.toString()??"";
+      String pickupDoneDate=allOrderDynamicList[i]['pickupDoneDate']?.toString()??"";
+
+
+      String pickupType_Date=allOrderDynamicList[i]['pickupDate']?.toString()??"";
+
+
+      String orderStatus= allOrderDynamicList[i]['orderStatus']?.toString()??"";
       String statusKey="";
       String statusName="";
-
-
-
       if(status=="orderCanceled"){
+        statusName="Order Cancelled";
+        statusKey="order_cancelled";
+      }else if(orderStatus.isEmpty && pickupdate.isEmpty && shippedDate.isEmpty  && deliveryDate.isEmpty){
+        statusName="Order Placed";
+        statusKey="order_place";
+        notShippedList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        notShippedDynamicList.add(allOrderDynamicList[i]);
+      }
+      else if(orderStatus=='orderPacked'){
+        statusName="Order Pack";
+        statusKey="order_pack";
+        notShippedList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        notShippedDynamicList.add(allOrderDynamicList[i]);
+      }else if(orderStatus == 'orderReady'){
+        statusName="Order Ready";
+        statusKey="order_ready";
+        notShippedList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        notShippedDynamicList.add(allOrderDynamicList[i]);
+      }else if(orderStatus == 'orderPickedUp' && pickupType_Date.isNotEmpty){
+        statusName="Order Picked Up";
+        statusKey="order_pickedup";
+        deliveredList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        deliveredDynamicList.add(allOrderDynamicList[i]);
+      }else if(orderStatus == 'orderPickedUp' && pickupType_Date.isEmpty){
+        statusName="Order Picked Up";
+        statusKey="order_dispatch";
+      }else if(deliveryDate.isNotEmpty){
+        statusName="Order Delivered";
+        statusKey="order_delivered";
+        deliveredList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        deliveredDynamicList.add(allOrderDynamicList[i]);
+      }else if (pickupdate.isNotEmpty && shippedDate.isEmpty  && deliveryDate.isEmpty){
+        statusName="Order Dispatched";
+        statusKey="order_dispatch";
+      }else if (pickupdate.isNotEmpty && shippedDate.isNotEmpty  && deliveryDate.isEmpty){
+        statusName="Out For Delivery";
+        statusKey="order_ofd";
+      }
+
+
+
+      /*if(status=="orderCanceled"){
         statusName="Order Cancelled";
         statusKey="order_cancelled";
       }else if(pickupdate.isEmpty && shippedDate.isEmpty && deliveryDate.isEmpty ){
@@ -166,10 +233,18 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
       }else if(pickupdate.isNotEmpty && shippedDate.isNotEmpty && deliveryDate.isEmpty){
         statusName="Out For Delivery";
         statusKey="order_shipped";
+        outForDeliveryList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        outForDeliveryDynamicList.add(allOrderDynamicList[i]);
+
       }else if(pickupdate.isNotEmpty && shippedDate.isNotEmpty && deliveryDate.isNotEmpty){
         statusName="Order Delivered";
         statusKey="order_delivered";
-      }
+
+        deliveredList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
+            discountAmount, grandTotal, status, odSeriesList,pickupdate,shippedDate,deliveryDate,statusKey,statusName));
+        deliveredDynamicList.add(allOrderDynamicList[i]);
+      }*/
 
 
       allOrderList.add(orderListModel(orderId, invoiceNo, totalAmount, deliveryCharge,
@@ -289,8 +364,6 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
     print("Cancelled Orders:${response.toString()}");
     cancelledOrderList.clear();
     cancelledDynamicList.clear();
-
-
     cancelledDynamicList=(responseJSON['data'] as List?) ?? [];
     for(int i=0;i<cancelledDynamicList.length;i++){
       String orderId=cancelledDynamicList[i]['_id']?.toString()??"";
@@ -338,17 +411,16 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
       isCancelledLoading = false;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: isLoading
             ? Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  NotificationBarWidget(),
                   // App Bar
                   Card(
                     elevation: 2,
@@ -377,7 +449,7 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                               Navigator.pop(context);
                             },
                             child: const Icon(Icons.arrow_back_ios_new_sharp,
-                                size: 17, color: Colors.black),
+                                size: 24, color: Colors.black),
                           ),
                           const Expanded(
                             child: Center(
@@ -519,7 +591,447 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                   child: Stack(
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Order ID: $orderId',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+
+                                            ListView.builder(
+                                                itemCount: orderItem.length,
+                                                physics: NeverScrollableScrollPhysics(),
+                                                shrinkWrap: true,
+                                                itemBuilder: (itemContext,itemIndex){
+                                                  String productName=orderItem[itemIndex].productName;
+                                                  String productImage=orderItem[itemIndex].productImage;
+                                                  String finalImageUrl="";
+                                                  String quantitiy=orderItem[itemIndex].quantity;
+                                                  if(productImage.isNotEmpty){
+                                                    finalImageUrl=AppConstant.appBaseURL+productImage;
+                                                  }
+                                                  return Row(
+                                                    crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16), // rounded corners
+                                                        child: CachedNetworkImage(
+                                                          height: 80,
+                                                          width: 80,
+                                                          imageUrl: finalImageUrl,
+                                                          fit: BoxFit.cover,
+                                                          placeholder: (context, url) => Container(
+                                                            color: Colors.grey[200],
+                                                            child: const Center(
+                                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                                            ),
+                                                          ),
+                                                          errorWidget: (context, url, error) =>
+                                                          const Icon(Icons.error, color: Colors.red),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                          CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              productName,
+                                                              style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            Text(
+                                                              "Quantity: $quantitiy",
+                                                              style: const TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            if (orderStatusKey == 'order_delivered')
+                                                              Column(
+                                                                children: [
+                                                                  const SizedBox(height: 4),
+                                                                  GestureDetector(
+                                                                    onTap: () {
+                                                                      // Handle rate product
+                                                                    },
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                      MainAxisSize.min,
+                                                                      children: [
+                                                                        const Text(
+                                                                          'Rate this product',
+                                                                          style: TextStyle(
+                                                                              fontSize: 14),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width: 4),
+                                                                        Row(
+                                                                          children:
+                                                                          List.generate(5,
+                                                                                  (index) {
+                                                                                return const Icon(
+                                                                                  Icons.star_border,
+                                                                                  size: 18,
+                                                                                  color:
+                                                                                  Colors.amber,
+                                                                                );
+                                                                              }),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                }),
+
+                                            Text(
+                                              '\$$orderTotalAmount',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+
+                                          ],
+                                        ),
+                                      ),
+                                      // Status Label
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4, horizontal: 8),
+                                          decoration: BoxDecoration(
+                                            color: statusColor,
+                                            borderRadius: const BorderRadius.only(
+                                              topRight: Radius.circular(8),
+                                              bottomLeft: Radius.circular(8),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            orderStatusName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Arrow icon at center right
+                                      Positioned(
+                                        right: 16,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ):
+                        _selectedFilterKey=="order_shipped"?
+                        outForDeliveryList.isEmpty?
+                        Center(child: Padding(padding: EdgeInsets.all(16),
+                          child: Text("No order is out for delivery at the moment.",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey
+                            ),),
+
+                        ),):
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: outForDeliveryList.length,
+                            itemBuilder: (context, index) {
+                              var order=outForDeliveryList[index];
+                              String orderId=outForDeliveryList[index].orderId;
+                              String orderStatusName=outForDeliveryList[index].statusName;
+                              String orderStatusKey=outForDeliveryList[index].statusKey;
+                              String orderTotalAmount=outForDeliveryList[index].grandTotal;
+                              var statusLabel = orderStatusName;
+                              var statusColor = _findLabelColor(orderStatusKey);
+
+                              List<orderItemsSeries>orderItem=outForDeliveryList[index].orderItems;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          OrderDetailsScreen(order,false,false,returnDays),
+                                    ),
+                                  ).then((_) {
+                                    _fetchTheOrders(); // clear & clean syntax
+                                  });
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Order ID: $orderId',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            ListView.builder(
+                                                itemCount: orderItem.length,
+                                                physics: NeverScrollableScrollPhysics(),
+                                                shrinkWrap: true,
+                                                itemBuilder: (itemContext,itemIndex){
+                                                  String productName=orderItem[itemIndex].productName;
+                                                  String productImage=orderItem[itemIndex].productImage;
+                                                  String finalImageUrl="";
+                                                  String quantitiy=orderItem[itemIndex].quantity;
+                                                  if(productImage.isNotEmpty){
+                                                    finalImageUrl=AppConstant.appBaseURL+productImage;
+                                                  }
+                                                  return Row(
+                                                    crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16), // rounded corners
+                                                        child: CachedNetworkImage(
+                                                          height: 80,
+                                                          width: 80,
+                                                          imageUrl: finalImageUrl,
+                                                          fit: BoxFit.cover,
+                                                          placeholder: (context, url) => Container(
+                                                            color: Colors.grey[200],
+                                                            child: const Center(
+                                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                                            ),
+                                                          ),
+                                                          errorWidget: (context, url, error) =>
+                                                          const Icon(Icons.error, color: Colors.red),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                          CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              productName,
+                                                              style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            Text(
+                                                              "Quantity: $quantitiy",
+                                                              style: const TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            if (orderStatusKey == 'order_delivered')
+                                                              Column(
+                                                                children: [
+                                                                  const SizedBox(height: 4),
+                                                                  GestureDetector(
+                                                                    onTap: () {
+                                                                      // Handle rate product
+                                                                    },
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                      MainAxisSize.min,
+                                                                      children: [
+                                                                        const Text(
+                                                                          'Rate this product',
+                                                                          style: TextStyle(
+                                                                              fontSize: 14),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width: 4),
+                                                                        Row(
+                                                                          children:
+                                                                          List.generate(5,
+                                                                                  (index) {
+                                                                                return const Icon(
+                                                                                  Icons.star_border,
+                                                                                  size: 18,
+                                                                                  color:
+                                                                                  Colors.amber,
+                                                                                );
+                                                                              }),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                }),
+                                            const SizedBox(height: 4,),
+                                            Text(
+                                              '\$$orderTotalAmount',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+
+                                          ],
+                                        ),
+                                      ),
+                                      // Status Label
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4, horizontal: 8),
+                                          decoration: BoxDecoration(
+                                            color: statusColor,
+                                            borderRadius: const BorderRadius.only(
+                                              topRight: Radius.circular(8),
+                                              bottomLeft: Radius.circular(8),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            orderStatusName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Arrow icon at center right
+                                      Positioned(
+                                        right: 16,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ):
+                        _selectedFilterKey=="order_delivered"?
+                        deliveredList.isEmpty?
+                        Center(child: Padding(padding: EdgeInsets.all(16),
+                          child: Text("No delivered order found at the moment.",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey
+                            ),),
+
+                        ),):
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: deliveredList.length,
+                            itemBuilder: (context, index) {
+                              var order=deliveredList[index];
+                              String orderId=deliveredList[index].orderId;
+                              String orderStatusName=deliveredList[index].statusName;
+                              String orderStatusKey=deliveredList[index].statusKey;
+                              String orderTotalAmount=deliveredList[index].grandTotal;
+                              var statusLabel = orderStatusName;
+                              var statusColor = _findLabelColor(orderStatusKey);
+
+                              List<orderItemsSeries>orderItem=deliveredList[index].orderItems;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          OrderDetailsScreen(order,false,false,returnDays),
+                                    ),
+                                  ).then((_) {
+                                    _fetchTheOrders(); // clear & clean syntax
+                                  });
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
@@ -739,7 +1251,7 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                       child: Stack(
                                         children: [
                                           Padding(
-                                            padding: const EdgeInsets.all(16),
+                                            padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
@@ -961,7 +1473,7 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                                 child: Stack(
                                                   children: [
                                                     Padding(
-                                                      padding: const EdgeInsets.all(16),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
                                                       child: Column(
                                                         crossAxisAlignment: CrossAxisAlignment.start,
                                                         children: [
@@ -1183,7 +1695,7 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                                     child: Stack(
                                                       children: [
                                                         Padding(
-                                                          padding: const EdgeInsets.all(16),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 32),
                                                           child: Column(
                                                             crossAxisAlignment: CrossAxisAlignment.start,
                                                             children: [
@@ -1350,24 +1862,31 @@ class _MyOrdersScreen extends State<MyOrdersScreen> {
                                           :Container(),
                 ],
               ),
-      ),
-    );
+      );
   }
   _findLabelColor(String key){
-    var color=Colors.green;
-    if(key=="order_pack"){
-      color=Colors.cyan;
-    }else if(key=="order_pickup"){
+    var color=Colors.grey;
+    if(key == 'order_place'){
+      color = Colors.indigo;
+    } else if(key=="order_pack"){
+      color=Colors.amber;
+    } else if(key=="order_ready"){
+      color=Colors.lightGreen;
+    }else if(key=="order_delivered" || key == 'order_pickedup'){
+      color=Colors.green;
+    }else if(key=="order_cancelled"){
+      color=Colors.red;
+    }else if(key=="order_return"){
+      color=Colors.blueGrey;
+    }else if (key == 'order_dispatch'){
+      color = Colors.purple;
+    }else if (key == 'order_ofd'){
+      color = Colors.orange;
+    }/*else if(key=="order_pickup"){
       color=Colors.amber;
     }else if(key=="order_shipped"){
       color=Colors.orange;
-    }else if(key=="order_delivered"){
-      color=Colors.green;
-    }else if(key=="order_return"){
-      color=Colors.blueGrey;
-    }else if(key=="order_cancelled"){
-      color=Colors.red;
-    }
+    }*/
     return color;
   }
 }

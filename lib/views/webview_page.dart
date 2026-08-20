@@ -86,7 +86,7 @@ class _WebviewPageState extends State<WebviewPage> {
           backgroundColor: AppTheme.themeColor,
           leading: IconButton(
             icon:
-                const Icon(Icons.arrow_back_ios_new_sharp, color: Colors.black),
+                const Icon(Icons.arrow_back_ios_new_sharp, color: Colors.black,size: 24,),
             onPressed: () => backIOS(),
           ),
           title: RichText(

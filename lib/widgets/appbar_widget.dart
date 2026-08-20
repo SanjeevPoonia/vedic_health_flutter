@@ -29,7 +29,7 @@ class AppBarWidget extends StatelessWidget
                   Navigator.pop(context);
 
                 },
-                child:Icon(Icons.arrow_back_ios_new_sharp,size: 17)),
+                child:Icon(Icons.arrow_back_ios_new_sharp,size: 24)),
 
 
             Text(title,

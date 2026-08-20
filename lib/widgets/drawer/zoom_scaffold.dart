@@ -88,7 +88,7 @@ class _ZoomScaffoldState extends State<ZoomScaffold>
         },
             child:
 
-            Image.asset('assets/ham3.png',width: 22,height: 22,
+            Image.asset('assets/ham3.png',width: 24,height: 24,
             )),
 
 
@@ -99,16 +99,12 @@ class _ZoomScaffoldState extends State<ZoomScaffold>
               color: Colors.black,
             )),
 
-                        GestureDetector(
-                            onTap: (){
-                              Navigator.push(context, MaterialPageRoute(builder: (context)=>CartScreen()));
-
-
-                            },
-                            child: Image.asset("assets/cart_bag.png",width: 39,height: 39)
-                        )
-
-
+        GestureDetector(
+            onTap: (){
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>CartScreen()));
+            },
+            child: Image.asset("assets/cart_bag.png",width: 39,height: 39)
+        )
 
 
                       ]))),

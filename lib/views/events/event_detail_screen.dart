@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_html/flutter_html.dart';
 
 import '../../utils/app_theme.dart';
+import '../../widgets/notification_bar_widget.dart';
 import '../word_webview_screen.dart';
 class EventDetailScreen extends StatefulWidget {
   String eventId;
@@ -51,20 +52,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   int maxTicket=0;
   bool isRsvp=false;
+  int isExpired=0;
+  bool isFullyBooked=false;
 
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return Stack(
+    return Column(
       children: [
-        SafeArea(
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SingleChildScrollView(
-              child: Stack(
-                children: [
-                  /// Top Image
-                  /*SizedBox(
+        NotificationBarWidget(),
+        Expanded(child: Stack(
+          children: [
+            Scaffold(
+              backgroundColor: Colors.white,
+              body: SingleChildScrollView(
+                child: Stack(
+                  children: [
+                    /// Top Image
+                    /*SizedBox(
                 height: 250,
                 width: double.infinity,
                 child: Image.asset(
@@ -72,237 +77,257 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   fit: BoxFit.cover,
                 ),
               ),*/
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(0),
-                    child: CachedNetworkImage(
-                      imageUrl: eventImageFile,
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(0),
+                      child: CachedNetworkImage(
+                        imageUrl: eventImageFile,
                         height: 250,
                         width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 250,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 250,
+                          width: double.infinity,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 250,
-                        width: double.infinity,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: _circleIconButton(
+                        icon: Icons.arrow_back_ios_new,
+                        onTap: () => Navigator.pop(context),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: _circleIconButton(
-                      icon: Icons.arrow_back_ios_new,
-                      onTap: () => Navigator.pop(context),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: _circleIconButton(
+                        icon: Icons.share_outlined,
+                        onTap: () {
+                          _showShareOptions(context, widget.eventId);
+                        },
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: _circleIconButton(
-                      icon: Icons.share_outlined,
-                      onTap: () {
-                        _showShareOptions(context, widget.eventId);
-                      },
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.only(top: 220),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          //here
-                          Text(
-                            eventTitle,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                    Container(
+                      margin: const EdgeInsets.only(top: 220),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            //here
+                            Text(
+                              eventTitle,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                              textAlign: TextAlign.left,
                             ),
-                            textAlign: TextAlign.left,
-                          ),
-                          const SizedBox(height: 8),
-                          Html(
-                            data: speakerDescription,
-                            style: {
-                              "body": Style(
-                                fontSize: FontSize(14),
-                                color: Colors.black54,
-                              ),
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Date & Location",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                            const SizedBox(height: 8),
+                            Html(
+                              data: speakerDescription,
+                              style: {
+                                "body": Style(
+                                  fontSize: FontSize(14),
+                                  color: Colors.black54,
                                 ),
-                              ),
-                              if(latitude.isNotEmpty&&longitude.isNotEmpty)
-                                InkWell(
-                                  onTap: (){
-                                    openMap(latitude, longitude);
-                                  },
-                                  child:Row(
-                                    children: [
-                                      Icon(Icons.directions, color: Colors.blue),
-                                      SizedBox(
-                                        width: 4,
-                                      ),
-                                      Text(
-                                        "View Location",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.w500,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                      ),
-                                    ],
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Date & Location",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
                                   ),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            eventDateTimeAddress,
-                            style: const TextStyle(fontSize: 14, color: Colors.black87),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            "About The Event",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          RichText(
-                            text:  TextSpan(
-                              style: TextStyle(fontSize: 15, color: Colors.black),
-                              children: [
-                                const TextSpan(
-                                  text: "Host: ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: eventHost,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
+                                if(latitude.isNotEmpty&&longitude.isNotEmpty)
+                                  InkWell(
+                                    onTap: (){
+                                      openMap(latitude, longitude);
+                                    },
+                                    child:Row(
+                                      children: [
+                                        Icon(Icons.directions, color: Colors.blue),
+                                        SizedBox(
+                                          width: 4,
+                                        ),
+                                        Text(
+                                          "View Location",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.w500,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          RichText(
-                            text:  TextSpan(
-                              style: const TextStyle(fontSize: 15, color: Colors.black),
-                              children: [
-                                const TextSpan(
-                                  text: "Format: ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: eventFormat,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ],
+                            const SizedBox(height: 8),
+                            Text(
+                              eventDateTimeAddress,
+                              style: const TextStyle(fontSize: 14, color: Colors.black87),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          RichText(
-                            text:  TextSpan(
-                              style: const TextStyle(fontSize: 15, color: Colors.black),
-                              children: [
-                                const TextSpan(
-                                  text: "Cost: ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: "\$$eventPrice",
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            "Description",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Html(
-                            data: eventDescription,
-                            style: {
-                              "body": Style(
-                                fontSize: FontSize(14),
-                                color: Colors.black54,
+                            const SizedBox(height: 24),
+                            const Text(
+                              "About The Event",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
-                            },
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 8),
+                            RichText(
+                              text:  TextSpan(
+                                style: TextStyle(fontSize: 15, color: Colors.black),
+                                children: [
+                                  const TextSpan(
+                                    text: "Host: ",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  TextSpan(
+                                    text: eventHost,
+                                    style: const TextStyle(color: Colors.black87),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            RichText(
+                              text:  TextSpan(
+                                style: const TextStyle(fontSize: 15, color: Colors.black),
+                                children: [
+                                  const TextSpan(
+                                    text: "Format: ",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  TextSpan(
+                                    text: eventFormat,
+                                    style: const TextStyle(color: Colors.black87),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            RichText(
+                              text:  TextSpan(
+                                style: const TextStyle(fontSize: 15, color: Colors.black),
+                                children: [
+                                  const TextSpan(
+                                    text: "Cost: ",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  TextSpan(
+                                    text: "\$$eventPrice",
+                                    style: const TextStyle(color: Colors.black87),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              "Description",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Html(
+                              data: eventDescription,
+                              style: {
+                                "body": Style(
+                                  fontSize: FontSize(14),
+                                  color: Colors.black54,
+                                ),
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+
+              /// Sticky Bottom Button
+              bottomNavigationBar: isLoading?Container():Padding(
+                padding:  EdgeInsets.all(14),
+                child: isFullyBooked?ElevatedButton(
+                  onPressed: () {
+
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9F9E9D),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ],
+                  child:  Text(
+                    "Fully Booked",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ):ElevatedButton(
+                  onPressed: () {
+                    if(isExpired==0) {
+                      isRsvp ? _showBookBottomDialogRSVP(context) :
+                      _showBookBottomDialog(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isExpired==0?const Color(0xFFB65303):const Color(0xFF9F9E9D),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child:  Text(
+                    isExpired==0?"Register":"Event Expired",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ),
 
-            /// Sticky Bottom Button
-            bottomNavigationBar: isLoading?Container():Padding(
-              padding:  EdgeInsets.all(14),
-              child: ElevatedButton(
-                onPressed: () {
-                  isRsvp?_showBookBottomDialogRSVP(context):
-                  _showBookBottomDialog(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB65303),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            if (isLoading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.white,
+                  child:  Center(
+                    child: Loader(),
                   ),
                 ),
-                child: const Text(
-                  "Register",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
               ),
-            ),
-          ),
-        ),
-        if (isLoading)
-          Positioned.fill(
-            child: Container(
-              color: Colors.white,
-              child:  Center(
-                child: Loader(),
-              ),
-            ),
-          ),
+          ],
+        ))
       ],
     );
   }
@@ -384,7 +409,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         eventFormat=event['format']?.toString()??"";
         eventPrice=event['Price']?.toString()??"";
         speakerDescription=event['speakerdescription']?.toString()??"";
-        maxTicket=event['max_tickets']??1;
+        maxTicket=event['maxTicketsPerUser']??1;
+
+        isExpired=event['is_expired']??0;
+        isFullyBooked=event["isFullyBooked"]??false;
 
 
 
@@ -762,7 +790,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             )),
 
                       ],
-                    ):Column(
+                    ):
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Promo Code",

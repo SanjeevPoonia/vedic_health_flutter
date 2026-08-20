@@ -18,10 +18,13 @@ import 'package:vedic_health/views/word_webview_screen.dart';
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+import '../widgets/notification_bar_widget.dart';
+import 'package:vedic_health/utils/validators.dart';
 
 class AddressScreen extends StatefulWidget {
   final List<String> cartIDs;
-  AddressScreen(this.cartIDs);
+  String subTotalAmount;
+  AddressScreen(this.cartIDs,this.subTotalAmount);
   _MyHomePageState createState() => _MyHomePageState();
 }
 
@@ -35,13 +38,12 @@ class _MyHomePageState extends State<AddressScreen> {
   var addressLine1Controller = TextEditingController();
   var addressLine2Controller = TextEditingController();
   bool addressLoader = false;
-  String selectedAddressID = "";
-  final List<String> tabs = ["Category", "Brand"];
 
+  final List<String> tabs = ["Category", "Brand"];
   List<bool> categoryCheckList = [false, false, false, false];
   List<bool> brandCheckList = [false, false, false, false];
   int selectedAddressIndex = 9999;
-
+  String selectedAddressID = "";
   List<String> categoryList = [
     "All Categories (390)",
     "Health & Beauty (195)",
@@ -49,7 +51,6 @@ class _MyHomePageState extends State<AddressScreen> {
     "Personal Care (0)"
   ];
   int selectedTab = 1;
-
   List<String> brandList = [
     "Auromere",
     "Thorne",
@@ -63,25 +64,41 @@ class _MyHomePageState extends State<AddressScreen> {
     "Highly Rated"
   ];
   double shippingCost = 0;
-
   int selectedRadioButton = 0;
-
   bool checkToggle = false;
-
   bool isLoading = false;
   List<dynamic> addressList = [];
   List<dynamic> centersList = [];
-
   var couponController = TextEditingController();
+  double subTotal=0.0;
+  double discount=0.0;
+  double deliveryCharges=0.0;
+  double grandTotal=0.0;
+  bool isCoupanApplied=false;
+  String coupanCode="";
+  String coupanId="";
+  String coupanType="";
+  String coupanValue="";
+  String maxCoupanValue="";
+  String coupanTitle="";
+
+
+
+  var cityController = TextEditingController();
+  var stateController = TextEditingController();
+  var zipcodeController = TextEditingController();
+  var countryController = TextEditingController();
+
+  bool isRefundPolicyAccepted = false;
 
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             Card(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -107,7 +124,7 @@ class _MyHomePageState extends State<AddressScreen> {
                           Navigator.pop(context);
                         },
                         child: Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black)),
+                            size: 24, color: Colors.black)),
                     Expanded(
                       child: Center(
                         child: Padding(
@@ -123,11 +140,8 @@ class _MyHomePageState extends State<AddressScreen> {
                     ),
 
 /*
-
                     GestureDetector(
                       onTap: (){
-
-
                       },
                       child: Image.asset("assets/cart_bag.png",width: 39,height: 39)
                     )
@@ -183,7 +197,6 @@ class _MyHomePageState extends State<AddressScreen> {
                                             width: 18,
                                             height: 18,
                                             // margin: EdgeInsets.only(right: 25),
-
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: Color(0xFF00DB00),
@@ -287,6 +300,14 @@ class _MyHomePageState extends State<AddressScreen> {
                                     onTap: () {
                                       setState(() {
                                         selectedTab = 1;
+                                        if(selectedShippingIndex!=9999){
+                                          deliveryCharges=double.tryParse(ratesList[selectedShippingIndex]["amount"])!;
+                                          calculateThePaymentDetails();
+                                        }else{
+                                          deliveryCharges=0.0;
+                                          calculateThePaymentDetails();
+                                        }
+
                                       });
                                     },
                                     child: Container(
@@ -320,6 +341,8 @@ class _MyHomePageState extends State<AddressScreen> {
                                     onTap: () {
                                       setState(() {
                                         selectedTab = 2;
+                                        deliveryCharges=0.0;
+                                        calculateThePaymentDetails();
                                       });
                                     },
                                     child: Container(
@@ -457,11 +480,9 @@ class _MyHomePageState extends State<AddressScreen> {
                                           DateTime? pickedDate =
                                               await showDatePicker(
                                                   context: context,
-                                                  initialDate: DateTime.now(),
-                                                  firstDate: DateTime.now(),
-                                                  //DateTime.now() - not to allow to choose before today.
+                                                  initialDate: DateTime.now().add(const Duration(days: 1)),
+                                                  firstDate: DateTime.now().add(const Duration(days: 1)),
                                                   lastDate: DateTime(2100));
-
                                           if (pickedDate != null) {
                                             String formattedDate =
                                                 DateFormat('yyyy-MM-dd')
@@ -513,9 +534,7 @@ class _MyHomePageState extends State<AddressScreen> {
                                                               0
                                                           ? GestureDetector(
                                                               onTap: () {
-                                                                print(
-                                                                    "Clicked");
-
+                                                                print("Clicked");
                                                                 setState(() {
                                                                   selectedRadioButton =
                                                                       0;
@@ -533,18 +552,18 @@ class _MyHomePageState extends State<AddressScreen> {
                                                                   .darkBrown),
                                                     ),
                                                     SizedBox(width: 10),
-                                                    Text(
+                                                    Expanded(flex:1,child: Text(
                                                         addressList.length == 0
                                                             ? "No address"
-                                                            : addressList[
-                                                                    selectedAddressIndex]
-                                                                ["name"],
+                                                            : addressList[selectedAddressIndex]["name"],
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                         style: TextStyle(
                                                           fontSize: 14,
                                                           fontWeight:
-                                                              FontWeight.w500,
+                                                          FontWeight.w500,
                                                           color: Colors.black,
-                                                        )),
+                                                        ))),
                                                   ],
                                                 ),
                                               ),
@@ -559,7 +578,6 @@ class _MyHomePageState extends State<AddressScreen> {
                                                           builder: (context) =>
                                                               SelectDeliveryAddressScreen(
                                                                   selectedAddressID)));
-
                                                   if (data != null) {
                                                     selectedAddressID =
                                                         data.toString();
@@ -825,19 +843,43 @@ class _MyHomePageState extends State<AddressScreen> {
                               ),
                               SizedBox(height: 15),
                               GestureDetector(
-                                onTap: () {
-                                  /*   if(couponController.text=="")
-                      {
-                        Toast.show("Coupon name cannot be empty !",
-                            duration: Toast.lengthLong,
-                            gravity: Toast.bottom,
-                            backgroundColor: Colors.red);
-                      }
-                      else
-                      {
-                        //applyCoupon();
-                      }
-*/
+                                onTap: () async {
+                                     if(couponController.text=="")
+                                        {
+                                          Toast.show("Coupon name cannot be empty !",
+                                              duration: Toast.lengthLong,
+                                              gravity: Toast.bottom,
+                                              backgroundColor: Colors.red);
+                                        } else
+                                        {
+                                          var result= await checkCoupanCode(couponController.text.toString());
+                                          isCoupanApplied=result['valid'];
+                                          if(isCoupanApplied){
+                                            coupanCode=result['promo_code'];
+                                            coupanId=result['id'];
+                                            coupanType=result['type'];
+                                            coupanValue=result['value'];
+                                            maxCoupanValue=result['max'];
+                                            coupanTitle=result['title'];
+                                            double maxAm=double.parse(maxCoupanValue);
+                                            double percent=double.parse(coupanValue);
+                                            double disAmount=0.0;
+                                            if(coupanType=="percentage"){
+                                              disAmount= subTotal * percent / 100;
+                                            }else{
+                                              disAmount=percent;
+                                            }
+                                            discount = (disAmount < maxAm ? disAmount : maxAm);
+                                            discount = double.parse(discount.toStringAsFixed(2));
+
+                                            setState(() {
+
+                                            });
+                                            calculateThePaymentDetails();
+                                          }
+
+
+                                        }
                                 },
                                 child: Container(
                                   height: 48,
@@ -865,57 +907,109 @@ class _MyHomePageState extends State<AddressScreen> {
                               ),
                             ],
                           ),
+
                           SizedBox(height: 21),
+                          Text("Payment Details",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              )),
+                          SizedBox(height: 10,),
+                          Row(
 
-/*
-                Text("Gift Card",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    )),
-
-                SizedBox(height: 14),
-
-
-                Row(
-                  children: [
-
-                    Expanded(
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                            color:  Colors.white,
-                            border: Border.all(color: Color(0xFFEBD8D8),width: 1),
-                            borderRadius:
-                            BorderRadius.circular(6)),
-                        child: TextFormField(
-                            style: const TextStyle(
-                              fontSize: 15.0,
-                              height: 1.6,
-                              color: Colors.black,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: '',
-                              contentPadding:
-                              EdgeInsets.only(left: 10,bottom: 5),
-                              fillColor: Colors.white,
-                              border: InputBorder.none,
-                              hintStyle: TextStyle(
-                                fontSize: 13.0,
-                                color: Colors.grey,
+                            children: [
+                              Expanded(
+                                flex:1,
+                                child: Text("Sub Total",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black,
+                                          fontWeight: FontWeight.w500
+                                      )),
                               ),
-                            )),
-                      ),
-                    ),
+                              SizedBox(width: 5,),
+                              Text("\$${widget.subTotalAmount}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                      fontWeight: FontWeight.w500
+                                  ))
 
+                            ],
+                          ),
+                          SizedBox(height: 10,),
+                          Row(
 
-                  ],
-                ),
+                            children: [
+                              Expanded(
+                                flex:1,
+                                child: Text("Discount",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                        fontWeight: FontWeight.w500
+                                    )),
+                              ),
+                              SizedBox(width: 5,),
+                              Text("\$$discount",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color:discount==0.0?Colors.black: Colors.green,
+                                      fontWeight: FontWeight.w500
+                                  ))
 
+                            ],
+                          ),
+                          SizedBox(height: 10,),
+                          Row(
 
-                SizedBox(height: 21),*/
+                            children: [
+                              Expanded(
+                                flex:1,
+                                child: Text("Shipping Charges",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                        fontWeight: FontWeight.w500
+                                    )),
+                              ),
+                              SizedBox(width: 5,),
+                              Text("\$$deliveryCharges",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500
+                                  ))
 
+                            ],
+                          ),
+                          SizedBox(height: 10,),
+                          Row(
+
+                            children: [
+                              Expanded(
+                                flex:1,
+                                child: Text("Grand Total",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w800
+                                    )),
+                              ),
+                              SizedBox(width: 5,),
+                              Text("\$$grandTotal",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w800
+                                  ))
+
+                            ],
+                          ),
+                          SizedBox(height: 20,),
+                          Divider(color: Colors.grey,height: 1,),
+                          SizedBox(height: 21),
                           Text("Billing Address",
                               style: TextStyle(
                                 fontSize: 15,
@@ -933,7 +1027,8 @@ class _MyHomePageState extends State<AddressScreen> {
 
                                     if (checkToggle &&
                                         addressList.length != 0) {
-                                      addressLine1Controller.text =
+                                      addressLine1Controller.text=addressList[selectedAddressIndex]["area"].toString();
+                                      /*addressLine1Controller.text =
                                           addressList[selectedAddressIndex]
                                                       ["area"]
                                                   .toString() +
@@ -952,9 +1047,17 @@ class _MyHomePageState extends State<AddressScreen> {
                                               "-" +
                                               addressList[selectedAddressIndex]
                                                       ["pincode"]
-                                                  .toString();
+                                                  .toString();*/
+                                      cityController.text=addressList[selectedAddressIndex]["city"].toString();
+                                      stateController.text=addressList[selectedAddressIndex]["state"].toString();
+                                      zipcodeController.text=addressList[selectedAddressIndex]["pincode"].toString();
+                                      countryController.text=addressList[selectedAddressIndex]["country"].toString();
                                     } else {
                                       addressLine1Controller.text = "";
+                                      cityController.text="";
+                                      stateController.text="";
+                                      zipcodeController.text="";
+                                      countryController.text="";
                                     }
                                   },
                                   child: checkToggle
@@ -1039,9 +1142,187 @@ class _MyHomePageState extends State<AddressScreen> {
                               ),
                             ],
                           ),
-                          SizedBox(height: 28),
+                          SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                          color: Color(0xFFEBD8D8), width: 1),
+                                      borderRadius: BorderRadius.circular(6)),
+                                  child: TextFormField(
+                                      style: const TextStyle(
+                                        fontSize: 15.0,
+                                        height: 1.6,
+                                        color: Colors.black,
+                                      ),
+                                      controller: cityController,
+                                      keyboardType: TextInputType.text,
+                                      decoration: InputDecoration(
+                                        hintText: 'City',
+                                        contentPadding: EdgeInsets.only(
+                                            left: 10, bottom: 5),
+                                        fillColor: Colors.white,
+                                        border: InputBorder.none,
+                                        hintStyle: TextStyle(
+                                          fontSize: 13.0,
+                                          color: Color(0xFFA0A0A0)
+                                              .withOpacity(0.92),
+                                        ),
+                                      )),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                          color: Color(0xFFEBD8D8), width: 1),
+                                      borderRadius: BorderRadius.circular(6)),
+                                  child: TextFormField(
+                                      style: const TextStyle(
+                                        fontSize: 15.0,
+                                        height: 1.6,
+                                        color: Colors.black,
+                                      ),
+                                      controller: stateController,
+                                      keyboardType: TextInputType.text,
+                                      decoration: InputDecoration(
+                                        hintText: 'State',
+                                        contentPadding: EdgeInsets.only(
+                                            left: 10, bottom: 5),
+                                        fillColor: Colors.white,
+                                        border: InputBorder.none,
+                                        hintStyle: TextStyle(
+                                          fontSize: 13.0,
+                                          color: Color(0xFFA0A0A0)
+                                              .withOpacity(0.92),
+                                        ),
+                                      )),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                          color: Color(0xFFEBD8D8), width: 1),
+                                      borderRadius: BorderRadius.circular(6)),
+                                  child: TextFormField(
+                                      style: const TextStyle(
+                                        fontSize: 15.0,
+                                        height: 1.6,
+                                        color: Colors.black,
+                                      ),
+                                      controller: zipcodeController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: InputDecoration(
+                                        hintText: 'Zip Code',
+                                        contentPadding: EdgeInsets.only(
+                                            left: 10, bottom: 5),
+                                        fillColor: Colors.white,
+                                        border: InputBorder.none,
+                                        hintStyle: TextStyle(
+                                          fontSize: 13.0,
+                                          color: Color(0xFFA0A0A0)
+                                              .withOpacity(0.92),
+                                        ),
+                                      )),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                          color: Color(0xFFEBD8D8), width: 1),
+                                      borderRadius: BorderRadius.circular(6)),
+                                  child: TextFormField(
+                                      style: const TextStyle(
+                                        fontSize: 15.0,
+                                        height: 1.6,
+                                        color: Colors.black,
+                                      ),
+                                      controller: countryController,
+                                      keyboardType: TextInputType.text,
+                                      decoration: InputDecoration(
+                                        hintText: 'Country',
+                                        contentPadding: EdgeInsets.only(
+                                            left: 10, bottom: 5),
+                                        fillColor: Colors.white,
+                                        border: InputBorder.none,
+                                        hintStyle: TextStyle(
+                                          fontSize: 13.0,
+                                          color: Color(0xFFA0A0A0)
+                                              .withOpacity(0.92),
+                                        ),
+                                      )),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 15),
                         ],
                       )),
+
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: isRefundPolicyAccepted,
+                  onChanged: (value) {
+                    setState(() {
+                      isRefundPolicyAccepted = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Wrap(
+                    children: [
+                      const Text(
+                        'I have read and agree to the ',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () => showRefundPolicyDialog(context),
+                        child: const Text(
+                          'Refund Policy',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10,),
+
             Container(
               height: 88,
               decoration: BoxDecoration(
@@ -1067,12 +1348,20 @@ class _MyHomePageState extends State<AddressScreen> {
                                   duration: Toast.lengthLong,
                                   gravity: Toast.bottom,
                                   backgroundColor: Colors.red);
-                            } else if (selectedShippingIndex == 9999) {
+                            }
+                            else if (selectedShippingIndex == 9999) {
                               Toast.show("Please select a shipping method!",
                                   duration: Toast.lengthLong,
                                   gravity: Toast.bottom,
                                   backgroundColor: Colors.red);
-                            } else {
+                            }
+                            else if(!isRefundPolicyAccepted){
+                              Toast.show("Please accept the Refund Policy before proceeding.",
+                                  duration: Toast.lengthLong,
+                                  gravity: Toast.bottom,
+                                  backgroundColor: Colors.red);
+                            }
+                            else {
                               placeOrder();
                             }
                           } else if (selectedTab == 2) {
@@ -1081,7 +1370,13 @@ class _MyHomePageState extends State<AddressScreen> {
                                   duration: Toast.lengthLong,
                                   gravity: Toast.bottom,
                                   backgroundColor: Colors.red);
-                            } else {
+                            } else if(!isRefundPolicyAccepted){
+                              Toast.show("Please accept the Refund Policy before proceeding.",
+                                  duration: Toast.lengthLong,
+                                  gravity: Toast.bottom,
+                                  backgroundColor: Colors.red);
+                            }
+                            else {
                               placeOrder();
                             }
                           }
@@ -1106,7 +1401,113 @@ class _MyHomePageState extends State<AddressScreen> {
             )
           ],
         ),
-      ),
+      );
+  }
+
+  void showRefundPolicyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.policy_outlined,
+                      color: Colors.blue,
+                      size: 28,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Refund Policy',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'At Vedic Health, we aim to ensure a smooth and transparent experience for our customers.',
+                          style: TextStyle(height: 1.5),
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Text(
+                          'Items That Cannot Be Returned',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        SizedBox(height: 8),
+
+                        Text(
+                          '• Opened or used products\n'
+                              '• Supplements or ingestible products with unsealed packaging\n'
+                              '• Items damaged due to improper handling by the customer\n'
+                              '• Products missing original packaging, invoice, or included accessories\n\n'
+                              'These restrictions exist for safety, hygiene, and compliance reasons.',
+                          style: TextStyle(height: 1.5),
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Text(
+                          'Refund Process',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        SizedBox(height: 8),
+
+                        Text(
+                          '• Refunds are processed after inspection and approval of returned items.\n'
+                              '• You will be notified if the return is accepted or rejected.\n'
+                              '• Approved refunds will be issued within 7–14 business days.\n'
+                              '• Refunds will be deposited to the original payment method only.',
+                          style: TextStyle(height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('I Understand'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1170,6 +1571,7 @@ class _MyHomePageState extends State<AddressScreen> {
                                 onTap: () {
                                   setModalState(() {
                                     selectedShippingIndex = pos;
+
                                   });
                                 },
                                 child: Container(
@@ -1221,11 +1623,14 @@ class _MyHomePageState extends State<AddressScreen> {
                     GestureDetector(
                       onTap: () {
                         if (selectedShippingIndex != 9999) {
-                          selectedShippingDrop =
-                              ratesList[selectedShippingIndex]["duration_terms"]
-                                  .toString();
+                          deliveryCharges=double.tryParse(ratesList[selectedShippingIndex]["amount"])!;
+                          selectedShippingDrop = ratesList[selectedShippingIndex]["duration_terms"].toString();
+                          calculateThePaymentDetails();
                           setState(() {});
                           Navigator.pop(context);
+                        }else{
+                          deliveryCharges=0.0;
+                          calculateThePaymentDetails();
                         }
                       },
                       child: Container(
@@ -1253,17 +1658,49 @@ class _MyHomePageState extends State<AddressScreen> {
       }),
     );
   }
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    subTotal=double.tryParse(widget.subTotalAmount)!;
     fetchAddress(true);
     fetchCenterManagement();
+    calculateThePaymentDetails();
   }
+  Future<Map<String, dynamic>> checkCoupanCode(String promoCode) async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    if (userId == null) {
+      return {'valid':false,'message':"User id not found"};
+    }
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "couponCode": promoCode,
+      "userId":userId, // Assuming default page number
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI(
+        'coupon/applyCoupon', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    Navigator.of(context).pop();
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==201){
+      var coupan=responseJSON['coupon'];
+      String id=coupan['_id']?.toString()??"";
+      String discountType=coupan['discountType']?.toString()??"";
+      String discountValue=coupan['discountValue']?.toString()??"";
+      String maxDiscount=coupan['maxDiscount']?.toString()??"";
+      String title=coupan['title']?.toString()??"";
+      return {'valid':true,'id':id,'type':discountType,'value':discountValue,'max':maxDiscount,'title':title,'promo_code':promoCode};
 
-  // Successurl
-  //http://vedic.qdegrees.com:3008/order-management/paymentSuccess/682dff96a56e642c84ea1a4f
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      return {'valid':false,'message':responseJSON['message']?.toString()??"Something went wrong! Please try again"};
+    }
+
+  }
   fetchAddress(bool firstLoad) async {
     if (firstLoad) {
       setState(() {
@@ -1316,7 +1753,6 @@ class _MyHomePageState extends State<AddressScreen> {
 
     setState(() {});
   }
-
   fetchCenterManagement() async {
     setState(() {
       isLoading = true;
@@ -1344,14 +1780,9 @@ class _MyHomePageState extends State<AddressScreen> {
 
     setState(() {});
   }
-
   placeOrder() async {
     APIDialog.showAlertDialog(context, "Placing order...");
-
     String? userId = await MyUtils.getSharedPreferences("user_id");
-
-   
-
     var data;
     if (selectedTab == 2) {
       data = {
@@ -1359,7 +1790,8 @@ class _MyHomePageState extends State<AddressScreen> {
         "userId": userId.toString(),
         "deliveryCharge": 0,
         "carrier": "",
-        "coupanId": "",
+        "coupanId": coupanCode,
+        //"coupanId": coupanId,
         "pickupDate": selectDOB.text.toString(),
         "addressId": addressList[selectedAddressIndex]["_id"].toString()
       };
@@ -1372,7 +1804,8 @@ class _MyHomePageState extends State<AddressScreen> {
         "userId": userId.toString(),
         "deliveryCharge": valueDelivery??int.tryParse(ratesList[selectedShippingIndex]["amount"]),
         "carrier": ratesList[selectedShippingIndex]["provider"],
-        "coupanId": "",
+        "coupanId": coupanCode,
+        //"coupanId": coupanId,
         "shippingId": ratesList[selectedShippingIndex]["object_id"].toString(),
         "addressId": addressList[selectedAddressIndex]["_id"].toString(),
         "billingAddress1":addressLine1Controller.text,
@@ -1416,52 +1849,30 @@ class _MyHomePageState extends State<AddressScreen> {
 
     setState(() {});
   }
-
   calculateShippingCharges() async {
     APIDialog.showAlertDialog(context, "Please wait...");
-
     String? userId = await MyUtils.getSharedPreferences("user_id");
-
     var data = {
       "from": centersList[0]["_id"].toString(),
       "to": addressList[selectedAddressIndex]["_id"].toString()
     };
-
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
-
     ApiBaseHelper helper = ApiBaseHelper();
     var response = await helper.postAPI(
         'order-management/getShippingCharge', requestModel, context);
-
     Navigator.pop(context);
-
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-
     ratesList = responseJSON["data"]["rates"];
-
-/*
-    if (responseJSON['message'] == "Order placed") {
-
-      Toast.show(responseJSON['message'],
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.green);
-
-    }
-    else
-    {
-      Toast.show(responseJSON['message'],
-          duration: Toast.lengthLong,
-          gravity: Toast.bottom,
-          backgroundColor: Colors.red);
-    }*/
-
+    ratesList.sort((a, b) {
+      double amountA = double.tryParse(a["amount"].toString()) ?? 0.0;
+      double amountB = double.tryParse(b["amount"].toString()) ?? 0.0;
+      return amountA.compareTo(amountB);
+    });
     setState(() {});
   }
-
   fetchOrderHistory(String url) async {
     APIDialog.showAlertDialog(context, "Please wait...");
 
@@ -1504,6 +1915,17 @@ class _MyHomePageState extends State<AddressScreen> {
 
     setState(() {});
   }
+
+  calculateThePaymentDetails(){
+    double tot=subTotal+deliveryCharges;
+    double tos=tot-discount;
+    grandTotal = double.parse(tos.toStringAsFixed(2));
+    setState(() {
+
+    });
+
+  }
+
 }
 
 class DateFieldWidget3 extends StatelessWidget {

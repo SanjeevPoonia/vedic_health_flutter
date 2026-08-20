@@ -2,24 +2,40 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:toast/toast.dart';
+import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_payment_screen.dart';
 
 import '../../network/Utils.dart';
+import '../../network/constants.dart';
+import '../../widgets/notification_bar_widget.dart';
+import '../home_screen.dart';
 import 'my_appointment_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RescheduleAppointment2 extends StatefulWidget {
   final List<Map<String, dynamic>> allServicesData;
   final String userId;
   final String appointmentId;
+  final String id;
+  final String centerId;
+  final String serviceId;
+  final String employeeId;
+  final String employeeName;
+  final String serviceName;
+  final String employeeProfileImage;
+  final String empUserId;
+  final DateTime selectedDate;
 
   const RescheduleAppointment2(
       {super.key,
       required this.allServicesData,
       required this.userId,
-      required this.appointmentId});
+      required this.appointmentId,
+        required this.id, required this.centerId,required this.serviceId,required this.employeeId,required this.serviceName, required this.employeeName,required this.employeeProfileImage,required this.empUserId,required this.selectedDate
+      });
 
   @override
   State<RescheduleAppointment2> createState() => _RescheduleAppointment2State();
@@ -28,18 +44,18 @@ class RescheduleAppointment2 extends StatefulWidget {
 class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
   DateTime? selectedDate;
   Map<String, int?> selectedSlots = {};
-
   bool isLoading = true;
-
   Map<String, dynamic> servicesWithSlots = {};
+
 
   @override
   void initState() {
     super.initState();
-    if (widget.allServicesData.isNotEmpty) {
-      selectedDate = widget.allServicesData[0]['date'];
-    }
-    fetchAvailableSlots();
+    selectedDate=widget.selectedDate;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchAvailableSlots();
+    });
+
   }
 
   Future<Map<String, dynamic>?> editAppointment(
@@ -92,14 +108,8 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
       fetchAvailableSlots();
     }
   }
-
   Future<void> fetchAvailableSlots() async {
-    if (widget.allServicesData.isEmpty) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
+
 
     setState(() {
       isLoading = true;
@@ -107,7 +117,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
     });
 
     try {
-      var slotsPayload = {
+      /*var slotsPayload = {
         "slotsPayload": widget.allServicesData.map((serviceData) {
           return {
             "serviceId": serviceData["serviceId"],
@@ -116,10 +126,20 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
             "date": DateFormat('yyyy-MM-dd').format(selectedDate!)
           };
         }).toList(),
+      };*/
+      var data = {
+        "slotsPayload": [
+          {
+            "serviceId": widget.serviceId,
+            "employeeId": widget.employeeId,
+            "userId": widget.empUserId,
+            "date": DateFormat('yyyy-MM-dd').format(selectedDate!),
+          }
+        ]
       };
 
       var requestModel = {
-        "data": base64.encode(utf8.encode(json.encode(slotsPayload)))
+        "data": base64.encode(utf8.encode(json.encode(data)))
       };
 
       ApiBaseHelper helper = ApiBaseHelper();
@@ -134,6 +154,19 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
       if (responseJSON["slots"] != null && responseJSON["slots"].isNotEmpty) {
         // Store the response data in the map
         for (var serviceSlot in responseJSON["slots"]) {
+          final uniqueKey = "${serviceSlot['serviceDetails']['service']['_id']}_${serviceSlot['employeeData']['_id']}";
+          servicesWithSlots[uniqueKey] = {
+            'slots': serviceSlot['slots'],
+            'employeeData': serviceSlot['employeeData'],
+            'serviceDetails': serviceSlot['serviceDetails'],
+            'reviews' : serviceSlot['reviews'],
+            'allServiceData': widget.allServicesData.firstWhere((element) =>
+            element['serviceId'] ==
+                serviceSlot['serviceDetails']['service']['_id'], orElse: () => {}),
+
+          };
+        }
+        /*for (var serviceSlot in responseJSON["slots"]) {
           final uniqueKey =
               "${serviceSlot['serviceDetails']['service']['_id']}_${serviceSlot['employeeData']['_id']}";
           servicesWithSlots[uniqueKey] = {
@@ -146,7 +179,8 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                     serviceSlot['serviceDetails']['service']['_id'],
                 orElse: () => {})
           };
-        }
+
+        }*/
       }
     } catch (e) {
       print("Error fetching slots: $e");
@@ -156,18 +190,17 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
       isLoading = false;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -187,7 +220,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -233,6 +266,20 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                 final employeeData = serviceData['employeeData'];
                 final serviceDetails = serviceData['serviceDetails'];
                 final slots = serviceData['slots'];
+                print("slots $slots");
+                final reviewData=serviceData['reviews'];
+                //double averageReview=reviewData['average']?['overall_review']??0.0;
+
+                double averageReview =
+                    (reviewData['average']?['overall_review'] as num?)?.toDouble() ?? 0.0;
+
+                String employeeFile=employeeData['userDetails']?['file']?.toString()??"";
+                String empProfileImage="";
+                if(employeeFile.isNotEmpty){
+                  empProfileImage="${AppConstant.appBaseURL}$employeeFile";
+                }
+
+                print(empProfileImage);
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -272,7 +319,9 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                   ),
                                   const SizedBox(height: 4),
                                   GestureDetector(
-                                    onTap: () => _pickDate(context),
+                                    onTap: () => {
+                                     // _pickDate(context)
+                                    },
                                     child: Text(
                                       selectedDate != null
                                           ? DateFormat('E, MMM dd, yyyy')
@@ -302,8 +351,21 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                           children: [
                             Row(
                               children: [
-                                NameAvatar(fullName:  employeeData["userDetails"]["name"] ??
-                                    "N/A",size: 70,),
+                                empProfileImage.isEmpty?
+                                NameAvatar(fullName: employeeData["userDetails"]["name"] ?? "N/A",size: 70,):
+                                ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: empProfileImage,
+                                    width: 70,
+                                    height: 70,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                                    errorWidget: (context, url, error) => NameAvatar(
+                                      fullName: employeeData["userDetails"]["name"] ?? "N/A",
+                                      size: 70,
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,30 +378,28 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                         fontSize: 17,
                                       ),
                                     ),
-                                    const Row(
-                                      children: [
-                                        Icon(Icons.star,
-                                            color: Colors.grey, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.grey, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.grey, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.grey, size: 18),
-                                        Icon(Icons.star,
-                                            color: Colors.grey, size: 18),
-                                        SizedBox(width: 5),
-                                        Text("(0)"),
-                                      ],
+                                    Row(
+                                      children: List.generate(5, (index) {
+
+                                        if (index < averageReview.floor()) {
+                                          return const Icon(Icons.star, color: Colors.amber, size: 18);
+                                        } else if (index < averageReview) {
+                                          return const Icon(Icons.star_half, color: Colors.amber, size: 18);
+                                        } else {
+                                          return const Icon(Icons.star_border, color: Colors.grey, size: 18);
+                                        }
+                                      })
+                                        ..add(const SizedBox(width: 5))
+                                        ..add( Text("($averageReview)")),
                                     ),
                                     const SizedBox(height: 5),
-                                    Text(
+                                    /*Text(
                                       "\$${serviceDetails['price']?.toDouble().toStringAsFixed(2) ?? "0.00"}",
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                       ),
-                                    ),
+                                    ),*/
                                   ],
                                 ),
                               ],
@@ -433,8 +493,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
+                              builder: (context) =>  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
                             ));
 
                       },
@@ -460,7 +519,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                     child: ElevatedButton(
                       onPressed: () async {
                         // Build appointments from selected slots
-                        List<Map<String, dynamic>> appointments = [];
+                        /*List<Map<String, dynamic>> appointments = [];
                         double totalPrice=0.0;
                         String? userId = await MyUtils.getSharedPreferences("user_id");
                         List<Map<String,dynamic>> selectedEmpList=[];
@@ -526,7 +585,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                           final result = await editAppointment(payload);
                           if (result != null) {
 
-                           /* List<String> appointIds=[(widget.appointmentId)];
+                            List<String> appointIds=[(widget.appointmentId)];
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -542,7 +601,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                   appointIds: appointIds,
                                 ),
                               ),
-                            );*/
+                            );
                             Toast.show(result['message']?.toString()??"Appointment Rescheduled Successfully.",duration: Toast.lengthLong,backgroundColor: Colors.green);
                             Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
@@ -564,7 +623,8 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
                                 content: Text(
                                     "Something went wrong. Please try again.")),
                           );
-                        }
+                        }*/
+                        rescheduleAppointment();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF662A09),
@@ -588,8 +648,7 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
   String formatDateUtc(String date) {
     try {
@@ -599,7 +658,6 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
       return date;
     }
   }
- 
   String formatDateUtc24(String date) {
     try {
       DateTime dateTime = DateTime.parse(date).toLocal();
@@ -607,5 +665,90 @@ class _RescheduleAppointment2State extends State<RescheduleAppointment2> {
     } catch (e) {
       return date;
     }
+  }
+  Future<void> rescheduleAppointment() async {
+
+
+    APIDialog.showAlertDialog(context, "Please wait...");
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    try {
+
+      String timeSlot="";
+      String duration="";
+      String price="";
+      selectedSlots.forEach((serviceKey, slotIndex) {
+        if (slotIndex != null) {
+          final selectedServiceData = servicesWithSlots[serviceKey];
+          final slot = selectedServiceData['slots'][slotIndex];
+         timeSlot= formatDateUtc24(slot['startTime']?.toString()??"");
+         duration=selectedServiceData['serviceDetails']?['duration']?.toString()??"";
+         price=selectedServiceData['serviceDetails']?['price']?.toString()??"0";
+
+        }
+      });
+      print("Slot Time $timeSlot");
+      print("Duration $duration");
+      print("price $price");
+      if(timeSlot.isEmpty){
+        if(Navigator.canPop(context)){
+          Navigator.of(context).pop();
+        }
+        Toast.show("Please select the Available Slot",duration: Toast.lengthLong,backgroundColor: Colors.red);
+        return;
+      }
+      var data = {
+        "_id":widget.id,
+        "serviceId": widget.serviceId,
+        "employeeId": widget.employeeId,
+        "userId": userId,
+        "note":"Rescheduled via MyAppointments",
+        "date": DateFormat('yyyy-MM-dd').format(selectedDate!),
+        "time": timeSlot,
+        "deposit":0,
+        "repeat":"Off",
+        "duration":duration,
+        "price":price
+
+      };
+
+      var requestModel = {
+        "data": base64.encode(utf8.encode(json.encode(data)))
+      };
+
+      ApiBaseHelper helper = ApiBaseHelper();
+      var response = await helper.postAPI(
+        'appointment-management/editAppointments',
+        requestModel,
+        context,
+      );
+
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
+      var responseJSON = json.decode(response.toString());
+      String message=responseJSON['message']?.toString()??"";
+      if(responseJSON['statusCode']==200){
+        Toast.show(message.isNotEmpty?message:"Appointment Resheduled Successfully",duration: Toast.lengthLong,backgroundColor: Colors.green);
+        redirectToHome();
+      }else{
+        Toast.show(message.isNotEmpty?message:"Error! Something went wrong please try again.",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      }
+
+
+    } catch (e) {
+      print("Error fetching slots: $e");
+      Toast.show("Error!!! Something went wrong, Please try again later",duration: Toast.lengthLong,backgroundColor: Colors.red);
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
+    }
+
+
+  }
+
+  void redirectToHome(){
+    Route route = MaterialPageRoute(builder: (context) => HomeScreen());
+    Navigator.pushAndRemoveUntil(
+        context, route, (Route<dynamic> route) => false);
   }
 }

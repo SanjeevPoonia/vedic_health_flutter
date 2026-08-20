@@ -1,20 +1,41 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/views/appointments/book_appointment_screen.dart';
 
-class AppointmentDetail extends StatelessWidget {
-  final List<dynamic> consultations;
+import '../../network/api_helper.dart';
+import '../../widgets/notification_bar_widget.dart';
+
+
+class AppointmentDetail extends StatefulWidget{
   final String title;
+  final String serviceId;
+  final String centerId;
 
   const AppointmentDetail(
-      {super.key, required this.consultations, required this.title});
+      {super.key,required this.title,required this.serviceId,required this.centerId});
+
+
+  _appointmentDetails createState()=>_appointmentDetails();
+}
+class _appointmentDetails extends State<AppointmentDetail> {
+  List<dynamic> consultations=[];
+  bool isLoading = false;
+  int pageNo=1;
+  int pageSize=100;
+
+
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    ToastContext().init(context);
+    return Scaffold(
         backgroundColor: Colors.white,
-        body: Column(
+        body: isLoading?Center(child: Loader(),):Column(
           children: [
+            NotificationBarWidget(),
             Card(
               elevation: 1,
               margin: const EdgeInsets.only(bottom: 10),
@@ -42,14 +63,14 @@ class AppointmentDetail extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       child: const Icon(Icons.arrow_back_ios_new_sharp,
-                          size: 17, color: Colors.black),
+                          size: 24, color: Colors.black),
                     ),
                     Expanded(
                       child: Center(
                         child: Padding(
                           padding: const EdgeInsets.only(right: 10),
                           child: Text(
-                            title,
+                            widget.title,
                             style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
@@ -71,15 +92,11 @@ class AppointmentDetail extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       itemCount: consultations.length,
                       itemBuilder: (context, index) {
-                        final service =
-                            consultations[index] as Map<String, dynamic>;
+                        final service = consultations[index] as Map<String, dynamic>;
                         final title = service['name'] ?? 'No name';
                         final description = service['description'] ?? '';
-                        final price = service.containsKey('price')
-                            ? '\$${service['price']}'
-                            : '';
+                        final price = service.containsKey('price') ? '\$${service['price']}' : '';
                         final serviceId=service['_id']?.toString()??"";
-
                         return Column(
                           children: [
                             Card(
@@ -155,8 +172,7 @@ class AppointmentDetail extends StatelessWidget {
                                                         builder: (context) =>
                                                             BookAppointmentScreen(
                                                                 title: title,
-                                                                consultations:
-                                                                    consultations,
+                                                                consultations: consultations,
                                                               selectedServiceId: serviceId,
                                                             ),
                                                       ));
@@ -226,7 +242,33 @@ class AppointmentDetail extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAppointments();
+  }
+  Future<void> fetchAppointments() async {
+    setState(() => isLoading = true);
+
+    var data = {"page": pageNo, "pageSize": pageSize, "centerId": widget.centerId,"service_type":widget.serviceId};
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI('services_management/getAll', requestModel, context);
+
+    final responseJSON = json.decode(response.toString());
+    print("Appointments response: $responseJSON");
+    if (responseJSON["statusCode"] == 200) {
+      consultations= List<dynamic>.from(responseJSON["data"] ?? []);
+      setState(() {
+      });
+    } else {
+      print("Error fetching appointments: ${responseJSON["message"]}");
+      Toast.show(responseJSON["message"]?.toString()??"Something went wrong.",duration: Toast.lengthLong,backgroundColor: Colors.red);
+
+    }
+    setState(() => isLoading = false);
   }
 }

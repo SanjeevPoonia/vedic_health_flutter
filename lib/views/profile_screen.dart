@@ -6,22 +6,28 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:toast/toast.dart';
+import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
+import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
-import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
 import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/invoices_screen.dart';
 import 'package:vedic_health/views/my_profile_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
+import 'package:vedic_health/views/yoga_courses/yoga_courses_screen.dart';
+import 'package:vedic_health/widgets/notification_bar_widget.dart';
 
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+import 'category_wise_products.dart';
 import 'change_password_screen.dart';
 import 'events/event_home_screen.dart';
 import 'login_screen.dart';
+import 'membership/membership_user_screen.dart';
 import 'my_reviews_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfileScreen extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
@@ -79,52 +85,52 @@ class _MyHomePageState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            Card(
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 10),
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(15),
-                      bottomRight: Radius.circular(15))),
-              child: Container(
-                height: 65,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(20), // Adjust the radius as needed
-                    bottomRight:
-                        Radius.circular(20), // Adjust the radius as needed
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          NotificationBarWidget(),
+          Card(
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 10),
+            color: Colors.white,
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(15),
+                    bottomRight: Radius.circular(15))),
+            child: Container(
+              height: 65,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft:
+                  Radius.circular(20), // Adjust the radius as needed
+                  bottomRight:
+                  Radius.circular(20), // Adjust the radius as needed
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black)),
-                    const Expanded(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 10),
-                          child: Text("My Account",
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              )),
-                        ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Icon(Icons.arrow_back_ios_new_sharp,
+                          size: 24, color: Colors.black)),
+                  const Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 10),
+                        child: Text("My Account",
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            )),
                       ),
                     ),
+                  ),
 
 /*
 
@@ -136,20 +142,20 @@ class _MyHomePageState extends State<ProfileScreen> {
                       child: Image.asset("assets/cart_bag.png",width: 39,height: 39)
                     )
 */
-                  ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-                child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                Row(
-                  children: [
-                    Stack(
-                      children: [
-                        /*Container(
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  Row(
+                    children: [
+                      Stack(
+                        children: [
+                          /*Container(
                           width: 88,
                           height: 88,
                           decoration: BoxDecoration(
@@ -172,449 +178,418 @@ class _MyHomePageState extends State<ProfileScreen> {
                             ),
                           ),
                         ),*/
-                        profileImage == null || profileImage!.isEmpty
-                            ? Container(
-                            width: 88,
-                            height: 88,
-
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.orange[300], // Custom background color
-                            ),
-                          child: Center(
-                            child: Text(
-                              (name != null && name!.isNotEmpty)
-                                  ? name![0].toUpperCase() // First letter of name
-                                  : "?",
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        )
-                            : ClipOval(
-                          child: Image.network(
-                            profileImage.toString(),
-                            width: 88,
-                            height: 88,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.orange[300],
-                              child: Center(
-                                child: Text(
-                                  (name != null && name!.isNotEmpty)
-                                      ? name![0].toUpperCase()
-                                      : "?",
-                                  style: const TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                          profileImage == null || profileImage!.isEmpty
+                              ? NameAvatar(fullName: name,size: 88,)
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(44), // rounded corners
+                                  child: CachedNetworkImage(
+                                    height: 88,
+                                    width: 88,
+                                    imageUrl: profileImage??"",
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => NameAvatar(fullName: name,size: 88,),
                                   ),
-                                ),
-                              ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                            top: 55,
-                            left: 55,
-                            child: GestureDetector(
-                              onTap: () {
-                                // _showPictureDialog();
-                                //_fetchImage(context);
-                              },
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: Colors.white, width: 1),
-                                    color: const Color(0xFFF38328)),
-                                child: Image.asset("assets/edit_img.png",
-                                    color: Colors.white),
-                              ),
-                            ))
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                     Expanded(
-                        child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name??"NA",
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            )),
-                        const SizedBox(height: 5),
-                        Text(email??"NA",
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF9D9CA0),
-                            )),
-                      ],
-                    ))
-                  ],
-                ),
-                const SizedBox(height: 30),
-                GestureDetector(
-                  onTap: () async {
-                    /*Navigator.push(
+                         /* Positioned(
+                              top: 55,
+                              left: 55,
+                              child: GestureDetector(
+                                onTap: () {
+                                  // _showPictureDialog();
+                                  //_fetchImage(context);
+                                },
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors.white, width: 1),
+                                      color: const Color(0xFFF38328)),
+                                  child: Image.asset("assets/edit_img.png",
+                                      color: Colors.white),
+                                ),
+                              ))*/
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(name??"NA",
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  )),
+                              const SizedBox(height: 5),
+                              Text(email??"NA",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF9D9CA0),
+                                  )),
+                            ],
+                          ))
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const MyProfileScreen()));*/
-
-
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 7, top: 7),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/profile_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("My Profile",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                            builder: (context) => const MyProfileScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 7, top: 7),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/profile_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("My Profile",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                 /* GestureDetector(
+                    onTap: () async {
 
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/doc_tb.png", width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Documents",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/doc_tb.png", width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Documents",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
+                  Divider(color: Colors.grey.withOpacity(0.2)),*/
+                  GestureDetector(
+                    onTap: () async {
 
-                  /*  Navigator.push(
+                        Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                const AppointmentHomeScreen()));*/
+                                const AppointmentHomeScreen()));
 
 
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/appoint_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Appointments",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/appoint_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Appointments",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
 
-                  /*  Navigator.push(
+                        Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const JoinMembershipScreen(),
-                        ));*/
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/member_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Membership",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                          builder: (context) =>  MembershipUserScreen(),
+                        ));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/member_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Membership",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryWiseProducts("","")));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/product_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Products",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => YogaCoursesScreen()));
 
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/product_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Products",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/courses_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Courses",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
-                    /*Navigator.push(
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
+
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const EventHomeScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/member_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Events",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () {
+                      print("Invoices tapped");
+
+                        Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) =>
-                                const AppointmentHomeScreen()));*/
+                            builder: (context) => InvoicesScreen()));
 
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/courses_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Courses",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/invoices_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Invoices",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
 
-                    Navigator.push(
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => MyReviewScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/reviews_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("My Reviews",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
+
+
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const EventHomeScreen()));
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/member_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Events",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                            builder: (context) => ChangePasswordScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/pass_tb.png",
+                              width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Password Change",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () {
-                    print("Invoices tapped");
+                  Divider(color: Colors.grey.withOpacity(0.2)),
+                  GestureDetector(
+                    onTap: () async {
+                      _modalBottomLogout();
 
-                  /*  Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => InvoicesScreen()));*/
-
-
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/invoices_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Invoices",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5, top: 5),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 5),
+                          Image.asset("assets/log_tb.png", width: 40, height: 40),
+                          const SizedBox(width: 17),
+                          const Expanded(
+                              child: Text("Logout",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: "Montserrat",
+                                      color: Color(0xFFBA363B)))),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.black, size: 16),
+                          const SizedBox(width: 5),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
-
-                   /* Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => MyReviewScreen()));*/
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/reviews_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("My Reviews",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
-                    ),
-                  ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
-
-
-                    /*Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ChangePasswordScreen()));*/
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/pass_tb.png",
-                            width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Password Change",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
-                    ),
-                  ),
-                ),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                GestureDetector(
-                  onTap: () async {
-                    _modalBottomLogout();
-
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, top: 5),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 5),
-                        Image.asset("assets/log_tb.png", width: 40, height: 40),
-                        const SizedBox(width: 17),
-                        const Expanded(
-                            child: Text("Logout",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: "Montserrat",
-                                    color: Color(0xFFBA363B)))),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: Colors.black, size: 16),
-                        const SizedBox(width: 5),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20)
-              ],
-            ))
-          ],
-        ),
+                  const SizedBox(height: 20)
+                ],
+              ))
+        ],
       ),
     );
   }
@@ -629,7 +604,10 @@ class _MyHomePageState extends State<ProfileScreen> {
     name = await MyUtils.getSharedPreferences("name");
     email = await MyUtils.getSharedPreferences("email");
     userId = await MyUtils.getSharedPreferences("user_id");
-
+    String? image = await MyUtils.getSharedPreferences("image");
+    if(image!=null && image.isNotEmpty){
+      profileImage=AppConstant.appBaseURL+image;
+    }
     setState(() {});
   }
 

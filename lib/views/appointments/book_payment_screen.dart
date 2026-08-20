@@ -9,6 +9,7 @@ import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/selectotherperson_screen.dart';
+import 'package:vedic_health/widgets/notification_bar_widget.dart';
 import '../../network/Utils.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/name_avatar.dart';
@@ -16,6 +17,7 @@ import '../payment_success_screen.dart';
 import '../word_webview_screen.dart';
 import 'add_family&friends_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class BookPaymentScreen extends StatefulWidget {
   final DateTime date;
@@ -63,6 +65,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
   List<String> bookForList=["User (ME)","Other Person"];
   String selectedBookForName="User (ME)";
   String selectedOtherPersonId="";
+  String selectedOtherPersonName="";
+  String selectedOtherPersonRelation="";
   List<dynamic> otherPersonsList=[];
 
   bool isCardExpired=false;
@@ -109,7 +113,6 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
       setState(() => isCardExpired = false);
     }
   }
-
   _fetchUserDetails()async{
     selfUserId= await MyUtils.getSharedPreferences("user_id")??"";
     selectedEmpList.addAll(widget.empData);
@@ -124,7 +127,6 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
 
 
   }
-
   Future<void> fetchUserAddresses() async {
     setState(() {
       isLoading = true;
@@ -205,6 +207,9 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
         Toast.show("Please Add family or Friend",duration: Toast.lengthLong,backgroundColor: Colors.red);
         selectedBookForName="User (ME)";
         bookingForUserId=selfUserId;
+        selectedOtherPersonId="";
+        selectedOtherPersonName="";
+        selectedOtherPersonRelation="";
         setState(() {
 
         });
@@ -234,6 +239,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
   }
   void selectOtherPerson(BuildContext context) {
     String tempSelectedId=selectedOtherPersonId;
+    String tempSelectedName="";
+    String tempSelectedRelation="";
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
       context: context,
@@ -267,6 +274,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                             onTap: () {
                               setState(() {
                                 selectedOtherPersonId="";
+                                selectedOtherPersonName="";
+                                selectedOtherPersonRelation="";
                                 bookingForUserId=selfUserId;
                                 selectedBookForName='User (ME)';
                               });
@@ -287,6 +296,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                             onTap: () {
                               setModalState(() {
                                 tempSelectedId = emp["_id"];
+                                tempSelectedName= "${emp["firstName"]?.toString()??""}  ${emp["lastName"]?.toString()??""}";
+                                tempSelectedRelation=emp['relation']?.toString()??"";
                               });
                             },
                             child: Container(
@@ -321,13 +332,48 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
+                    GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          selectedOtherPersonId="";
+                          selectedOtherPersonName="";
+                          selectedOtherPersonRelation="";
+                          bookingForUserId=selfUserId;
+                          selectedBookForName='User (ME)';
+                        });
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const AddFamilyFriendScreen()),
+                        );
+                      },
+                      child: Container(
+                          height: 54,
+                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: const Color(0xFF662A09)),
+                          child: const Center(
+                            child: Text("Add Family or Friend",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                )),
+                          )),
+                    ),
+
+                    const SizedBox(height: 15),
                     Row(
                       children: [
                         Expanded(
                           child: GestureDetector(
                             onTap: (){
                               setState(() {
-                              selectedOtherPersonId="";
+                                selectedOtherPersonId="";
+                                selectedOtherPersonName="";
+                                selectedOtherPersonRelation="";
                               bookingForUserId=selfUserId;
                               selectedBookForName='User (ME)';
                               });
@@ -354,6 +400,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                             onTap: () async {
                               setState(() {
                                selectedOtherPersonId=tempSelectedId;
+                               selectedOtherPersonName=tempSelectedName;
+                               selectedOtherPersonRelation=tempSelectedRelation;
                                bookingForUserId=selectedOtherPersonId;
                                selectedBookForName='Other Person';
                               });
@@ -499,6 +547,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
         "city":"",
         "country":"",
         "pincode":"",
+        "billingAddress1":addressLine1Controller.text.toString(),
+        "billingAddress2":addressLine2Controller.text.toString(),
         "id":widget.appointIds[0],
         "price":widget.price,
         "aboutAppoiment":_specialRequestController.text,
@@ -528,7 +578,7 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
        String paymentUrl=responseJSON['paymentUrl']?.toString()??"";
 
        if(paymentUrl.isNotEmpty){
-         if(paymentUrl.contains("Shop/thankYou")){
+         if(paymentUrl.contains("Shop/thankYou")||paymentUrl.contains("AyurvedicInitialConsult/Thankyou")){
            Navigator.of(context).pushAndRemoveUntil(
                MaterialPageRoute(
                    builder: (context) =>
@@ -554,417 +604,375 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
 
 
   }
-
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// Top App Bar
-              Card(
-                elevation: 1,
-                margin: const EdgeInsets.only(bottom: 10),
-                color: Colors.white,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(15),
-                    bottomRight: Radius.circular(15),
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NotificationBarWidget(),
+            Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(bottom: 10),
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(15),
+                  bottomRight: Radius.circular(15),
                 ),
-                child: Container(
-                  height: 65,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
-                      ),
-                      const Expanded(
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(right: 10),
-                            child: Text(
-                              "Payment",
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
+              ),
+              child: Container(
+                height: 65,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back_ios_new_sharp,
+                          size: 24, color: Colors.black),
+                    ),
+                    const Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Text(
+                            "Payment",
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 12,
-              ),
-
-              ListView.builder(
-                shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: selectedEmpList.length,
-                  itemBuilder: (context,index){
-                    String empName=selectedEmpList[index]['emp_name']?.toString()??"N/A";
-                    String empId=selectedEmpList[index]['empId']?.toString()??"N/A";
-                    double dou=selectedEmpList[index]['price']??0.0;
-                    return Container(
-
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          width: 1,
-                          color: const Color(0xFFDBDBDB),
-                        ),
-                      ),
-                      margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              NameAvatar(fullName:  empName,size: 70,),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    empName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                  const Row(
-                                      children: [
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        SizedBox(width: 5),
-                                        Text("(0)"),
-                                      ],),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    "\$$dou", // This price is static, you could also pass this as a parameter
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                      ),
-                    );
-                  }),
-
-
-
-              const SizedBox(height: 20),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Who Are You Booking For?",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: bookForList.length,
-                        itemBuilder: (BuildContext context, int pos) {
-                          String name=bookForList[pos];
-
-
-                          bool isSelected=false;
-                          if(selectedBookForName==name){
-                            isSelected=true;
-                          }
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedBookForName=name;
-                                bookingForUserId=selfUserId;
-                              });
-
-                              if(selectedBookForName=='Other Person'){
-                                fetchOtherPersons();
-                              }
-
-
-
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.only(
-                                  top: 10, bottom: 10, left: 13, right: 10),
-                              child: Row(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                 isSelected
-                                      ? const Icon(
-                                      Icons.radio_button_checked,
-                                      color: AppTheme.darkBrown)
-                                      : const Icon(Icons.radio_button_off,
-                                      color: Color(0xFF707070)),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                     name,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color:
-                                        // ignore: deprecated_member_use
-                                        Colors.black.withOpacity(0.6),
-                                      ),
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(
+              height: 12,
+            ),
 
-              const SizedBox(height: 20),
-/* if (isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else if (userAddresses.isEmpty)
-                      const Text("No saved addresses found.")
-                    else
-                      Column(
-                        children: userAddresses.map((address) {
-                          final fullName = address["name"] ?? "Unknown";
-                          final uniqueId = address["_id"];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                  width: 1, color: const Color(0xFFDBDBDB)),
-                              color: selectedAddress != null &&
-                                      selectedAddress!["_id"] == uniqueId
-                                  ? const Color.fromARGB(70, 243, 131, 40)
-                                  : Colors.white,
-                            ),
-                            child: Row(
-                              children: [
-                                Radio(
-                                  activeColor: const Color(0xFF865940),
-                                  value: uniqueId,
+            ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: selectedEmpList.length,
+                itemBuilder: (context,index){
+                  String empName=selectedEmpList[index]['emp_name']?.toString()??"N/A";
+                  String empId=selectedEmpList[index]['empId']?.toString()??"N/A";
+                  double dou=selectedEmpList[index]['price']??0.0;
+                  double rating=selectedEmpList[index]['emp_rating']??0.0;
+                  String profileImage=selectedEmpList[index]['emp_profile']??"";
+                  return Container(
 
-                                  // ignore: deprecated_member_use
-                                  groupValue: selectedAddress?["_id"],
-                                  // ignore: deprecated_member_use
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedAddress = address;
-                                    });
-
-                                    // If "Other" type, push SelectOtherPersonScreen
-                                    if (address["name"] == "Other Person") {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              SelectOtherPersonScreen(
-                                            address:
-                                                address, // ✅ Pass selected address
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFDBDBDB),
+                      ),
+                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            profileImage.isEmpty?
+                            NameAvatar(fullName:  empName,size: 70,) :
+                            ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: profileImage,
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                                errorWidget: (context, url, error) => NameAvatar(
+                                  fullName: empName,
+                                  size: 70,
                                 ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 10),
-                                    child: Text(
-                                      "$fullName - ${address["city"]}, ${address["country"]}",
-                                      style: TextStyle(
-                                        fontWeight: selectedAddress != null &&
-                                                selectedAddress!["_id"] ==
-                                                    uniqueId
-                                            ? FontWeight.bold
-                                            : FontWeight.w400,
-                                      ),
-                                    ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  empName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                                Row(
+                                  children: List.generate(5, (index) {
+
+                                    if (index < rating.floor()) {
+                                      return const Icon(Icons.star, color: Colors.amber, size: 18);
+                                    } else if (index < rating) {
+                                      return const Icon(Icons.star_half, color: Colors.amber, size: 18);
+                                    } else {
+                                      return const Icon(Icons.star_border, color: Colors.grey, size: 18);
+                                    }
+                                  })
+                                    ..add(const SizedBox(width: 5))
+                                    ..add( Text("($rating)")),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  "\$$dou", // This price is static, you could also pass this as a parameter
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
-                      ),*/
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  );
+                }),
 
-              // About Your Appointment Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "About Your Appointment",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+
+
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Who Are You Booking For?",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          width: 1,
-                          color: const Color(0xFFDBDBDB),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _specialRequestController,
-                        decoration: InputDecoration(
-                          hintStyle: const TextStyle(
-                              color: Color.fromARGB(255, 116, 115, 115)),
-                          hintText:
-                              "Do you have any special request or ideas to share with service provider? (Optional)",
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                        ),
-                        maxLines: 3,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: bookForList.length,
+                      itemBuilder: (BuildContext context, int pos) {
+                        String name=bookForList[pos];
+
+
+                        bool isSelected=false;
+                        if(selectedBookForName==name){
+                          isSelected=true;
+                        }
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedBookForName=name;
+                              bookingForUserId=selfUserId;
+                            });
+
+                            if(selectedBookForName=='Other Person'){
+                              fetchOtherPersons();
+                            }else{
+                              setState(() {
+                                selectedOtherPersonId="";
+                                selectedOtherPersonName="";
+                                selectedOtherPersonRelation="";
+                              });
+                            }
+
+
+
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                                top: 10, bottom: 10, left: 13, right: 10),
+                            child: Row(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                isSelected
+                                    ? const Icon(
+                                    Icons.radio_button_checked,
+                                    color: AppTheme.darkBrown)
+                                    : const Icon(Icons.radio_button_off,
+                                    color: Color(0xFF707070)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color:
+                                      // ignore: deprecated_member_use
+                                      Colors.black.withOpacity(0.6),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 20),
 
-              isPaymentInitialize?
-              needCardDetails?
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Payment Information",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+            selectedBookForName=='Other Person'?
+            selectedOtherPersonName.isNotEmpty?
+                Padding(padding: EdgeInsets.symmetric(horizontal: 16),child: Text("$selectedOtherPersonName ($selectedOtherPersonRelation)",style: TextStyle(fontWeight: FontWeight.w600,fontSize: 14.5,color: AppTheme.orangeColor),),):Container():Container(),
+
+            const SizedBox(height: 20),
+            // About Your Appointment Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "About Your Appointment",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFDBDBDB),
                       ),
                     ),
-                    const SizedBox(height: 5,),
-                    const Text(
-                      "A card is required to hold your appointment slot, You will not be charged",
-                      style: TextStyle(
+                    child: TextField(
+                      controller: _specialRequestController,
+                      decoration: InputDecoration(
+                        hintStyle: const TextStyle(
+                            color: Color.fromARGB(255, 116, 115, 115)),
+                        hintText:
+                        "Do you have any special request or ideas to share with service provider? (Optional)",
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                      maxLines: 3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            isPaymentInitialize?
+            needCardDetails?
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Payment Information",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5,),
+                  const Text(
+                    "A card is required to hold your appointment slot, You will not be charged",
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: Colors.deepOrange
-                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Enter your name as it\'s written on your card.",
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                width: 1,
-                                color: const Color(0xFFDBDBDB),
-                              ),
-                            ),
-                            child: TextField(
-                              controller: cardNameController,
-                              decoration: const InputDecoration(
-                                hintStyle: TextStyle(
-                                    color: Color.fromARGB(255, 116, 115, 115)),
-                                hintText:
-                                "Name on card",
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
-                              ),
-                              maxLines: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          stripe.CardFormField(
-                            controller: cardController,
-                            style:  stripe.CardFormStyle(
-                              borderColor: Colors.transparent,
-                              textColor: Colors.black,
-                              fontSize: 16,
-                              placeholderColor: Colors.grey,
-                              backgroundColor: Colors.white,
-                            ),
-                            autofocus: false,
-                            onCardChanged: (card) {
-                              debugPrint('Card changed: $card');
-                            },
-                          )
-
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Enter your name as it\'s written on your card.",
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              width: 1,
+                              color: const Color(0xFFDBDBDB),
+                            ),
+                          ),
+                          child: TextField(
+                            controller: cardNameController,
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                  color: Color.fromARGB(255, 116, 115, 115)),
+                              hintText:
+                              "Name on card",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        stripe.CardFormField(
+                          controller: cardController,
+                          style:  stripe.CardFormStyle(
+                            borderColor: Colors.transparent,
+                            textColor: Colors.black,
+                            fontSize: 16,
+                            placeholderColor: Colors.grey,
+                            backgroundColor: Colors.white,
+                          ),
+                          autofocus: false,
+                          onCardChanged: (card) {
+                            debugPrint('Card changed: $card');
+                          },
+                        )
+
+                      ],
+                    ),
+                  ),
 
 
-                    /*stripe.CardField(
+                  /*stripe.CardField(
                       onCardChanged: (card){
                         setState(() {
                           cardDetails=card;
                         });
                       },
                     ),*/
-                    /*Container(
+                  /*Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(10),
 
@@ -1108,291 +1116,290 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
                         ],
                       ),
                     ),*/
-                  ],
-                ),
-              ):Container():Container(),
-
-              const SizedBox(height: 20),
-
-              // Billing Address Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Billing Address",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          width: 1,
-                          color: const Color(0xFFDBDBDB),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: addressLine1Controller,
-                        decoration: const InputDecoration(
-                          hintStyle: TextStyle(
-                              color: Color.fromARGB(255, 116, 115, 115)),
-                          hintText:
-                          "Address Line 1",
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          width: 1,
-                          color: const Color(0xFFDBDBDB),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: addressLine2Controller,
-                        decoration: const InputDecoration(
-                          hintStyle: TextStyle(
-                              color: Color.fromARGB(255, 116, 115, 115)),
-                          hintText:
-                          "Address Line 2 (Optional)",
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                        ),
-                        maxLines: 2,
-                      ),
-                    ),
-
-                  ],
-                ),
+                ],
               ),
-
-              const SizedBox(height: 20),
-              // Price Detail Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Price Detail",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          width: 1,
-                          color: const Color(0xFFDBDBDB),
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Total Amount",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                              Text("\$${widget.price}",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          const Divider(),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text("Total Due Now",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600)),
-                                  const SizedBox(width: 10),
-                                  Container(
-                                      height: 20,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7),
-                                      decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(5),
-                                          color: const Color(0xFF662A09)),
-                                      child: const Center(
-                                        child: Text("Hold with card",
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white,
-                                            )),
-                                      )),
-                                ],
-                              ),
-                              const Text("\$0.00",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Total Due at Business",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w600)),
-                              Text("\$${widget.price}",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Cancellation Policy Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Cancellation Policy",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "We ask that you please reschedule or cancel at least 24 hours before the beginning of your appointment or you may be charged a cancellation fee of \$50.",
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF23B816),
-                          fontStyle: FontStyle.italic),
-                    ),
-                    const SizedBox(height: 10),
-                    CheckboxListTile(
-                      activeColor: const Color(0xFF23B816),
-                      title: const Text(
-                        "By Clicking \"Book\" you agree to the Cancellation Policy and conditions of this business.",
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w500),
-                      ),
-                      value: _agreeToPolicy,
-                      onChanged: (value) {
-                        setState(() {
-                          _agreeToPolicy = value!;
-                        });
-                      },
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
-
-        /// Sticky Bottom Search Button
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // important to keep it small
-            children: [
-              const Divider(
-                thickness: 1,
-                color: Colors.grey, // change color as per UI
-              ),
-              const SizedBox(height: 10),
-              Row(
+            ):Container():Container(),
+            const SizedBox(height: 20),
+            // Billing Address Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>  AddToWaitlistScreen(allServicesData: widget.allServicesData,),
-                            ));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE3E3E3),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: const Text(
-                        "Back",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
+                  const Text(
+                    "Billing Address",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if(needCardDetails){
-                          setUpPayment();
-                        }else{
-                          addPayment("");
-                        }
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFDBDBDB),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: addressLine1Controller,
+                      decoration: const InputDecoration(
+                        hintStyle: TextStyle(
+                            color: Color.fromARGB(255, 116, 115, 115)),
+                        hintText:
+                        "Address Line 1",
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFDBDBDB),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: addressLine2Controller,
+                      decoration: const InputDecoration(
+                        hintStyle: TextStyle(
+                            color: Color.fromARGB(255, 116, 115, 115)),
+                        hintText:
+                        "Address Line 2 (Optional)",
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                      maxLines: 2,
+                    ),
+                  ),
 
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF23B816),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            // Price Detail Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Price Detail",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFDBDBDB),
                       ),
-                      child: const Text(
-                        "Book Now",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Total Amount",
+                                style:
+                                TextStyle(fontWeight: FontWeight.bold)),
+                            Text("\$${widget.price}",
+                                style:
+                                TextStyle(fontWeight: FontWeight.bold)),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 10),
+                        const Divider(),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Text("Total Due Now",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(width: 10),
+                                Container(
+                                    height: 20,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 7),
+                                    decoration: BoxDecoration(
+                                        borderRadius:
+                                        BorderRadius.circular(5),
+                                        color: const Color(0xFF662A09)),
+                                    child: const Center(
+                                      child: Text("Hold with card",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                          )),
+                                    )),
+                              ],
+                            ),
+                            const Text("\$0.00",
+                                style:
+                                TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Total Due at Business",
+                                style:
+                                TextStyle(fontWeight: FontWeight.w600)),
+                            Text("\$${widget.price}",
+                                style:
+                                TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            // Cancellation Policy Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Cancellation Policy",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "We ask that you please reschedule or cancel at least 24 hours before the beginning of your appointment or you may be charged a cancellation fee of \$50.",
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF23B816),
+                        fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 10),
+                  CheckboxListTile(
+                    activeColor: const Color(0xFF23B816),
+                    title: const Text(
+                      "By Clicking \"Book\" you agree to the Cancellation Policy and conditions of this business.",
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    value: _agreeToPolicy,
+                    onChanged: (value) {
+                      setState(() {
+                        _agreeToPolicy = value!;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+
+      /// Sticky Bottom Search Button
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // important to keep it small
+          children: [
+            const Divider(
+              thickness: 1,
+              color: Colors.grey, // change color as per UI
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                     Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE3E3E3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: const Text(
+                      "Back",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      String billAddress1=addressLine1Controller.text.toString().trim();
+                      String billAddress2=addressLine2Controller.text.toString().trim();
+                      if(billAddress1.isEmpty){
+                        Toast.show("Please Enter your billing Address",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                      }else if(!_agreeToPolicy){
+                        Toast.show("Please agree with Cancellation Policy",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                      }else if(needCardDetails){
+                        setUpPayment();
+                      }else{
+                        addPayment("");
+                      }
+
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF23B816),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: const Text(
+                      "Book Now",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );
   }
   Future<void> fetchStripeKey() async {
-
     APIDialog.showAlertDialog(context, "Please Wait...");
     try {
       // Prepare payload
@@ -1448,9 +1455,6 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
       isPaymentInitialize=true;
     });
   }
-
-
-
   Future<void> fetchAppointmentDetail(String appointmentId) async {
     try {
       setState(() => isLoading = true);
@@ -1495,6 +1499,8 @@ class _BookPaymentScreenState extends State<BookPaymentScreen> {
       print("Error fetching appointment detail: $e");
     }
   }
+
+
 
 
 }

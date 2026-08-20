@@ -6,13 +6,15 @@ import 'package:html/parser.dart' show parse;
 import 'package:toast/toast.dart';
 import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
-import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
 import 'package:vedic_health/views/yoga_classes/yoga_class_detail_screen.dart';
 import '../../network/Utils.dart';
 import '../../network/api_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/yogavideo_model.dart';
+import '../../widgets/notification_bar_widget.dart';
+import '../membership/join_membership_screen.dart';
+import 'package:intl/intl.dart';
 
 // Dummy Video and dummy data to match the image
 class Video {
@@ -29,80 +31,7 @@ class Video {
   });
 }
 
-final List<Video> beginnerVideos = [
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Trataka Candle Meditation",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Trataka Candle Meditation",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Trataka Candle Meditation",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-  Video(
-    title: "Trataka Candle Meditation",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-];
-final List<Video> advantageVideos = [
-  Video(
-    title: "Trataka Candle Meditation",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-];
-final List<Video> hathaVideos = [
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-];
-final List<Video> powerVideos = [
-  Video(
-    title: "Surya Namaskar: Practice",
-    imagePath: "assets/banner2.png",
-    duration: "44 min",
-    instructor: "Amita Jain",
-  ),
-];
+
 
 // Main screen widget
 class YogaClassesScreen extends StatefulWidget {
@@ -124,145 +53,487 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
   List<categoryModel>allClassesList=[];
   List<categoryVideoModel>categoryWiseVideoList=[];
 
+  int selectedTab = 0;
+  List<dynamic> scheduledClasses = [];
+
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: isLoading?Center(child: Loader(),):Column(
+      body:
+         isLoading?Center(child: Loader(),):Column(
           children: [
+            NotificationBarWidget(),
             // App Bar
             _buildAppBar(),
-
-            filterList.isNotEmpty?
-            _buildFilterChips():Container(),
-            // Main Content Area
-            allClassesList.isNotEmpty?
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      // Conditionally show content based on the selected filter
-                      if (_selectedFilterKey == '0') ...[
-
-                        ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: allClassesList.length,
-                            itemBuilder: (context, index){
-                              String categoryName=allClassesList[index].categoryName;
-                              String categoryId=allClassesList[index].categoryId;
-                              String categoryDescription=allClassesList[index].categoryDescription;
-                              List<categoryVideoModel>videoList=allClassesList[index].videoList;
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        categoryName,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      videoList.isEmpty?Container():
-                                      GestureDetector(
-                                        onTap: () {
-                                          _selectedFilterKey=categoryId;
-                                          _onFilterClick();
-                                          /* setState(() {
-                                            _selectedFilterKey=categoryId;
-                                          });*/
-                                        },
-                                        child: const Text(
-                                          "See all",
-                                          style: TextStyle(
-                                            color: Color(0xFF5A89AD),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12,),
-                                  videoList.isNotEmpty?
-                                  ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: NeverScrollableScrollPhysics(),
-                                      itemCount: videoList.length,
-                                      itemBuilder: (mContext,inx){
-                                        return _buildVideoCard(videoList[inx]);
-                                      }):
-                                  Center(child: Padding(padding: EdgeInsets.all(16),
-                                    child: Text("Currently, there are no videos available for $categoryName.",
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.grey
-                                      ),),
-
-                                  ),),
-                                ],
-                              );
-
-                            }),
-
-
-
-                      ] else ...[
-                        categoryWiseVideoList.isNotEmpty?
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.8, // Adjust to fit the content well
-                          ),
-                          itemCount: categoryWiseVideoList.length,
-                          itemBuilder: (context, index) {
-                            return _buildGridVideoCard(categoryWiseVideoList[index]);
-                          },
-                        )
-                            :Center(child: Padding(padding: EdgeInsets.all(16),
-                          child: Text("Currently, there are no videos available for $_selectedCategoryName.",
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey
-                            ),),
-
-                        ),),
-                      ]
-                    ],
-                  ),
-                ),
-              ),
-            ):
-            const Center(child: Padding(padding: EdgeInsets.all(16),
-              child: Text("Currently, there are no Yoga classes available. Please visit again later for upcoming Yoga classes.",
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey
-                ),),
-
-            ),),
-
-
+            Expanded(child: Column(
+              children: [
+                buildTopTabs(),
+                Expanded(
+                  child: selectedTab == 0
+                      ? buildScheduledClasses()
+                      : buildVideoSection(),
+                )
+              ],
+            )),
+            SizedBox(height: 40,),
           ],
         ),
+
+    );
+  }
+  Widget buildScheduledClasses(){
+    if(scheduledClasses.isEmpty){
+      return const Center(
+        child: Text(
+          "No scheduled classes found.",
+        ),
+      );
+    }
+    return ListView.builder(
+      padding:
+      const EdgeInsets.all(16),
+      itemCount:
+      scheduledClasses.length,
+      itemBuilder:
+          (_,index){
+        return buildBookingCard(
+            scheduledClasses[index]);
+      },
+    );
+  }
+  Widget buildBookingCard(
+      Map<String,dynamic> booking){
+    Map<String,dynamic> item =
+    booking["class"];
+    DateTime classDate =
+    DateTime.parse(item["date"]);
+    return Container(
+      margin:
+      const EdgeInsets.only(
+        bottom: 15,
       ),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+        BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.grey.shade300,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 8,
+          )
+        ],
+
+      ),
+
+      child: Padding(
+
+        padding:
+        const EdgeInsets.all(16),
+
+        child: Column(
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+          children: [
+            Text(
+
+              item["classname"],
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight:
+                FontWeight.bold,
+
+              ),
+
+            ),
+
+            const SizedBox(height: 12),
+
+            Row(
+
+              children: [
+
+                const Icon(
+                  Icons.calendar_today,
+                  size: 17,
+                  color: Color(0xffF38328),
+                ),
+
+                const SizedBox(width: 6),
+
+                Text(
+
+                  DateFormat(
+                      "dd MMM, yyyy")
+                      .format(classDate),
+
+                ),
+
+                const Spacer(),
+
+                const Icon(
+                  Icons.access_time,
+                  size: 17,
+                  color: Color(0xffF38328),
+                ),
+
+                const SizedBox(width: 6),
+
+                Text(
+                  DateFormat("hh:mm a").format(
+                    DateFormat("HH:mm")
+                        .parse(item["time"]),
+                  ),
+                ),
+
+              ],
+
+            ),
+
+            const SizedBox(height: 12),
+
+            Row(
+
+              children: [
+
+                Icon(
+                  Icons.confirmation_number,
+                  size: 18,
+                  color: Colors.grey.shade700,
+                ),
+
+                const SizedBox(width: 6),
+
+                Text(
+                  "Qty : ${booking["quantity"]}",
+                ),
+
+                const Spacer(),
+
+                Text(
+
+                  "\$${booking["grandTotal"]}",
+
+                  style: const TextStyle(
+
+                    color: Colors.green,
+
+                    fontWeight:
+                    FontWeight.bold,
+
+                  ),
+
+                ),
+
+              ],
+
+            ),
+
+            const SizedBox(height: 12),
+
+            Container(
+
+              padding:
+              const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 5,
+              ),
+
+              decoration: BoxDecoration(
+
+                color:
+                booking["status"]=="paid"
+                    ? Colors.green.shade50
+                    : booking["status"]=="pending"
+                    ? Colors.orange.shade50
+                    : Colors.blue.shade50,
+
+                borderRadius:
+                BorderRadius.circular(20),
+
+              ),
+
+              child: Text(
+
+                booking["status"]
+                    .toString()
+                    .toUpperCase(),
+
+                style: TextStyle(
+
+                  fontWeight:
+                  FontWeight.bold,
+
+                  color:
+                  booking["status"]=="paid"
+                      ? Colors.green
+                      : booking["status"]=="pending"
+                      ? Colors.orange
+                      : Colors.blue,
+
+                ),
+
+              ),
+
+            ),
+
+            if(booking["ticketNumber"]!=null)...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.qr_code,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      booking["ticketNumber"]?.toString()??"-",
+                      style:
+                      const TextStyle(
+                        fontWeight:
+                        FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+
+              )
+
+            ]
+
+          ],
+
+        ),
+
+      ),
+
+    );
+
+  }
+  Widget buildTopTabs() {
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(4),
+
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(30),
+      ),
+
+      child: Row(
+
+        children: [
+
+          buildTab(
+            "Scheduled Classes",
+            0,
+          ),
+
+          buildTab(
+            "Your Videos",
+            1,
+          ),
+
+        ],
+      ),
+    );
+  }
+  Widget buildTab(
+      String title,
+      int index,
+      ) {
+    bool selected =
+        selectedTab == index;
+    return Expanded(
+
+      child: InkWell(
+
+        borderRadius:
+        BorderRadius.circular(30),
+
+        onTap: () {
+
+          setState(() {
+            selectedTab = index;
+          });
+
+        },
+
+        child: AnimatedContainer(
+
+          duration:
+          const Duration(milliseconds: 250),
+
+          padding:
+          const EdgeInsets.symmetric(
+            vertical: 13,
+          ),
+
+          decoration: BoxDecoration(
+
+            color: selected
+                ? const Color(0xffF38328)
+                : Colors.transparent,
+
+            borderRadius:
+            BorderRadius.circular(30),
+          ),
+
+          child: Text(
+
+            title,
+
+            textAlign: TextAlign.center,
+
+            style: TextStyle(
+
+              fontWeight: FontWeight.w600,
+
+              color: selected
+                  ? Colors.white
+                  : Colors.black87,
+
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  Widget buildVideoSection() {
+    return Column(
+      children: [
+        filterList.isNotEmpty?
+        _buildFilterChips():Container(),
+        // Main Content Area
+        allClassesList.isNotEmpty?
+        Expanded(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Conditionally show content based on the selected filter
+                  if (_selectedFilterKey == '0') ...[
+
+                    ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: allClassesList.length,
+                        itemBuilder: (context, index){
+                          String categoryName=allClassesList[index].categoryName;
+                          String categoryId=allClassesList[index].categoryId;
+                          String categoryDescription=allClassesList[index].categoryDescription;
+                          List<categoryVideoModel>videoList=allClassesList[index].videoList;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    categoryName,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  videoList.isEmpty?Container():
+                                  videoList.length>4?
+                                  GestureDetector(
+                                    onTap: () {
+                                      _selectedFilterKey=categoryId;
+                                      _onFilterClick();
+                                      /* setState(() {
+                                            _selectedFilterKey=categoryId;
+                                          });*/
+                                    },
+                                    child: const Text(
+                                      "See all",
+                                      style: TextStyle(
+                                        color: Color(0xFF5A89AD),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ):Container(),
+                                ],
+                              ),
+                              SizedBox(height: 12,),
+                              videoList.isNotEmpty?
+                              ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: videoList.length>4?4:videoList.length,
+                                  itemBuilder: (mContext,inx){
+                                    return _buildVideoCard(videoList[inx]);
+                                  }):
+                              Center(child: Padding(padding: EdgeInsets.all(16),
+                                child: Text("Currently, there are no videos available for $categoryName.",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey
+                                  ),),
+
+                              ),),
+                            ],
+                          );
+
+                        }),
+
+
+
+                  ] else ...[
+                    categoryWiseVideoList.isNotEmpty?
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8, // Adjust to fit the content well
+                      ),
+                      itemCount: categoryWiseVideoList.length,
+                      itemBuilder: (context, index) {
+                        return _buildGridVideoCard(categoryWiseVideoList[index]);
+                      },
+                    )
+                        :Center(child: Padding(padding: EdgeInsets.all(16),
+                      child: Text("Currently, there are no videos available for $_selectedCategoryName.",
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey
+                        ),),
+
+                    ),),
+                  ]
+                ],
+              ),
+            ),
+          ),
+        ):
+        const Center(child: Padding(padding: EdgeInsets.all(16),
+          child: Text("Currently, there are no Yoga Videos available. Please visit again later for upcoming Yoga Videos.",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey
+            ),),
+
+        ),),
+      ],
     );
   }
   Widget _buildAppBar() {
@@ -293,7 +564,7 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
                 Navigator.pop(context);
               },
               child: const Icon(Icons.arrow_back_ios_new_sharp,
-                  size: 17, color: Colors.black),
+                  size: 24, color: Colors.black),
             ),
             const Expanded(
               child: Center(
@@ -365,105 +636,6 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
       ),
     );
   }
-  /*Widget _buildVideoSection(String title, List<Video> videos) {
-    if (videos.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                if (title.toLowerCase().contains('beginner yoga')) {
-                  setState(() {
-                    _selectedFilterKey = 'Beginner Yoga';
-                  });
-                } else if (title.toLowerCase().contains('advantage yoga')) {
-                  setState(() {
-                    _selectedFilterKey = 'Advantage Yoga';
-                  });
-                } else if (title.toLowerCase().contains('hatha yoga')) {
-                  setState(() {
-                    _selectedFilterKey = 'Hatha Yoga';
-                  });
-                } else if (title.toLowerCase().contains('power yoga')) {
-                  setState(() {
-                    _selectedFilterKey = 'Power Yoga';
-                  });
-                }
-              },
-              child: const Text(
-                "See all",
-                style: TextStyle(
-                  color: Color(0xFF5A89AD),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...videos.map((video) => _buildVideoCard(video)).toList(),
-      ],
-    );
-  }
-  // New widget for the Beginner Yoga grid layout
-  Widget _buildBeginnerYogaGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "BEGINNER YOGA VIDEOS",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // TODO: Implement "See all" functionality for Beginner Yoga
-              },
-              child: const Text(
-                "See all",
-                style: TextStyle(
-                  color: Color(0xFF5A89AD),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.8, // Adjust to fit the content well
-          ),
-          itemCount: beginnerVideos.length,
-          itemBuilder: (context, index) {
-            return _buildGridVideoCard(beginnerVideos[index]);
-          },
-        ),
-      ],
-    );
-  }*/
   Widget _buildGridVideoCard(categoryVideoModel video) {
     String coverImg=AppConstant.appBaseURL+video.videoCoverImage;
     String videoTitle=video.videoName;
@@ -495,10 +667,10 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
               child: CachedNetworkImage(
                 imageUrl: coverImg,
-                height: 120,
+                height: 110,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  height: 120,
+                  height: 110,
                   color: Colors.grey[200],
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
@@ -566,7 +738,6 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
       ),
     );
   }
-
   Widget _buildMembershipBanner() {
     return GestureDetector(
       onTap: () {
@@ -695,6 +866,8 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -731,6 +904,8 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
                               color: Color(0xFF865940),
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -749,7 +924,6 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
     final String parsedString = parse(document.body!.text).documentElement!.text;
     return parsedString;
   }
-
   @override
   void initState() {
     super.initState();
@@ -816,6 +990,38 @@ class _YogaClassesScreenState extends State<YogaClassesScreen> {
         allClassesList.add(categoryModel(categoryid, categoryName, categoryDescription, categoryDropdownType, videoList));
       }
 
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }
+    setState(() {
+      isLoading = false;
+    });
+    fetchScheduleClasses();
+  }
+  fetchScheduleClasses() async {
+    setState(() {
+      isLoading = true;
+    });
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    if (userId == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "user_id": userId, // Assuming default page size
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('yoga_class_management/getUserYogaClassBookings', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==200){
+      scheduledClasses.clear();
+      scheduledClasses=(responseJSON['data'] as List?) ?? [];
     }else{
       Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
     }

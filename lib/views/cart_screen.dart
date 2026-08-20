@@ -16,6 +16,7 @@ import 'package:vedic_health/views/product_detail_screen.dart';
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+import '../widgets/notification_bar_widget.dart';
 
 class CartScreen extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
@@ -49,13 +50,17 @@ class _MyHomePageState extends State<CartScreen> {
   bool isLoading=false;
   List<dynamic> cartList=[];
   List<bool> cartSelectedItems=[];
+  List<membershipProducts> membershipProductDisList=[];
+
+  bool isMembershipPurchased=false;
+  String membershipId="";
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             Card(
               elevation: 2,
               margin: EdgeInsets.only(bottom: 10),
@@ -83,7 +88,7 @@ class _MyHomePageState extends State<CartScreen> {
                           Navigator.pop(context);
 
                         },
-                        child:Icon(Icons.arrow_back_ios_new_sharp,size: 17,color: Colors.black)),
+                        child:Icon(Icons.arrow_back_ios_new_sharp,size: 24,color: Colors.black)),
 
 
 
@@ -227,8 +232,6 @@ class _MyHomePageState extends State<CartScreen> {
 
 
                 SizedBox(height: 10),
-
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -258,10 +261,7 @@ class _MyHomePageState extends State<CartScreen> {
                         )),
                   ],
                 ),
-
                 SizedBox(height: 25),
-                
-                
                 ListView.builder(
                     itemCount: cartList.length,
                     shrinkWrap: true,
@@ -273,11 +273,25 @@ class _MyHomePageState extends State<CartScreen> {
                   int maxOrderQuantity=cartList[pos]['productDetails']['maxOrderQuantity']??0;
                   int currentQuantity=cartList[pos]["quantity"]??0;
                   int stock=cartList[pos]['productDetails']['stock']??0;
-
-
+                 /* double? itemPrice=double.tryParse({cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"]}.toString());
+                  int itemPriceInt=itemPrice??cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"];*/
+                  num quantity = cartList[pos]["quantity"] ?? 0;
+                  num price = cartList[pos]["productDetails"]?["price"] ?? 0;
+                  double itemPrice = (quantity * price).toDouble();
+                  int itemPriceInt = itemPrice.toInt();
+                  String categoryId=cartList[pos]?['productDetails']?['category']?.toString()??"";
+                  double discountedPrice=0.0;
+                  if(membershipProductDisList.isNotEmpty){
+                    discountedPrice=calculateTheAmount(categoryId, itemPriceInt);
+                  }
+                  String dicountOffer=calculatePercentage(categoryId);
+                  String productImage="";
+                  String img=cartList[pos]["productDetails"]?["coverImage"]?.toString()??"";
+                  if(img.isNotEmpty){
+                    productImage=AppConstant.appBaseURL+img;
+                  }
                   return Column(
                     children: [
-
                       Container(
                        // height: 108,
                         padding: EdgeInsets.symmetric(horizontal: 11),
@@ -309,7 +323,7 @@ class _MyHomePageState extends State<CartScreen> {
                                           fit: BoxFit
                                               .cover,
                                           image: NetworkImage(
-                                            AppConstant.appBaseURL+cartList[pos]["productDetails"]["coverImage"],
+                                            productImage,
                                           ))
 
                                   ),
@@ -320,30 +334,30 @@ class _MyHomePageState extends State<CartScreen> {
                                       if(cartSelectedItems[pos])
                                         {
                                           cartSelectedItems[pos]=false;
-
-                                          int doubleSingleProductCost= cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"];
-
-                                          subTotalAmount=subTotalAmount-doubleSingleProductCost;
+                                         // int doubleSingleProductCost= cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"];
+                                          if(discountedPrice!=0.0){
+                                            subTotalAmount=subTotalAmount-discountedPrice;
+                                          }else{
+                                            subTotalAmount=subTotalAmount-itemPriceInt;
+                                          }
                                           setState(() {
 
                                           });
-
-
-
 
                                         }
                                       else
                                         {
                                           cartSelectedItems[pos]=true;
-
-                                          int doubleSingleProductCost= cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"];
-
-                                          subTotalAmount=subTotalAmount+doubleSingleProductCost;
+                                          /*int doubleSingleProductCost= cartList[pos]["quantity"] * cartList[pos]["productDetails"]["price"];
+                                          subTotalAmount=subTotalAmount+doubleSingleProductCost;*/
+                                          if(discountedPrice!=0.0){
+                                            subTotalAmount=subTotalAmount+discountedPrice;
+                                          }else{
+                                            subTotalAmount=subTotalAmount+itemPriceInt;
+                                          }
                                           setState(() {
 
                                           });
-
-
                                         }
 
                                       setState(() {
@@ -358,7 +372,7 @@ class _MyHomePageState extends State<CartScreen> {
 
                                     cartSelectedItems[pos]?
                                     Icon(Icons.check_box,color: AppTheme.themeColor):
-                                Icon(Icons.check_box_outline_blank_outlined)
+                                    Icon(Icons.check_box_outline_blank_outlined)
 
 
                                 ),
@@ -379,7 +393,7 @@ class _MyHomePageState extends State<CartScreen> {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: Text(cartList[pos]["productDetails"]["productName"],
+                                        child: Text(cartList[pos]["productDetails"]["productName"]??"",
                                             style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w600,
@@ -391,7 +405,7 @@ class _MyHomePageState extends State<CartScreen> {
                                       InkWell(
                                         onTap: (){
                                           if(cartId.isNotEmpty){
-                                            _modelDeleteConfirmation(context, cartId);
+                                            _modelDeleteConfirmation(context, cartId,pos);
                                           }
 
                                         },
@@ -406,7 +420,7 @@ class _MyHomePageState extends State<CartScreen> {
                                     ],
                                   ),
                                   SizedBox(height: 6),
-                                  Text("Brand: "+cartList[pos]["productDetails"]["brand_name"],
+                                  Text("Brand: ${cartList[pos]["productDetails"]["brand_name"]??""}",
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFFA3A3A3),
@@ -414,7 +428,13 @@ class _MyHomePageState extends State<CartScreen> {
                                   SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Text("\$"+cartList[pos]["productDetails"]["price"].toString(),
+                                     /* Text("\$"+cartList[pos]["productDetails"]["price"].toString(),
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          )),*/
+                                      Text("\$$itemPriceInt",
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -487,104 +507,36 @@ class _MyHomePageState extends State<CartScreen> {
 
                                         ],
                                       ),
-
-
-                                     /* Container(
-                                        //width: 68,
-                                        height: 26,
-                                        padding: EdgeInsets.symmetric(horizontal: 10),
-                                        decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(30),
-                                            color: Color(0xFFF5F5F5)
-                                        ),
-
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-
-                                           *//* currentQuantity>1?
-                                            GestureDetector(
-                                              onTap:(){
-                                                updateCartProduct(cartList[pos]["productId"].toString(), false);
-                                              },
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(8.0),
-                                                child: Image.asset("assets/minus_ic.png",width: 9,height: 9,),
-                                              ),
-                                            ):Container(),*//*
-                                            if (currentQuantity > 1)
-                                              GestureDetector(
-                                                onTap: () {
-                                                  updateCartProduct(cartList[pos]["productId"].toString(), false);
-                                                },
-                                                child: Container(
-                                                  decoration: const BoxDecoration(
-                                                    color: Colors.red, // Red circle background
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  padding: const EdgeInsets.all(6),
-                                                  child: Image.asset(
-                                                    "assets/minus_ic.png",
-                                                    width: 9,
-                                                    height: 9,
-                                                    color: Colors.white, // white icon inside red circle
-                                                  ),
-                                                ),
-                                              ),
-
-                                            Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                                              child: Text(cartList[pos]["quantity"].toString(),
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.black,
-                                                  )),
-                                            ),
-
-                                          *//*  stock>currentQuantity&&currentQuantity<maxOrderQuantity?
-                                            GestureDetector(
-                                              onTap:(){
-                                                updateCartProduct(cartList[pos]["productId"].toString(), true);
-                                              },
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(8.0),
-                                                child: Image.asset("assets/plus_ic.png",width: 9,height: 9,),
-                                              ),
-                                            ):Container(),*//*
-                                            if (stock > currentQuantity && currentQuantity < maxOrderQuantity)
-                                              GestureDetector(
-                                                onTap: () {
-                                                  updateCartProduct(cartList[pos]["productId"].toString(), true);
-                                                },
-                                                child: Container(
-                                                  decoration: const BoxDecoration(
-                                                    color: Colors.green, // Green circle background
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  padding: const EdgeInsets.all(6),
-                                                  child: Image.asset(
-                                                    "assets/plus_ic.png",
-                                                    width: 9,
-                                                    height: 9,
-                                                    color: Colors.white, // white icon inside green circle
-                                                  ),
-                                                ),
-                                              ),
-
-
-                                          ],
-                                        ),
-                                      ),*/
-
-
-
-
-
-
-
                                     ],
                                   ),
+                                  SizedBox(height: 6),
+                                  discountedPrice!=0.0?
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text("Member Price",
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green,
+                                            )),
+                                      ),
+                                      SizedBox(width: 10,),
+                                      Text("\$${discountedPrice.toStringAsFixed(2)}",
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green,
+                                          )),
+                                      SizedBox(width: 5,),
+                                      Text(dicountOffer,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.green,
+                                          )),
+                                    ],
+                                  ):Container(),
                                   SizedBox(height: 15),
 
                                 ],
@@ -604,7 +556,6 @@ class _MyHomePageState extends State<CartScreen> {
 
 
                       ),
-
                       SizedBox(height: 15),
                     ],
                   );
@@ -613,23 +564,16 @@ class _MyHomePageState extends State<CartScreen> {
 
 
                 ),
-
-
                 SizedBox(height: 10),
-
                 Row(
                   children: [
-
-
-                    Text("Missed something?",
+                    const Text("Missed something?",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Colors.black,
                         )),
-
                     Spacer(),
-
                     GestureDetector(
                       onTap: (){
                         Navigator.push(
@@ -654,26 +598,12 @@ class _MyHomePageState extends State<CartScreen> {
                         ),
                       ),
                     )
-
-
-
                   ],
                 ),
-
                 SizedBox(height: 20,),
-
-
-
-
-
-
               ],
             )),
-
-
             cartList.length==0?Container():
-
-
             Container(
               height: 88,
               decoration: BoxDecoration(
@@ -728,15 +658,10 @@ class _MyHomePageState extends State<CartScreen> {
 
                   Expanded(child: GestureDetector(
                     onTap: (){
-
-
                       if(cartSelectedItems.toString().contains("true"))
                         {
-
                           placeOrder();
                         }
-
-
                     },
                     child: Container(
                       height: 54,
@@ -771,21 +696,9 @@ class _MyHomePageState extends State<CartScreen> {
 
 
             )
-
-
-
-
-
-
-
-
-
-
-
           ],
         ),
-      ),
-    );
+      );
   }
   void allCategoryBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -1330,16 +1243,31 @@ class _MyHomePageState extends State<CartScreen> {
     var responseJSON = json.decode(response.toString());
     print(response.toString());
     subTotalAmount=0;
-
-
+    cartList.clear;
     cartList = responseJSON["data"];
 
     for(int i=0;i<cartList.length;i++)
       {
-        int totalAmount=cartList[i]["quantity"] * cartList[i]["productDetails"]["price"];
-        
-        subTotalAmount=subTotalAmount+totalAmount;
+        num quantity = cartList[i]["quantity"] ?? 0;
+        num price = cartList[i]["productDetails"]?["price"] ?? 0;
+
+        int itemPriceInt = (quantity * price).toInt();
+        String categoryId=cartList[i]?['productDetails']?['category']?.toString()??"";
+
+        double discountedPrice=0.0;
+        if(membershipProductDisList.isNotEmpty){
+          discountedPrice=calculateTheAmount(categoryId, itemPriceInt);
+        }
+        if(discountedPrice!=0.0){
+          subTotalAmount=subTotalAmount+discountedPrice;
+        }else{
+          subTotalAmount=subTotalAmount+itemPriceInt;
+        }
+
+        //int totalAmount=cartList[i]["quantity"] * cartList[i]["productDetails"]["price"];
+
       }
+
 
     if(cartSelectedItems.length==0)
       {
@@ -1366,9 +1294,10 @@ class _MyHomePageState extends State<CartScreen> {
   }
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    fetchCartItems(false);
+    //fetchMembershipDetails();
+    fetchMembershipCourses();
+
   }
   updateCartProduct(String productID,bool addMore) async {
 
@@ -1383,15 +1312,16 @@ class _MyHomePageState extends State<CartScreen> {
     Navigator.pop(context);
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-    if (responseJSON['message'] == "Cart successfully added!") {
+    if (responseJSON['statusCode'] == 201 ||responseJSON['statusCode'] == 200 ) {
       fetchCartItems(true);
     }
     else
     {
-      Toast.show("${responseJSON['message'].toString()} Error: ${responseJSON['error'].toString()}",
+      /*Toast.show(responseJSON['message'].toString(),
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
-          backgroundColor: Colors.red);
+          backgroundColor: Colors.red);*/
+      APIDialog.showErrorDialog(context, responseJSON['message']?.toString()??"Something went wrong. Please try again.");
     }
 
 
@@ -1400,87 +1330,53 @@ class _MyHomePageState extends State<CartScreen> {
   placeOrder() async {
 
     APIDialog.showAlertDialog(context, "Please wait...");
-
     String? userId=await MyUtils.getSharedPreferences("user_id");
-
     List<String> cartIDs=[];
-
     for(int i=0;i<cartSelectedItems.length;i++)
       {
-
         if(cartSelectedItems[i])
           {
             cartIDs.add(cartList[i]["_id"].toString());
           }
-
-
-
       }
-
-
-
-
-
-
-
     var data ={"ids":cartIDs,"user":userId.toString()};
-
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
-
     ApiBaseHelper helper = ApiBaseHelper();
     var response = await helper.postAPI('cart_management/selectItems', requestModel, context);
-
-
     Navigator.pop(context);
-
-
-
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-
-    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen(cartIDs)));
-
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen(cartIDs,subTotalAmount.toStringAsFixed(2))));
 
     setState(() {});
   }
-  deleteCartProduct(String cartID) async {
-
+  deleteCartProduct(String cartID,int index) async {
     APIDialog.showAlertDialog(context, "Removing item...");
-
     String? userId=await MyUtils.getSharedPreferences("user_id");
-
-
-
-
     var data = {"id": cartID,"user_id":userId.toString()};
-
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
     print(requestModel);
-
     ApiBaseHelper helper = ApiBaseHelper();
     var response = await helper.postAPI('cart_management/delete', requestModel, context);
-
-
     Navigator.pop(context);
-
-
-
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-    if (responseJSON['message'] == "File deleted successfully") {
-
+    if (responseJSON['statusCode'] == 201 || responseJSON['statusCode'] == 204 ) {
          Toast.show("Item removed successfully!",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
+          setState(() {
+            cartSelectedItems.removeAt(index);
+            cartList.removeAt(index);
+          });
+
+
 
       fetchCartItems(true);
-
-
-
     }
     else
     {
@@ -1489,11 +1385,9 @@ class _MyHomePageState extends State<CartScreen> {
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
     }
-
-
     setState(() {});
   }
-  void _modelDeleteConfirmation(BuildContext context,String id) {
+  void _modelDeleteConfirmation(BuildContext context,String id,int index) {
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -1597,7 +1491,7 @@ class _MyHomePageState extends State<CartScreen> {
                         child: GestureDetector(
                           onTap: () async {
                             Navigator.of(ctx).pop();
-                            deleteCartProduct(id);
+                            deleteCartProduct(id,index);
                           },
                           child: Container(
                             height: 50,
@@ -1629,4 +1523,113 @@ class _MyHomePageState extends State<CartScreen> {
           }),
     );
   }
+  fetchMembershipCourses() async {
+    setState(() {
+      isLoading = true;
+    });
+    String? userId=await MyUtils.getSharedPreferences("user_id");
+    ApiBaseHelper helper = ApiBaseHelper();
+
+    Map<String, dynamic> requestBody = {
+      "user_id": userId
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('course_management/getCourseAndMembership', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==200){
+      membershipId=responseJSON['data']?['membership']?['membership_id']?.toString()??"";
+      if(responseJSON['data']?['membership']==null){
+        isMembershipPurchased=false;
+      }else{
+        isMembershipPurchased=true;
+      }
+
+    }else{
+      isMembershipPurchased=false;
+    }
+    setState(() {
+      isLoading = false;
+    });
+    if(isMembershipPurchased){
+      fetchMembershipDetails();
+    }else{
+      fetchCartItems(false);
+    }
+
+
+
+  }
+  fetchMembershipDetails() async {
+    setState(() {
+      isLoading = true;
+    });
+    String? userId=await MyUtils.getSharedPreferences("user_id");
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "id": membershipId,
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('membership_management/view', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==200){
+      var result=responseJSON['result'];
+      membershipProductDisList.clear();
+      var data = result['product_categories'];
+      List proList = (data is List) ? data : (data != null ? [data] : []);
+      for(var proCat in proList){
+        String categoryid=proCat['category_id']?.toString()??"";
+        int dicount=proCat['discount']??0;
+        String _id=proCat['_id']?.toString()??"";
+        membershipProductDisList.add(membershipProducts(categoryid, dicount, _id));
+      }
+
+    }
+    setState(() {
+      isLoading = false;
+    });
+    fetchCartItems(false);
+  }
+  double calculateTheAmount(String categoryId,int itemPrice){
+    double totalPrice=0.0;
+    int discount=0;
+    for(var proCat in membershipProductDisList){
+      String catId=proCat.categoryId;
+      if(categoryId==catId){
+        discount=proCat.discount;
+        print("discount $discount");
+        break;
+      }
+    }
+    double discountAmount= itemPrice * discount / 100;
+    totalPrice=itemPrice-discountAmount;
+    return totalPrice;
+  }
+  String calculatePercentage(String categoryId){
+    String percentageOff="";
+    int discount=0;
+    for(var proCat in membershipProductDisList){
+      String catId=proCat.categoryId;
+      if(categoryId==catId){
+        discount=proCat.discount;
+        print("discount $discount");
+        break;
+      }
+    }
+    percentageOff="($discount% off)";
+    return percentageOff;
+  }
+}
+
+class membershipProducts{
+  String categoryId;
+  int discount;
+  String id;
+
+  membershipProducts(this.categoryId, this.discount, this.id);
 }

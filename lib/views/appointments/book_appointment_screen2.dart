@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
+import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_payment_screen.dart';
-
 import '../../network/Utils.dart';
+import '../../widgets/notification_bar_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class BookAppointmentScreen2 extends StatefulWidget {
   final List<Map<String, dynamic>> allServicesData;
@@ -22,6 +24,8 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
   Map<String, int?> selectedSlots = {};
   bool isLoading = true;
   Map<String, dynamic> servicesWithSlots = {};
+
+  Map<String, dynamic>? selectedSlot;
 
   @override
   void initState() {
@@ -42,6 +46,8 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
+        selectedSlot = null;
+        selectedSlots.clear();
       });
       fetchAvailableSlots();
     }
@@ -66,7 +72,8 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
           return {
             "serviceId": serviceData["serviceId"],
             "employeeId": serviceData["employeeId"],
-            "userId": serviceData["userId"],
+            "userId": widget.userId,
+            //"userId": serviceData["userId"],
             "date": DateFormat('yyyy-MM-dd').format(selectedDate!)
           };
         }).toList(),
@@ -88,19 +95,20 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
       if (responseJSON["slots"] != null && responseJSON["slots"].isNotEmpty) {
         // Store the response data in the map
         for (var serviceSlot in responseJSON["slots"]) {
-          final uniqueKey =
-              "${serviceSlot['serviceDetails']['service']['_id']}_${serviceSlot['employeeData']['_id']}";
+          final uniqueKey = "${serviceSlot['serviceDetails']['service']['_id']}_${serviceSlot['employeeData']['_id']}";
           servicesWithSlots[uniqueKey] = {
             'slots': serviceSlot['slots'],
             'employeeData': serviceSlot['employeeData'],
             'serviceDetails': serviceSlot['serviceDetails'],
-            'allServiceData': widget.allServicesData.firstWhere(
-                (element) =>
+            'reviews' : serviceSlot['reviews'],
+            'allServiceData': widget.allServicesData.firstWhere((element) =>
                     element['serviceId'] ==
-                    serviceSlot['serviceDetails']['service']['_id'],
-                orElse: () => {})
+                    serviceSlot['serviceDetails']['service']['_id'], orElse: () => {}),
+
           };
         }
+
+
       }
     } catch (e) {
       print("Error fetching slots: $e");
@@ -113,14 +121,14 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -140,7 +148,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -186,8 +194,21 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                 final employeeData = serviceData['employeeData'];
                 final serviceDetails = serviceData['serviceDetails'];
                 List<dynamic> slots = serviceData['slots'];
-
                 print("slots $slots");
+                final reviewData=serviceData['reviews'];
+                //double averageReview=reviewData['average']?['overall_review']??0.0;
+
+                double averageReview =
+                    (reviewData['average']?['overall_review'] as num?)?.toDouble() ?? 0.0;
+
+                String employeeFile=employeeData['userDetails']?['file']?.toString()??"";
+                String empProfileImage="";
+                if(employeeFile.isNotEmpty){
+                  empProfileImage="${AppConstant.appBaseURL}$employeeFile";
+                }
+
+                print(empProfileImage);
+
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -257,7 +278,22 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                           children: [
                             Row(
                               children: [
-                                NameAvatar(fullName: employeeData["userDetails"]["name"] ?? "N/A",size: 70,),
+                                empProfileImage.isEmpty?
+                                NameAvatar(fullName: employeeData["userDetails"]["name"] ?? "N/A",size: 70,):
+                                ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: empProfileImage,
+                                    width: 70,
+                                    height: 70,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                                    errorWidget: (context, url, error) => NameAvatar(
+                                      fullName: employeeData["userDetails"]["name"] ?? "N/A",
+                                      size: 70,
+                                    ),
+                                  ),
+                                ),
+
                                 const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,16 +306,19 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                         fontSize: 17,
                                       ),
                                     ),
-                                    const Row(
-                                      children: [
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        Icon(Icons.star, color: Colors.grey, size: 18),
-                                        SizedBox(width: 5),
-                                        Text("(0)"),
-                                      ],
+                                    Row(
+                                      children: List.generate(5, (index) {
+
+                                        if (index < averageReview.floor()) {
+                                          return const Icon(Icons.star, color: Colors.amber, size: 18);
+                                        } else if (index < averageReview) {
+                                          return const Icon(Icons.star_half, color: Colors.amber, size: 18);
+                                        } else {
+                                          return const Icon(Icons.star_border, color: Colors.grey, size: 18);
+                                        }
+                                      })
+                                        ..add(const SizedBox(width: 5))
+                                        ..add( Text("($averageReview)")),
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
@@ -382,14 +421,38 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
 
                             String time=formatDateUtc(slot['startTime']?.toString()??"");
 
-                            final isSelected = selectedSlots[serviceId] == index;
+                            //final isSelected = selectedSlots[serviceId] == index;
+
+                            final isSelected =
+                                selectedSlot != null &&
+                                    selectedSlot!['serviceKey'] == serviceId &&
+                                    selectedSlot!['slotIndex'] == index;
 
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  if (isSelected) {
+                                  /*if (isSelected) {
                                     selectedSlots[serviceId] = null;
                                   } else {
+                                    selectedSlots[serviceId] = index;
+                                  }*/
+                                  if (isSelected) {
+                                    // Unselect current slot
+                                    selectedSlot = null;
+                                    selectedSlots.clear();
+                                  } else {
+                                    // Only ONE slot can be selected globally
+                                    selectedSlot = {
+                                      'serviceKey': serviceId,
+                                      'slotIndex': index,
+                                      'slot': slot,
+                                      'employeeData': employeeData,
+                                      'serviceDetails': serviceDetails,
+                                      'reviews': serviceData['reviews'],
+                                      'allServiceData': serviceData['allServiceData'],
+                                    };
+                                    // Keep old map updated if required elsewhere
+                                    selectedSlots.clear();
                                     selectedSlots[serviceId] = index;
                                   }
                                 });
@@ -523,14 +586,13 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                     child: ElevatedButton(
                       onPressed: () async {
                         // Build appointments from selected slots
-                        List<Map<String, dynamic>> appointments = [];
+                        /*List<Map<String, dynamic>> appointments = [];
                         String? userId = await MyUtils.getSharedPreferences("user_id");
                         double totalPrice=0.0;
                         List<Map<String,dynamic>> selectedEmpList=[];
                         selectedSlots.forEach((serviceKey, slotIndex) {
                           if (slotIndex != null) {
-                            final selectedServiceData =
-                                servicesWithSlots[serviceKey];
+                            final selectedServiceData = servicesWithSlots[serviceKey];
                             final slot =
                                 selectedServiceData['slots'][slotIndex];
                             final allServiceData =
@@ -539,19 +601,37 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                 selectedServiceData['serviceDetails'];
                             final employeeData = selectedServiceData['employeeData'];
                             String empName=employeeData["userDetails"]["name"] ?? "N/A";
-                            String empId=allServiceData['employeeId'];
+                           // String empId=allServiceData['employeeId'];
+                            String empId = employeeData['_id']?.toString() ?? allServiceData['employeeId']?.toString() ?? "";
+
+
                             double price=double.parse(serviceDetails['price']?.toString() ?? "0");
+
+                            final reviewData=selectedServiceData['reviews'];
+
+                            double averageReview =
+                                (reviewData['average']?['overall_review'] as num?)?.toDouble() ?? 0.0;
+                            String employeeFile=employeeData['userDetails']?['file']?.toString()??"";
+                            String empProfileImage="";
+                            if(employeeFile.isNotEmpty){
+                              empProfileImage="${AppConstant.appBaseURL}$employeeFile";
+                            }
+
+
                             final empData={
                               "emp_name":empName,
                               "price":price,
-                              "empId":empId
+                              "empId":empId,
+                              "emp_rating":averageReview,
+                              "emp_profile":empProfileImage
                             };
                             selectedEmpList.add(empData);
 
 
                             final appointment = {
                               "serviceId": allServiceData['serviceId'],
-                              "employeeId": allServiceData['employeeId'],
+                              //"employeeId": allServiceData['employeeId'],
+                              "employeeId": empId,
                               "userId": userId,
                               //"userId": allServiceData['userId'],
                               "note": "test",
@@ -579,7 +659,118 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                                     "Please select a time slot to continue.")),
                           );
                           return;
+                        }*/
+                        List<Map<String, dynamic>> appointments = [];
+
+                        String? userId =
+                        await MyUtils.getSharedPreferences("user_id");
+
+                        double totalPrice = 0.0;
+
+                        List<Map<String, dynamic>> selectedEmpList = [];
+
+                        if (selectedSlot == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Please select a time slot to continue.",
+                              ),
+                            ),
+                          );
+
+                          return;
                         }
+                        final selectedServiceData =
+                        selectedSlot!['allServiceData'];
+
+                        final slot =
+                        selectedSlot!['slot'];
+
+                        final serviceDetails =
+                        selectedSlot!['serviceDetails'];
+
+                        final employeeData =
+                        selectedSlot!['employeeData'];
+                        String empName =
+                            employeeData["userDetails"]["name"] ?? "N/A";
+
+                        String empId =
+                            employeeData["_id"]?.toString() ??
+                                selectedServiceData["employeeId"]?.toString() ??
+                                "";
+                        final reviewData =
+                        selectedSlot!['reviews'];
+
+                        double averageReview =
+                            (reviewData?['average']?['overall_review'] as num?)
+                                ?.toDouble() ??
+                                0.0;
+                        double price = double.tryParse(
+                          serviceDetails['price']?.toString() ?? "0",
+                        ) ??
+                            0.0;
+                        String employeeFile =
+                            employeeData['userDetails']?['file']
+                                ?.toString() ??
+                                "";
+
+                        String empProfileImage = "";
+
+                        if (employeeFile.isNotEmpty) {
+                          empProfileImage =
+                          "${AppConstant.appBaseURL}$employeeFile";
+                        }
+
+                        final empData = {
+                          "emp_name": empName,
+                          "price": price,
+                          "empId": empId,
+                          "emp_rating": averageReview,
+                          "emp_profile": empProfileImage,
+                        };
+
+                        selectedEmpList.add(empData);
+
+                        final appointment = {
+                          "serviceId":
+                          selectedServiceData['serviceId'],
+
+                          // IMPORTANT:
+                          // Use selected doctor's ID, NOT "any"
+                          "employeeId": empId,
+
+                          "userId": userId,
+
+                          "note": "test",
+
+                          "date": DateFormat('yyyy-MM-dd')
+                              .format(selectedDate!),
+
+                          "time": formatDateUtc24(
+                            slot['startTime']?.toString() ?? "",
+                          ),
+
+                          "deposit": 0,
+
+                          "repeat": "Off",
+
+                          "file": "",
+
+                          "duration": int.tryParse(
+                            serviceDetails['duration']
+                                ?.toString() ??
+                                "60",
+                          ) ??
+                              60,
+
+                          "price":
+                          serviceDetails['price'] ?? 0,
+                        };
+
+                        appointments.add(appointment);
+
+                        totalPrice += price;
+
 
                         try {
                           APIDialog.showAlertDialog(context, "Please wait...");
@@ -616,15 +807,16 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
                             }
 
                             if(appointIds.isNotEmpty){
+
+
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => BookPaymentScreen(
                                     date: selectedDate!,
                                     userId: widget.userId,
-                                    name: servicesWithSlots[
-                                    selectedSlots.keys.first]
-                                    ['employeeData']['userDetails']['name'],
+                                   // name: servicesWithSlots[selectedSlots.keys.first]['employeeData']['userDetails']['name'],
+                                    name: selectedSlot!['employeeData']['userDetails']['name'],
                                     price: totalPrice,
                                     allServicesData: widget.allServicesData,
                                     empData: selectedEmpList,
@@ -681,8 +873,7 @@ class _BookAppointmentScreen2State extends State<BookAppointmentScreen2> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   String formatDateUtc(String date) {

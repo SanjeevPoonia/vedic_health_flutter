@@ -7,16 +7,19 @@ import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
+import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/cart_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vedic_health/views/reviewall_screen.dart';
 import 'package:vedic_health/widgets/readMore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:convert' show base64, json, utf8;
 
 import '../network/api_helper.dart';
 import 'address_details_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productID;
@@ -234,7 +237,7 @@ class ProductState extends State<ProductDetailScreen> {
                                             color: Colors.black,
                                           ))),
                                   Text(
-                                      "\$${productData["discounted_price"]?.toString()??productData["price"]?.toString()??""}",
+                                      "\$${productData["price"]?.toString()??productData["discounted_price"]?.toString()??""}",
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -260,7 +263,7 @@ class ProductState extends State<ProductDetailScreen> {
                                         color: Color(0xFF662A09),
                                       )),
                                   SizedBox(width: 10),
-                                  Text("${ratingData['totalReviews']} Reviews",
+                                  Text("${ratingData['totalReviews']??0} Reviews",
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
@@ -476,7 +479,7 @@ class ProductState extends State<ProductDetailScreen> {
                                                     child: Row(
                                                       children: [
                                                         Text(
-                                                            "\$${similarProducts[index]["discounted_price"]?.toString()??similarProducts[index]["price"]?.toString()??""}",
+                                                            "\$${similarProducts[index]["price"]?.toString()??similarProducts[index]["discounted_price"]?.toString()??""}",
                                                             style: const TextStyle(
                                                               fontSize: 16,
                                                               fontWeight:
@@ -534,7 +537,10 @@ class ProductState extends State<ProductDetailScreen> {
                                                               FontWeight.w500,
                                                           color:
                                                               Color(0xFFF38328),
-                                                        )),
+                                                        ),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -554,6 +560,17 @@ class ProductState extends State<ProductDetailScreen> {
                                         fontWeight: FontWeight.w600,
                                         color: Colors.black,
                                       )),
+                                  Spacer(),
+                                  reviewsList.length>5?
+                                      GestureDetector(
+                                        onTap: (){
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) => ReviewallScreen(widget.productID)));
+                                        },
+                                        child: Text("View All",style: TextStyle(fontWeight: FontWeight.w900,fontSize: 14,color: AppTheme.textBlue),),
+                                      ):Container(),
                                 ],
                               ),
                               SizedBox(height: 13),
@@ -591,7 +608,7 @@ class ProductState extends State<ProductDetailScreen> {
                                         SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                              ratingData["totalReviews"]?.toString()??"" +
+                                              ratingData["totalReviews"]?.toString()??"0" +
                                                   " reviews",
                                               style: TextStyle(
                                                 fontSize: 13,
@@ -606,22 +623,28 @@ class ProductState extends State<ProductDetailScreen> {
                                       child: Text("No reviews found!"),
                                     )
                                   : ListView.builder(
-                                      itemCount: reviewsList.length,
+                                      itemCount: reviewsList.length>5?5:reviewsList.length,
                                       shrinkWrap: true,
                                       physics: NeverScrollableScrollPhysics(),
                                       itemBuilder:
                                           (BuildContext context, int pos) {
+                                            List<String> uploadedImageList = [];
+                                            List<dynamic> imlist= (reviewsList[pos]['additionalImages'] as List?) ?? [];
+                                            uploadedImageList.addAll(imlist.map((e) =>  e.toString()
+                                            ));
+
                                         return Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
-                                                CircleAvatar(
+                                                NameAvatar(fullName: reviewsList[pos]["userName"]?.toString()??"NA",size: 48,),
+                                               /* CircleAvatar(
                                                   radius: 24,
                                                   backgroundImage: AssetImage(
                                                       "assets/user_d2.png"),
-                                                ),
+                                                ),*/
                                                 SizedBox(width: 12),
                                                 Expanded(
                                                     child: Column(
@@ -687,7 +710,38 @@ class ProductState extends State<ProductDetailScreen> {
                                                       ),
                                                     ),
                                             ),
-                                            pos == 4
+                                            SizedBox(height: 12,),
+                                            uploadedImageList.isNotEmpty?
+                                            GridView.builder(
+                                              shrinkWrap: true, // important
+                                              physics: const NeverScrollableScrollPhysics(), // ListView scroll handle karega
+                                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 2, // 2 columns
+                                                crossAxisSpacing: 12,
+                                                mainAxisSpacing: 12,
+                                                childAspectRatio: 1, // square look
+                                              ),
+                                              itemCount: uploadedImageList.length,
+                                              itemBuilder: (context, index) {
+                                                final url = AppConstant.appBaseURL+uploadedImageList[index];
+                                                return ClipRRect(
+                                                  borderRadius: BorderRadius.circular(16), // rounded corners
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: url,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context, url) => Container(
+                                                      color: Colors.grey[200],
+                                                      child: const Center(
+                                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                                      ),
+                                                    ),
+                                                    errorWidget: (context, url, error) =>
+                                                    const Icon(Icons.error, color: Colors.red),
+                                                  ),
+                                                );
+                                              },
+                                            ):Container(),
+                                            pos == 5
                                                 ? Container()
                                                 : SizedBox(height: 35),
                                             /* Row(
@@ -805,7 +859,6 @@ class ProductState extends State<ProductDetailScreen> {
       ),
     );
   }
-
   fetchProductDetails() async {
     setState(() {
       isLoading = true;
@@ -837,7 +890,6 @@ class ProductState extends State<ProductDetailScreen> {
       });
     }
   }
-
   addProductToCart(bool isBuyNow) async {
     APIDialog.showAlertDialog(context, "Adding to cart...");
 
@@ -878,7 +930,7 @@ class ProductState extends State<ProductDetailScreen> {
             var createdCartManagement=da['createdCartManagement'];
             String cartId=createdCartManagement['_id']?.toString()??"";
             int quantity=createdCartManagement['quantity']??1;
-            if(quantity<2){
+            /*if(quantity<2){
               if(cartId.isNotEmpty){
                 placeOrder(cartId);
               }
@@ -887,39 +939,82 @@ class ProductState extends State<ProductDetailScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => CartScreen()));
-            }
+            }*/
+            findCartDetails(widget.productID);
 
           }else{
-            Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
+            Toast.show(responseJSON['message'].toString(),
                 duration: Toast.lengthLong,
                 gravity: Toast.bottom,
                 backgroundColor: Colors.red);
           }
         }else{
-          Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
+          Toast.show(responseJSON['message'].toString(),
               duration: Toast.lengthLong,
               gravity: Toast.bottom,
               backgroundColor: Colors.red);
         }
 
 
+      }else{
+        Toast.show(responseJSON['message'],
+            duration: Toast.lengthLong,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.green);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => CartScreen()));
       }
     } else {
-      Toast.show("${responseJSON['message'].toString()}-Error:${responseJSON['error'].toString()}",
+      Toast.show(responseJSON['message'].toString(),
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      if(isBuyNow){
+        findCartDetails(widget.productID);
+      }
+    }
+
+    setState(() {});
+  }
+  findCartDetails(String productId) async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+    String? userId=await MyUtils.getSharedPreferences("user_id");
+
+    var data ={
+      "product":productId,
+      "user":userId.toString(),
+      "selected":1
+    };
+    print(data.toString());
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    print(requestModel);
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI('cart_management/findUserCart', requestModel, context);
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.toString());
+    List<dynamic> cartList=(responseJSON['data'] as List?) ?? [];
+    if(cartList.isNotEmpty){
+      String cartId=cartList[0]['_id']?.toString()??"";
+      num quantity = cartList[0]["quantity"] ?? 0;
+      num price = cartList[0]["productDetails"]?["price"] ?? 0;
+      double itemPrice = (quantity * price).toDouble();
+      int itemPriceInt = itemPrice.toInt();
+      placeOrder(cartId, itemPriceInt);
+
+    }else{
+      Toast.show("Something went wrong! Please try again",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
     }
 
+
     setState(() {});
   }
-
-
-
-  placeOrder(String cartId) async {
-
+  placeOrder(String cartId, int itemPrice) async {
     APIDialog.showAlertDialog(context, "Please wait...");
-
     String? userId=await MyUtils.getSharedPreferences("user_id");
     List<String> cartIDs=[];
     cartIDs.add(cartId);
@@ -930,11 +1025,9 @@ class ProductState extends State<ProductDetailScreen> {
     ApiBaseHelper helper = ApiBaseHelper();
     var response = await helper.postAPI('cart_management/selectItems', requestModel, context);
     Navigator.pop(context);
-
     var responseJSON = json.decode(response.toString());
     print(response.toString());
-
-    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen(cartIDs)));
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen(cartIDs,itemPrice.toString())));
     setState(() {});
   }
 
@@ -987,7 +1080,7 @@ class ProductState extends State<ProductDetailScreen> {
     setState(() {
       isLoading = true;
     });
-    var data = {"product_id": widget.productID, "limit": 5, "page": 1};
+    var data = {"product_id": widget.productID, "limit": 20, "page": 1};
 
     print(data.toString());
     var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
@@ -1002,7 +1095,7 @@ class ProductState extends State<ProductDetailScreen> {
     });
 
     var responseJSON = json.decode(response.toString());
-    print(response.toString());
+    print("reviews :${response.toString()}");
 
     reviewsList = responseJSON["data"];
 

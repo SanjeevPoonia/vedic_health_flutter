@@ -5,12 +5,7 @@ import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/views/appointments/appointment_detail.dart';
-import 'package:vedic_health/views/appointments/book_classes/select_class_screen.dart';
-import 'package:vedic_health/views/appointments/detox_programs/detox_programs_home.dart';
-import 'package:vedic_health/views/appointments/membership/join_membership_screen.dart';
-import 'package:vedic_health/views/menu_screen.dart';
-
-import '../events/event_home_screen.dart';
+import '../../widgets/notification_bar_widget.dart';
 import '../yoga_classes/yoga_classes_screen.dart';
 
 class AppointmentOption {
@@ -59,11 +54,11 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             Card(
               // elevation: 2,
               // margin: EdgeInsets.only(bottom: 10),
@@ -91,7 +86,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                           Navigator.pop(context);
                         },
                         child: Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black)),
+                            size: 24, color: Colors.black)),
                     /*GestureDetector(
                       onTap: () {
                         // TODO: Open menu drawer if needed
@@ -173,7 +168,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  const SelectClassScreen(),
+                                                  const YogaClassesScreen(),
                                             ));
                                       },
                                       style: ElevatedButton.styleFrom(
@@ -306,8 +301,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Future<void> fetchAllCenters(int page, int pageSize, bool progressDialog) async {
@@ -390,6 +384,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
   }
 
   Widget _buildAppointmentCard(AppointmentOption option) {
+
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -474,8 +469,9 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AppointmentDetail(
-                          consultations: option.services ?? [],
                           title: option.title,
+                          serviceId: option.id??"",
+                          centerId: centers[selectedCenter]["_id"],
                         ),
                       ),
                     );
@@ -534,7 +530,7 @@ class _AppointmentHomeScreenState extends State<AppointmentHomeScreen> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    "Book Now",
+                    "Explore",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

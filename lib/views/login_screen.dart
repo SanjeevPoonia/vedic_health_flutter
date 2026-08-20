@@ -414,6 +414,8 @@ getRemeberedPassword()async{
       MyUtils.saveSharedPreferences(
           'user_id', responseJSON['data']['_id'].toString());
 
+
+
       AppModel.setTokenValue(responseJSON['data']['password'].toString());
       AppModel.setLoginToken(true);
 

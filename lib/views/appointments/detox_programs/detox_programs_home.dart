@@ -38,7 +38,7 @@ class _DetoxProgramsHomeState extends State<DetoxProgramsHome> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(

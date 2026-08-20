@@ -7,9 +7,12 @@ import '../../network/Utils.dart';
 import '../../network/api_dialog.dart';
 import '../../network/api_helper.dart';
 import 'package:flutter/material.dart';
+import '../../network/constants.dart';
 import '../../network/loader.dart';
 import '../../utils/name_avatar.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/notification_bar_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MyAppointmentWaitlistScreen extends StatefulWidget{
   _waitlistState createState()=>_waitlistState();
@@ -22,11 +25,11 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             // Custom App Bar
             _buildAppBar(),
 
@@ -36,10 +39,8 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
             Expanded(child: _buildAppointmentList()),
           ],
         ),
-      ),
-    );
+      );
   }
-
   Widget _buildAppBar() {
     return Card(
       color: Colors.white,
@@ -64,7 +65,7 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
                   Navigator.pop(context);
                 },
                 child: Icon(Icons.arrow_back_ios_new_sharp,
-                    size: 17, color: Colors.black)),
+                    size: 24, color: Colors.black)),
             /*GestureDetector(
               onTap: () {
                 // TODO: Open menu drawer if needed
@@ -129,12 +130,18 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
       requestModel,
       context,
     );
-    setState(() => isLoading = false);
-    var responseJSON = json.decode(response.toString());
-    if (responseJSON["statusCode"] == 200 || responseJSON["statusCode"] == 201) {
+    setState(() {
+      isLoading = false;
+      mywaitlist.clear();
 
-      mywaitlist=responseJSON['data']??[];
+    });
+
+
+    var responseJSON = json.decode(response.toString());
+
+    if (responseJSON["statusCode"] == 200 || responseJSON["statusCode"] == 201) {
       setState(() {
+        mywaitlist=responseJSON['data']??[];
       });
     } else {
       Toast.show(responseJSON["message"]?.toString()??"Something went wrong. Please try again");
@@ -185,6 +192,11 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
     final service = appointment["service"] ?? {};
     final employee = appointment["employee"] ?? {};
     final employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+    String employeeImage = employee["userDetails"]?["file"] ?? "";
+    String userProfile="";
+    if(employeeImage.isNotEmpty){
+      userProfile=AppConstant.appBaseURL+employeeImage;
+    }
 
     List<dynamic> centerList=employee['centerId']??[];
     String centerId="";
@@ -197,35 +209,45 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
       centerName=_getCenterName(centerId);
     }
 
-    // Parse date + time
-    DateTime? dateTime;
-    try {
-      final dateStr = appointment["date"];
-      final timeStr = appointment["time"];
+    String daStr=appointment["date"]?.toString()??"";
+    String tmStr=appointment["time"]?.toString()??"";
 
-      if (dateStr != null && timeStr != null) {
-        final parsedDate = DateTime.parse(dateStr);
-        final parsedTime = TimeOfDay(
-          hour: int.parse(timeStr.split(":")[0]),
-          minute: int.parse(timeStr.split(":")[1]),
-        );
+    DateTime? date1;
+    String date1Str="";
+    String preferredDateTime="";
+    if (!tmStr.contains("T")) {
 
-        dateTime = DateTime(
-          parsedDate.year,
-          parsedDate.month,
-          parsedDate.day,
-          parsedTime.hour,
-          parsedTime.minute,
-        );
+      final dateStr = appointment["date"]; // example: "2026-02-07"
+      final timeStr = tmStr;              // "09:30"
+
+      DateTime? dateTime = combineDateAndTime(dateStr, timeStr);
+
+      if (dateTime != null) {
+        preferredDateTime =
+            DateFormat('MMM dd,yyyy hh:mm a').format(dateTime);
       }
-    } catch (e) {
-      print("Error parsing date/time: $e");
+
+    }else{
+      date1 = DateTime.parse(tmStr).toLocal();
+      date1Str = DateFormat('MMM dd,yyyy hh:mm a').format(date1);
+      preferredDateTime = date1Str;
     }
+   /* if(tmStr.isNotEmpty){
+      date1=DateTime.parse(tmStr).toLocal();
+      date1Str=DateFormat('MMM dd,yyyy hh:mm a').format(date1);
+      preferredDateTime=DateFormat('MMM dd,yyyy hh:mm a').format(date1);
+    }*/
+
+
+
+    /*final dateStr = appointment["date"];
+    final timeStr = appointment["time"];
+    DateTime? dateTime=combineDateAndTime(dateStr, timeStr);
 
     String preferredDateTime="";
     if(dateTime!=null){
       preferredDateTime=DateFormat('MMM dd,yyyy hh:mm a').format(dateTime);
-    }
+    }*/
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -240,6 +262,23 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              userProfile.isNotEmpty?
+              ClipRRect(
+                borderRadius: BorderRadius.circular(35), // rounded corners
+                child: CachedNetworkImage(
+                  height: 70,
+                  width: 70,
+                  imageUrl: userProfile,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => NameAvatar(fullName: employeeName,size: 70,),
+                ),
+              ):
               NameAvatar(fullName: employeeName,size: 70,),
               const SizedBox(width: 16),
               Expanded(
@@ -405,8 +444,8 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
                   Text(
                       preferredDateTime.isNotEmpty?
                           preferredDateTime:
-                    dateTime != null
-                        ? "${dateTime.toLocal()}".split('.')[0]
+                    date1 != null
+                        ? "${date1Str}".split('.')[0]
                         : "N/A",
                     style: const TextStyle(
                       fontSize: 14,
@@ -443,6 +482,48 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
       ),
     );
   }
+  DateTime? combineDateAndTime(String dateStr, String timeStr) {
+    try {
+      final parsedDate = DateTime.parse(dateStr.trim());
+      final time = timeStr.trim().toUpperCase();
+
+      int hour = 0;
+      int minute = 0;
+
+      // Check if time has AM/PM → means 12-hour format
+      if (time.contains("AM") || time.contains("PM")) {
+        final parts = time.split(' ');
+        final timePart = parts[0]; // e.g. "02:30"
+        final period = parts[1];   // e.g. "PM"
+
+        final hourPart = int.parse(timePart.split(':')[0]);
+        final minutePart = int.parse(timePart.split(':')[1]);
+
+        hour = hourPart;
+        minute = minutePart;
+
+        // Convert to 24-hour format
+        if (period == 'PM' && hour != 12) hour += 12;
+        if (period == 'AM' && hour == 12) hour = 0;
+      } else {
+        // 24-hour format (like "14:30")
+        final parts = time.split(':');
+        hour = int.parse(parts[0]);
+        minute = int.parse(parts[1]);
+      }
+
+      return DateTime(
+        parsedDate.year,
+        parsedDate.month,
+        parsedDate.day,
+        hour,
+        minute,
+      );
+    } catch (e) {
+      print("Error parsing date/time: $e");
+      return null;
+    }
+  }
   Future<void> fetchAllCenters() async {
     setState(() => isLoading = true);
     var data = {"page": 1, "pageSize": 100};
@@ -457,6 +538,7 @@ class _waitlistState extends State<MyAppointmentWaitlistScreen>{
     var responseJSON = json.decode(response.toString());
     if (responseJSON["statusCode"] == 200 || responseJSON["statusCode"] == 201) {
       setState(() {
+        centers.clear();
         centers = responseJSON["centers"];
       });
       fetchMyWaitList();

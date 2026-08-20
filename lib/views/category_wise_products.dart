@@ -2,13 +2,22 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/cart_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
+import '../network/Utils.dart';
+import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
 import '../network/constants.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+import '../widgets/notification_bar_widget.dart';
 
 class CategoryWiseProducts extends StatefulWidget {
   final String catName;
@@ -49,18 +58,28 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
 
     // Pagination data
 
-    int currentPage=1;
-    bool isPaginationLoading=false;
-    bool hasMoreData=false;
+
+
     ScrollController _scrollController=ScrollController();
+    String initialCatName="";
+    String initialCatId="";
+    final ApiBaseHelper helper2 = ApiBaseHelper();
+    int totalCount=20;
+    int currentPage = 1;
+    int perPageSize = 20;
+    bool isPaginationLoading = false;
+    bool hasMoreData = true;
+    String? userName;
+    String? userId;
+
 
     @override
     Widget build(BuildContext context) {
-      return SafeArea(
-        child: Scaffold(
+      return  Scaffold(
           backgroundColor: Colors.white,
           body: Column(
             children: [
+              NotificationBarWidget(),
               Card(
                 elevation: 2,
                 margin: EdgeInsets.only(bottom: 10),
@@ -89,8 +108,8 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                             Navigator.pop(context);
                           },
                           child: Icon(Icons.arrow_back_ios_new_sharp,
-                              size: 17, color: Colors.black)),
-                      Text(widget.catName,
+                              size: 24, color: Colors.black)),
+                      Text("Categories",
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
@@ -121,24 +140,60 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                           padding: EdgeInsets.zero,
                           itemCount: categoryListDynamic.length,
                           itemBuilder: (BuildContext context, int pos) {
+                            final String catId = categoryListDynamic[pos]["cat_id"].toString();
+                            String catImage=categoryListDynamic[pos]['image']?.toString()??"";
+                            final bool isSelected = selectedCategoryIds.contains(catId);
                             return Row(
                               children: [
                                 GestureDetector(
                                   onTap: () {
-                                    final String catId = categoryListDynamic[pos]
-                                            ["cat_id"]
-                                        .toString();
                                     selectedCategoryIds
                                       ..clear()
                                       ..add(catId);
                                     _applyFiltersAndSort();
+
+                                    categoryCheckList = categoryCheckList.map((e) => false).toList();
+                                    categoryCheckList[pos]=true;
+
                                   },
-                                  child: SizedBox(
+                                  child: Container(
                                     height: 84,
                                     width: 95,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color:  Colors.transparent,
+                                        width: isSelected ? 3 : 0,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                     child: Stack(
                                       children: [
-                                        Image.asset("assets/grid1.png"),
+                                        catImage.isNotEmpty?
+                                        CachedNetworkImage(
+                                          height: 84,
+                                          width: 95,
+                                          imageUrl: catImage,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Container(
+                                            color: Colors.grey[200],
+                                            child: const Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                          const Icon(Icons.error, color: Colors.red),
+                                        ):
+                                        Image.asset(
+                                          "assets/grid1.png",
+                                          height: 84,
+                                          width: 95,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        Container(
+                                          height: 84,
+                                          width: 95,
+                                          color: Colors.black.withOpacity(0.6),   // 40% black overlay
+                                        ),
                                         Center(
                                           child: Text(
                                               categoryListDynamic[pos]
@@ -148,8 +203,16 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                                                 fontWeight: FontWeight.w500,
                                                 color: Colors.white,
                                               ),
-                                              textAlign: TextAlign.center),
-                                        )
+                                              textAlign: TextAlign.center,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        isSelected?
+                                        const Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: Icon(Icons.check_circle,size: 22,color: Colors.orange,)):Container(),
                                       ],
                                     ),
                                   ),
@@ -161,8 +224,9 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
               isLoading ? Container() : SizedBox(height: 12),
               isLoading
                   ? Container()
-                  : Expanded(
+                  : productList.isEmpty?Expanded(child: Center(child: Text("No products are available",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w600,color: Colors.grey),),)):Expanded(
                       child: GridView.builder(
+                        controller: _scrollController,
                         padding:
                             EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         gridDelegate:
@@ -178,6 +242,9 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
 
                           String productId=productList[index]["_id"]?.toString()??"";
                           String categoryId=productList[index]["category_id"]?.toString()??"";
+                          if(categoryId.isEmpty){
+                            categoryId=productList[index]['category']?.toString()??"";
+                          }
                           String coverImage=productList[index]["coverImage"]?.toString()??"";
                           String price=productList[index]["price"]?.toString()??"";
                           String mrp=productList[index]['mrp']?.toString()??"";
@@ -186,10 +253,14 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                           String discountedPrice=productList[index]["discounted_price"]?.toString()??"";
                           String productImage="";
                           String productprice="";
-                          if(discountedPrice.isNotEmpty){
+                         /* if(discountedPrice.isNotEmpty){
                             productprice=discountedPrice;
                           }else {
                             productprice=price;
+                          }*/
+                          productprice=price;
+                          if(coverImage.isNotEmpty){
+                            productImage=AppConstant.appBaseURL+coverImage;
                           }
                           if(coverImage.isNotEmpty){
                             productImage=AppConstant.appBaseURL+coverImage;
@@ -197,6 +268,15 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                           print("product price $productprice");
                           print("price $price");
                           print("discounted $discountedPrice");
+
+                          if (index == productList.length && initialCatId.isEmpty) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
 
                           return GestureDetector(
                             onTap: () {
@@ -224,13 +304,16 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                                         Row(
                                           children: [
                                             Spacer(),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 4, right: 4),
-                                              child: Image.asset(
-                                                  "assets/arrow_right.png",
-                                                  width: 34,
-                                                  height: 26),
+                                            GestureDetector(
+                                              onTap: () {
+                                                _showShareOptions(context, productId);
+                                              },
+                                              child: Padding(padding: const EdgeInsets.only(top: 4, right: 4),
+                                                child: Image.asset(
+                                                    "assets/arrow_right.png",
+                                                    width: 34,
+                                                    height: 26),
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -295,7 +378,10 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                           color: Color(0xFFF38328),
-                                        )),
+                                        ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -378,8 +464,7 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                     )
             ],
           ),
-        ),
-      );
+        );
     }
 
     void allCategoryBottomSheet(BuildContext context) {
@@ -605,10 +690,7 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
                               SizedBox(height: 5),
                               ListView.builder(
                                   shrinkWrap: true,
-                                  itemCount: (selectedIndex == 0
-                                          ? categoryList
-                                          : brandList)
-                                      .length,
+                                  itemCount: (selectedIndex == 0 ? categoryList : brandList).length,
                                   itemBuilder: (BuildContext context, int pos) {
                                     final bool isCategoryTab = selectedIndex == 0;
                                     final String label = isCategoryTab
@@ -862,22 +944,46 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
       }
 
       // Build category display list and checks
-      categoryList =
-          categoryListDynamic.map((e) => e["cat_name"].toString()).toList();
+      categoryList = categoryListDynamic.map((e) => e["cat_name"].toString()).toList();
       categoryCheckList = List<bool>.filled(categoryList.length, false);
 
       // Use widget.catID if available
-      if (categoryIDs.isNotEmpty) {
-        String initialCatId = categoryIDs[0];
-        if (widget.catID.isNotEmpty && categoryIDs.contains(widget.catID)) {
-          initialCatId = widget.catID;
-        }
+      /*if (categoryIDs.isNotEmpty) {
+        String initCaiId = categoryIDs[0];
+        initialCatId=initCaiId;
+        initialCatName = categoryListDynamic
+            .firstWhere((cat) => cat['cat_id'] == initialCatId,
+          orElse: () => null,
+        )?['cat_name'] ?? "";
+
+
+
+
+        selectedCategoryIds
+          ..clear()
+          ..add(initCaiId);
+        productList =
+            List<dynamic>.from(categoryIdToProducts[initCaiId] ?? []);
+      }*/
+
+
+      if (widget.catID.isNotEmpty && categoryIDs.contains(widget.catID)) {
+        initialCatId = widget.catID;
+        initialCatName=widget.catName;
         selectedCategoryIds
           ..clear()
           ..add(initialCatId);
         productList =
-            List<dynamic>.from(categoryIdToProducts[initialCatId] ?? []);
+        List<dynamic>.from(categoryIdToProducts[initialCatId] ?? []);
+
+        for (int i = 0; i < categoryListDynamic.length; i++) {
+          categoryCheckList[i] =
+              categoryListDynamic[i]['cat_id']?.toString() == initialCatId;
+        }
       }
+
+      print("Initial Cat id %%%%%%%%%%%%$initialCatId");
+      print("Initial Cat Name %%%%%%%%%%%%$initialCatName");
 
       _rebuildBrandList();
 
@@ -886,6 +992,61 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
       print(productList.toString());
 
       setState(() {});
+      fetchCatTypes();
+    }
+
+    fetchCatTypes() async {
+      APIDialog.showAlertDialog(context, "Please wait...");
+      ApiBaseHelper helper = ApiBaseHelper();
+      Map<String, dynamic> requestBody = {
+        "dropdown_type":"category",
+        "page":1,
+        "pageSize":100// Assuming default page size
+      };
+      var resModel = {
+        'data': base64.encode(utf8.encode(json.encode(requestBody)))
+      };
+      var response = await helper.postAPI('master/allData', resModel, context);
+      if(Navigator.canPop(context)){
+        Navigator.of(context).pop();
+      }
+      var responseJSON= json.decode(response.toString());
+      print(responseJSON);
+      if(responseJSON["statusCode"]==200){
+        List<dynamic> catList=(responseJSON['result'] as List?)??[];
+
+        for(var item in catList){
+
+          String _id=item['_id']?.toString()??"";
+          String _file=item['file']?.toString()??"";
+          String iconFile=item['icon_file']?.toString()??"";
+
+          for(int i=0;i<categoryListDynamic.length;i++){
+            String catId=categoryListDynamic[i]['cat_id']?.toString()??"";
+            if(catId==_id){
+              String fileNew="";
+              if(_file.isNotEmpty){
+                fileNew=AppConstant.appBaseURL+_file;
+              }else if(iconFile.isNotEmpty){
+                fileNew=AppConstant.appBaseURL+iconFile;
+              }
+              categoryListDynamic[i]['image']=fileNew;
+            }
+          }
+
+          setState(() {
+
+          });
+
+
+
+        }
+
+
+      }
+
+
+
     }
 
     void _rebuildBrandList() {
@@ -936,13 +1097,13 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
 
       switch (selectedSortIndex) {
         case 1: // High to Low
-          combined.sort((a, b) => _numFrom(a["discounted_price"])
-              .compareTo(_numFrom(b["discounted_price"])));
+          combined.sort((a, b) => _numFrom(a["price"])
+              .compareTo(_numFrom(b["price"])));
           combined = combined.reversed.toList();
           break;
         case 2: // Low to High
-          combined.sort((a, b) => _numFrom(a["discounted_price"])
-              .compareTo(_numFrom(b["discounted_price"])));
+          combined.sort((a, b) => _numFrom(a["price"])
+              .compareTo(_numFrom(b["price"])));
           break;
         case 3: // Highly Rated
           combined.sort(
@@ -963,15 +1124,181 @@ class _MyHomePageState extends State<CategoryWiseProducts> {
       final s = v.toString().replaceAll(RegExp(r'[^0-9.\-]'), '');
       return num.tryParse(s) ?? 0;
     }
+    void _showShareOptions(BuildContext context, id) {
+      showModalBottomSheet(
+        context: context,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
+                  title: Text('Share via WhatsApp'),
+                  onTap: () async {
+                    final text = "Check this product: " +
+                        helper2.getFrontEndUrl() +
+                        "Shop/product/" +
+                        id;
+                    final whatsappUrl = Uri.parse("whatsapp://send?text=$text");
+                    if (await canLaunchUrl(whatsappUrl)) {
+                      await launchUrl(whatsappUrl);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("WhatsApp not installed")),
+                      );
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.instagram, color: Colors.purple),
+                  title: Text('Share on Instagram'),
+                  onTap: () {
+                    // Instagram doesn't allow direct text sharing
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                          Text("Instagram sharing not supported directly")),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.link, color: Colors.blue),
+                  title: Text('Copy Link'),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(
+                        text: helper2.getFrontEndUrl() + "Shop/product/" + id));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Link copied!")),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.share, color: Colors.black),
+                  title: Text('More Options'),
+                  onTap: () {
+                    Share.share("Check this product: " +
+                        helper2.getFrontEndUrl() +
+                        "Shop/product/" +
+                        id);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
     @override
     void initState() {
       super.initState();
-      _scrollController.addListener((){
+
+      print("Initial Category Id: ${widget.catID}");
+      print("Initial Category Name: ${widget.catName}");
+      initialCatId=widget.catID;
+      initialCatName=widget.catName;
+
+     /* _scrollController.addListener((){
         if(_scrollController.position.pixels>=_scrollController.position.maxScrollExtent-150 && !isPaginationLoading && hasMoreData){
           fetchCategories();
         }
       });
+      fetchCategories();*/
+      _loadUserData();
+    }
+
+    Future<void>_loadUserData()async{
+      userId=await MyUtils.getSharedPreferences("user_id")??"";
+      userName=await MyUtils.getSharedPreferences("name")??"";
+      setState(() {
+      });
+      _scrollController.addListener(() {
+        if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 150 &&
+            !isPaginationLoading &&
+            hasMoreData) {
+          if(widget.catID.isEmpty){
+            fetchProduct(isLoadMore: true);
+          }
+        }
+      });
       fetchCategories();
+      if(widget.catID.isEmpty){
+        fetchProduct();
+      }
+
+    }
+    fetchProduct({bool isLoadMore = false}) async {
+      if (!isLoadMore) {
+        currentPage = 1;
+        hasMoreData = true;
+        productList.clear();
+        setState(() {});
+        APIDialog.showAlertDialog(context, "Please wait...");
+      }else{
+
+        setState(() {
+          isPaginationLoading=true;
+        });
+      }
+
+
+      ApiBaseHelper helper = ApiBaseHelper();
+      Map<String, dynamic> requestBody = {
+        "brand":"",
+        "category":"",
+        "subCategory":"",
+        "page":currentPage,
+        "pageSize":perPageSize// Assuming default page size
+      };
+      print("request body $requestBody");
+      var resModel = {
+        'data': base64.encode(utf8.encode(json.encode(requestBody)))
+      };
+      var response = await helper.postAPI('product/allProducts', resModel, context);
+
+      var responseJSON= json.decode(response.toString());
+      print(responseJSON);
+      if(responseJSON["statusCode"]==201){
+        List<dynamic> newProducts =
+            (responseJSON['productsWithUrls'] as List?) ?? [];
+        // productList=(responseJSON['productsWithUrls'] as List?)??[];
+        totalCount=responseJSON['totalCount']??100;
+        setState(() {
+          productList.addAll(newProducts);
+
+
+          if (productList.length < totalCount) {
+            currentPage++;
+            // 🚫 no more pages
+          } else {
+            hasMoreData = false;
+            // ✅ next page
+          }
+        });
+
+        _applyFilterSelectionsFromModal();
+
+      }
+      if(!isLoadMore) {
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
+        setState(() {
+
+        });
+
+        print("Product list length final ${productList.length}");
+      }else{
+        setState(() {
+          isPaginationLoading=false;
+        });
+        print("Product list length final ${productList.length}");
+      }
     }
 }

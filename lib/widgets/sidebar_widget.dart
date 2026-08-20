@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 import '../utils/app_theme.dart';
 
@@ -22,12 +23,9 @@ class SideBarWidget extends StatelessWidget
 
           SizedBox(width: 7),
 
-          Image.asset(imagePath,width:23,height: 23,color: AppTheme.themeColor,),
-
-
+         // Image.asset(imagePath,width:23,height: 23,color: AppTheme.themeColor,),
+          SvgPicture.asset(imagePath,width: 23,height: 23,),
           SizedBox(width: 15),
-
-
           Text(title,
               style: TextStyle(
                   fontSize: 15,

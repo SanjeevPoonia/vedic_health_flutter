@@ -342,7 +342,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
-      Navigator.push(context, MaterialPageRoute(builder: (context) =>  ChangePasswordScreen(_emailController.text)));
+      showOtpVerificationDialog();
+
     }
   }
   sendOTP() async {
@@ -392,6 +393,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return double.tryParse(s) != null;
   }
   void showOtpVerificationDialog() {
+    otpController.text="";
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -401,11 +403,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Enter the OTP sent to your email or phone."),
+              const Text("Enter the OTP sent to your email."),
               const SizedBox(height: 10),
               TextField(
                 controller: otpController,
                 keyboardType: TextInputType.number,
+                maxLength: 5,
                 decoration: const InputDecoration(
                   labelText: "OTP",
                   border: OutlineInputBorder(),

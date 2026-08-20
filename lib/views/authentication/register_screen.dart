@@ -19,7 +19,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -32,7 +33,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _mobileController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -121,9 +123,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Name Field
                           _buildInputContainer(
                             child: TextFormField(
-                              controller: _nameController,
+                              controller: _firstNameController,
                               decoration: InputDecoration(
-                                hintText: 'Name*',
+                                hintText: 'First Name*',
+                                hintStyle: TextStyle(
+                                  color: const Color(0xFF707070),
+                                  fontSize: 16,
+                                ),
+                                prefixIcon: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Image.asset(
+                                    'assets/leading_user.png',
+                                    width: 18,
+                                    height: 18,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              validator: Validators.checkEmptyString,
+
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInputContainer(
+                            child: TextFormField(
+                              controller: _lastNameController,
+                              decoration: InputDecoration(
+                                hintText: 'Last Name*',
                                 hintStyle: TextStyle(
                                   color: const Color(0xFF707070),
                                   fontSize: 16,
@@ -149,6 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Mobile Field
                           _buildInputContainer(
                             child: TextFormField(
+
                               controller: _mobileController,
                               keyboardType: TextInputType.phone,
                               decoration: InputDecoration(
@@ -202,7 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderSide: BorderSide.none,
                                 ),
                               ),
-                              validator: Validators.checkEmptyString,
+                              validator: isValidGlobalMobile,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -484,6 +514,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     return null;
   }
+  String? isValidGlobalMobile(String? value) {
+    final RegExp globalPhoneRegex = RegExp(
+      r'^\+?[1-9]\d{7,14}$',
+    );
+    if(value!.isEmpty || !globalPhoneRegex.hasMatch(value)){
+      return 'Mobile should be valid mobile number.';
+    }
+    return null;
+  }
 
   String? checkPasswordValidator(String? value) {
     if (value!.length < 6) {
@@ -527,7 +566,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       "email": _emailController.text,
       "mobileNo": _mobileController.text,
       "password": _passwordController.text,
-      "name":_nameController.text
+      "name":_firstNameController.text,
+      "lastName":_lastNameController.text
     };
 
     var requestModel = {
@@ -605,6 +645,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     var data = {
       "email": _emailController.text,
       "mobileNumber": _mobileController.text.toString(),
+      "mobile_number": _mobileController.text.toString(),
       "requestFor": ""
     };
 
@@ -624,7 +665,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
-      showOtpVerificationDialog();
+        Navigator.push(context, MaterialPageRoute(builder: (context) =>  OTPVerificationScreen(_emailController.text.toString(), _mobileController.text.toString(), _firstNameController.text.toString(),_lastNameController.text.toString(), _passwordController.text.toString()),),
+      );
+     // showOtpVerificationDialog();
     } else {
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,

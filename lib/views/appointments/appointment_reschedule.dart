@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/api_dialog.dart';
 import 'package:vedic_health/network/api_helper.dart';
 import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/appointment_reschedule2.dart';
 import 'dart:convert';
+import '../../utils/name_avatar.dart';
+import '../../widgets/notification_bar_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class RescheduleAppointment extends StatefulWidget {
   final String id;
   final String centerId;
+  final String serviceId;
+  final String employeeId;
+  final String employeeName;
+  final String serviceName;
+  final String employeeProfileImage;
+  final String empUserId;
 
   const RescheduleAppointment(
-      {super.key, required this.id, required this.centerId});
+      {super.key, required this.id, required this.centerId,required this.serviceId,required this.employeeId,required this.serviceName, required this.employeeName,required this.employeeProfileImage,required this.empUserId});
 
   @override
   State<RescheduleAppointment> createState() => _RescheduleAppointmentState();
@@ -38,10 +50,21 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
   String? _defaultEmployeeId;
   DateTime? _defaultDate;
 
+
   @override
   void initState() {
     super.initState();
     _bootstrap();
+
+  }
+
+  Future<void> _defaultLoad() async{
+     fetchUnavailableDates(
+      serviceId: widget.serviceId,
+      employeeId: widget.employeeId,
+      userId: widget.empUserId,
+      date: DateTime.now().toIso8601String().substring(0, 10),
+    );
   }
 
   Future<void> _bootstrap() async {
@@ -58,13 +81,13 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                   ? appt["service"]["service"]["_id"].toString()
                   : (appt["serviceId"]?.toString());
       final employeeId =
-          (appt["employee"] is Map && appt["employee"]["_id"] != null)
-              ? appt["employee"]["_id"].toString()
-              : (appt["employeeId"]?.toString());
+          (appt["employee"] is Map && appt["employee"]['_id'] != null)
+              ? appt["employee"]['_id'].toString()
+              : (appt["employeeId"]?.toString()??"");
       final defaultUserId =
           (appt["employee"] is Map && appt["employee"]["userId"] != null)
               ? appt["employee"]["userId"].toString()
-              : null;
+              : appt["employee"]['userDetails']["_id"].toString();
 
       DateTime? apptDate;
       try {
@@ -76,6 +99,8 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
             final parts = appt["time"].toString().split(":");
             apptDate = DateTime(date.year, date.month, date.day,
                 int.tryParse(parts[0]) ?? 0, int.tryParse(parts[1]) ?? 0);
+
+            print("Appt Date: $apptDate");
           } else {
             apptDate = DateTime.tryParse(appt["date"].toString());
           }
@@ -148,22 +173,25 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
         }
       }
 
-      if (_defaultDate != null) {
+      /*if (_defaultDate != null) {
         setState(() {
           selectedDate = _defaultDate;
         });
-      }
+      }*/
 
-      await fetchUnavailableDates(
+      /*await fetchUnavailableDates(
         serviceId: individualServices.isNotEmpty &&
                 selectedServiceIndex < individualServices.length
             ? (individualServices[selectedServiceIndex]["_id"] ?? "")
             : (_defaultServiceId ?? ""),
-        employeeId: selectedEmployeeId ?? "",
-        userId: selectedUserId ?? "",
+        employeeId: selectedEmployeeId ?? _defaultEmployeeId??"",
+        userId: selectedUserId ?? defaultUserId??"",
         date: DateTime.now().toIso8601String().substring(0, 10),
-      );
+      );*/
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _defaultLoad();
+    });
   }
 
   Future<void> fetchAppointments(String centerId) async {
@@ -179,7 +207,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
     setState(() => isLoading = false);
 
     final responseJSON = json.decode(response.toString());
-    print("Appointments response: $responseJSON");
+    print("Services response: $responseJSON");
 
     if (responseJSON["statusCode"] == 200) {
       final List<dynamic> fetched =
@@ -189,7 +217,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
         serviceList.clear();
         individualServices.clear();
 
-        for (var item in fetched) {
+        /*for (var item in fetched) {
           if (item is Map<String, dynamic> && item["service"] != null) {
             final List<dynamic> services = item["service"] ?? [];
 
@@ -206,6 +234,21 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                 });
               }
             }
+          }
+        }*/
+        for (var item in fetched) {
+          if (item is Map<String, dynamic> ) {
+
+
+            final name = item["name"] ?? "Unknown Service";
+            final id = item["_id"] ?? "";
+
+            individualServices.add({
+              "_id": id,
+              "name": name,
+              "description": item["description"] ?? "",
+              "price": item["price"] ?? 0,
+            });
           }
         }
 
@@ -355,7 +398,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
     required String date,
     int? serviceIndex,
   }) async {
-    setState(() => isLoading = true);
+    APIDialog.showAlertDialog(context, "Please Wait...");
 
     var data = {
       "slotsPayload": [
@@ -379,16 +422,18 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
       context,
     );
 
-    setState(() => isLoading = false);
-
+   // setState(() => isLoading = false);
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }
     final responseJSON = json.decode(response.toString());
     print("Unavailable Dates response: $responseJSON");
-
     if (responseJSON["statusCode"] == 200) {
       final List<dynamic> fetched = responseJSON["data"] ?? [];
       if (fetched.isNotEmpty) {
         setState(() {
           if (serviceIndex == null) {
+
             unavailableDates = List<String>.from(
               fetched[0]["unavailableDates"] ?? [],
             );
@@ -504,7 +549,6 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
     }
     return null;
   }
-
   Future<Map<String, dynamic>?> searchSlots(String serviceId) async {
     try {
       setState(() => isLoading = true);
@@ -541,17 +585,17 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
     }
     return null;
   }
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    ToastContext().init(context);
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -571,7 +615,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -620,6 +664,14 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+                            widget.serviceName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                          /*Text(
                             (serviceList.isNotEmpty &&
                                     selectedServiceIndex < serviceList.length)
                                 ? serviceList[selectedServiceIndex]
@@ -629,9 +681,9 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
-                          ),
+                          ),*/
                           const SizedBox(height: 4),
-                          GestureDetector(
+                          /*GestureDetector(
                             onTap: () {
                               changeServiceBottomSheet(context);
                             },
@@ -644,7 +696,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                                 color: Color(0xFF662A09),
                               ),
                             ),
-                          ),
+                          ),*/
                         ],
                       ),
                     ),
@@ -652,10 +704,10 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                 ),
               ),
 
-              const SizedBox(height: 22),
+
 
               /// Practitioner Heading
-              const Padding(
+              /*const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -668,7 +720,6 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                   ),
                 ),
               ),
-
               ListView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -721,7 +772,56 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                       },
                     ),
                 ],
-              ),
+              ),*/
+
+
+              Padding(padding: EdgeInsets.all(14),child: Card(
+                elevation: 0,
+                color: Colors.white,
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color: Colors.grey.shade300,
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      widget.employeeProfileImage.isNotEmpty?
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16), // rounded corners
+                        child: CachedNetworkImage(
+                          height: 70,
+                          width: 70,
+                          imageUrl:  widget.employeeProfileImage,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => NameAvatar(fullName: widget.employeeName,size: 70,),
+                        ),
+                      ):
+                      NameAvatar(fullName: widget.employeeName,size: 70,),
+                      const SizedBox(width: 12),
+                      Text(widget.employeeName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          )),
+
+                    ],
+                  ),
+                ),
+              ),),
+
+
+
 
               /// Date Picker
               Padding(
@@ -738,7 +838,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                     ),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => _pickDate(context),
+                      onTap: () => openCustomDatePicker(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 14),
@@ -773,7 +873,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
 
               const SizedBox(height: 12),
 
-              ...additionalServices.asMap().entries.map((entry) {
+              /*...additionalServices.asMap().entries.map((entry) {
                 int index = entry.key;
                 Map<String, dynamic> service = entry.value;
 
@@ -948,7 +1048,7 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 12),*/
             ],
           ),
         ),
@@ -958,6 +1058,11 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
           padding: const EdgeInsets.all(14),
           child: ElevatedButton(
             onPressed: () {
+
+              if(selectedDate==null){
+                Toast.show("Please Select Date",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                return;
+              }
               List<Map<String, dynamic>> allServicesData = [
                 {
                   'serviceId': selectedServiceIndex < individualServices.length
@@ -1014,6 +1119,16 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                               allServicesData: allServicesData,
                               userId: selectedUserId ?? "",
                               appointmentId: widget.id,
+                              id: widget.id,
+                              centerId: widget.centerId,
+                              serviceId: widget.serviceId,
+                              serviceName: widget.serviceName,
+                              employeeId: widget.employeeId,
+                              employeeName: widget.employeeName,
+                              employeeProfileImage: widget.employeeProfileImage,
+                              empUserId: widget.empUserId,
+                              selectedDate: selectedDate??DateTime.now(),
+
                             )));
               }
             },
@@ -1030,10 +1145,104 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
             ),
           ),
         ),
-      ),
+      );
+  }
+  Future<void> openCustomDatePicker(BuildContext context) async {
+    DateTime focusedDay = DateTime.now().add(Duration(days: 1));
+    DateTime firstDay = DateTime.now().add(Duration(days: 1));
+
+    // ✅ Last date after 3 years
+    DateTime lastDay = DateTime.now().add(Duration(days: 365 * 3));
+    DateTime today = DateTime.now();
+
+    List<String> unAvailDated = [];
+
+    String formatDate(DateTime d) =>
+        "${d.year.toString().padLeft(4, '0')}-"
+            "${d.month.toString().padLeft(2, '0')}-"
+            "${d.day.toString().padLeft(2, '0')}";
+
+    // ✅ API Call Function
+
+
+
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          content: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return SizedBox(
+                height: 400,
+                width: 350,
+                child: TableCalendar(
+                  firstDay: firstDay,
+                  lastDay: lastDay,
+                  focusedDay: focusedDay,
+                  calendarFormat: CalendarFormat.month, // ✅ Always full month
+                  availableCalendarFormats: const {
+                    CalendarFormat.month: 'Month', // ✅ remove week / twoWeeks options
+                  },
+
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false, // ✅ hide format toggle
+                  ),
+
+                  // ✅ Disable unavailable dates
+                  /*enabledDayPredicate: (day) {
+                    return !unavailableDates.contains(formatDate(day));
+                  },*/
+
+                  enabledDayPredicate: (day) {
+
+                    // remove time part
+                    final currentDate = DateTime(today.year, today.month, today.day);
+                    final checkDate = DateTime(day.year, day.month, day.day);
+
+                    // ❌ Disable today
+                    if (checkDate.isAtSameMomentAs(currentDate)) {
+                      return false;
+                    }
+
+                    // ❌ Disable unavailable dates
+                    if (unavailableDates.contains(formatDate(day))) {
+                      return false;
+                    }
+
+                    return true; // बाकी future dates enable रहेंगी
+                  },
+
+                  // ✅ Detect Month Change → Call API
+                  onPageChanged: (newFocusedDay) async {
+                    focusedDay = newFocusedDay;
+
+                    await fetchUnavailableDates(
+                      serviceId: widget.serviceId,
+                      employeeId: widget.employeeId ,
+                      userId: widget.empUserId ,
+                      date: focusedDay.toIso8601String().substring(0, 10),
+                    );
+
+                    setDialogState(() {});
+                  },
+
+                  // ✅ Select Date
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      selectedDate = selectedDay;
+                    });
+
+                    Navigator.pop(context);
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
-
   void changeServiceBottomSheet(BuildContext context) {
     showModalBottomSheet(
       // isScrollControlled: true,
@@ -1467,6 +1676,10 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
+                              if(selectedDate==null){
+                                Toast.show("Please Select Date",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                                return;
+                              }
                               List<Map<String, dynamic>> allServicesData = [
                                 {
                                   'serviceId': selectedServiceIndex <
@@ -1497,9 +1710,18 @@ class _RescheduleAppointmentState extends State<RescheduleAppointment> {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         RescheduleAppointment2(
-                                      allServicesData: allServicesData,
-                                      userId: selectedUserId ?? "",
-                                      appointmentId: widget.id,
+                                          allServicesData: allServicesData,
+                                          userId: selectedUserId ?? "",
+                                          appointmentId: widget.id,
+                                          id: widget.id,
+                                          centerId: widget.centerId,
+                                          serviceId: widget.serviceId,
+                                          serviceName: widget.serviceName,
+                                          employeeId: widget.employeeId,
+                                          employeeName: widget.employeeName,
+                                          employeeProfileImage: widget.employeeProfileImage,
+                                          empUserId: widget.empUserId,
+                                          selectedDate: selectedDate??DateTime.now(),
                                     ),
                                   ));
                             },

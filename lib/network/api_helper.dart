@@ -93,57 +93,70 @@ class ApiBaseHelper {
   }
 
   dynamic _returnResponse2(http.Response response, BuildContext context) {
-    String base64Response = response.body.toString();
+    try {
+      String base64Response = response.body.toString();
 
-    String foo = base64Response.split('.')[0];
-    List<int> res = base64.decode(base64.normalize(foo));
+      String foo = base64Response.split('.')[0];
+      List<int> res = base64.decode(base64.normalize(foo));
 
-    print(utf8.decode(res));
+      print(utf8.decode(res));
 
-    print(response.statusCode.toString() + 'Status Code******* ');
+      print(response.statusCode.toString() + 'Status Code******* ');
 
-    // log('api helper response $response');
-    switch (response.statusCode) {
-      case 200:
-        log(response.body.toString());
-        return utf8.decode(res);
-      case 302:
-        print(response.body.toString());
-        return utf8.decode(res);
-      case 201:
-        print(response.body.toString());
-        return utf8.decode(res);
-      case 400:
-        print(response.body.toString());
-        return utf8.decode(res);
-      case 401:
-        Toast.show('Unauthorized User!!',
-            duration: Toast.lengthShort,
-            gravity: Toast.bottom,
-            backgroundColor: Colors.black);
-        throw BadRequestException(response.body.toString());
-        break;
-      case 403:
-        Toast.show('Internal server error !!',
-            duration: Toast.lengthShort,
-            gravity: Toast.bottom,
-            backgroundColor: Colors.black);
-        throw UnauthorisedException(response.body.toString());
-      case 500:
-        Toast.show('Internal server error!!',
-            duration: Toast.lengthShort,
-            gravity: Toast.bottom,
-            backgroundColor: Colors.black);
-        break;
-      default:
-        throw FetchDataException(
-            'Error occured while Communication with Server with StatusCode : ${response.statusCode}');
+      // log('api helper response $response');
+      switch (response.statusCode) {
+        case 200:
+          log(response.body.toString());
+          return utf8.decode(res);
+        case 302:
+          print(response.body.toString());
+          return utf8.decode(res);
+        case 201:
+          print(response.body.toString());
+          return utf8.decode(res);
+        case 400:
+          print(response.body.toString());
+          return utf8.decode(res);
+        case 401:
+          Toast.show('Unauthorized User!!',
+              duration: Toast.lengthShort,
+              gravity: Toast.bottom,
+              backgroundColor: Colors.black);
+          throw BadRequestException(response.body.toString());
+          break;
+        case 403:
+          Toast.show('Internal server error !!',
+              duration: Toast.lengthShort,
+              gravity: Toast.bottom,
+              backgroundColor: Colors.black);
+          throw UnauthorisedException(response.body.toString());
+        case 500:
+          Toast.show('Internal server error!!',
+              duration: Toast.lengthShort,
+              gravity: Toast.bottom,
+              backgroundColor: Colors.black);
+          break;
+        default:
+          throw FetchDataException(
+              'Error occured while Communication with Server with StatusCode : ${response
+                  .statusCode}');
+      }
+    }catch(e){
+      return response;
     }
   }
 
   dynamic _returnResponse(http.Response response, BuildContext context) {
-    var responseJson = jsonDecode(response.body.toString());
     print(response.statusCode.toString() + 'Status Code******* ');
+    final body = response.body.trim();
+
+    if (body.startsWith('<')) {
+      print('HTML response received');
+      return response; // return raw response
+    }
+
+    var responseJson = jsonDecode(response.body.toString());
+
     log(responseJson.toString());
 
     // log('api helper response $response');

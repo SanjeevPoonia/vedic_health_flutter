@@ -60,6 +60,11 @@ dependencies:
   flutter_html: ^3.0.0
   flutter_stripe: ^12.1.0
   vimeo_player_flutter: ^0.1.0
+  fl_chart: ^1.1.1
+  pdf: ^3.10.7
+  printing: ^5.12.0
+  path_provider: ^2.1.2
+
 
 
   

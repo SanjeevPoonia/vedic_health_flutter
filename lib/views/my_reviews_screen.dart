@@ -16,6 +16,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+import '../widgets/notification_bar_widget.dart';
 
 
 class MyReviewScreen extends StatefulWidget {
@@ -33,12 +34,12 @@ class _MyHomePageState extends State<MyReviewScreen> {
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         //backgroundColor: Colors.red,
         body: Column(
           children: [
+            NotificationBarWidget(),
             Card(
               elevation: 2,
               margin: EdgeInsets.only(bottom: 10),
@@ -66,7 +67,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
                           Navigator.pop(context);
                         },
                         child: Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black)),
+                            size: 24, color: Colors.black)),
                     Expanded(
                       child: Center(
                         child: Padding(
@@ -211,8 +212,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
                     }))
           ],
         ),
-      ),
-    );
+      );
   }
 
   @override
@@ -270,7 +270,7 @@ class _MyHomePageState extends State<MyReviewScreen> {
       final outputFormat = DateFormat("dd MMM, yyyy hh:mm a");
       return outputFormat.format(dateTime);
     } catch (e) {
-      return dateStr; // अगर parsing fail हो जाए तो original string return
+      return dateStr;
     }
   }
 }

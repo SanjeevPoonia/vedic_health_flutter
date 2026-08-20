@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:toast/toast.dart';
 import 'package:vedic_health/network/api_helper.dart';
+import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/name_avatar.dart';
 import 'package:vedic_health/views/appointments/appointment_reschedule.dart';
@@ -12,6 +13,9 @@ import '../../network/Utils.dart';
 import '../../network/api_dialog.dart';
 import '../../utils/app_theme.dart';
 import 'package:intl/intl.dart';
+
+import '../../widgets/notification_bar_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class Appointment {
   final String practitionerName;
@@ -89,6 +93,12 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     final appointments = await fetchUserAppointments(userId!); // your userId
     setState(() {
       allAppointments = appointments;
+      allAppointments.sort((a, b) {
+        DateTime dateA = DateTime.parse(a['updated_at']);
+        DateTime dateB = DateTime.parse(b['updated_at']);
+
+        return dateB.compareTo(dateA); // ✅ Latest first
+      });
       filteredAppointments.addAll(allAppointments);
       for (var appointment in allAppointments){
         String familyMemberId=appointment['familyMemberId']?.toString()??"";
@@ -166,11 +176,11 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             // Custom App Bar
             _buildAppBar(),
 
@@ -199,8 +209,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
   Widget _buildAppBar() {
     return Card(
@@ -228,7 +237,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                   Navigator.pop(context);
                 },
                 child: Icon(Icons.arrow_back_ios_new_sharp,
-                    size: 17, color: Colors.black)),
+                    size: 24, color: Colors.black)),
             /*GestureDetector(
               onTap: () {
                 // TODO: Open menu drawer if needed
@@ -364,7 +373,23 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     String appointmentId=appointment['_id']?.toString()??"";
     final service = appointment["service"] ?? {};
     final employee = appointment["employee"] ?? {};
-    final employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+    String employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+    String employeeImage = employee["userDetails"]?["file"] ?? "";
+
+    String serviceId=appointment['serviceId']?.toString()??service["_id"]?.toString()??"";
+    String employeeId=appointment['employeeId']?.toString()??employee['_id'].toString()??"";
+    String serviceName=service["name"]?.toString()??"";
+    String empUserId=employee['userId']?.toString()??"";
+
+    String userProfile="";
+    if(employeeImage.isNotEmpty){
+      userProfile=AppConstant.appBaseURL+employeeImage;
+    }
+
+    String status= appointment['status']?.toString()??"";
+
+
+
 
     List<dynamic> centerList=employee['centerId']??[];
     String centerId="";
@@ -413,6 +438,23 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              userProfile.isNotEmpty?
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16), // rounded corners
+                child: CachedNetworkImage(
+                  height: 70,
+                  width: 70,
+                  imageUrl: userProfile,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => NameAvatar(fullName: employeeName,size: 70,),
+                ),
+              ):
               NameAvatar(fullName: employeeName,size: 70,),
               const SizedBox(width: 16),
               Expanded(
@@ -429,7 +471,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        GestureDetector(
+                       status!="cancelled" ?GestureDetector(
                             onTap: () {
                               showModalBottomSheet(
                                 // isScrollControlled: true,
@@ -493,6 +535,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                                       children: [
                                                         TextButton(
                                                             onPressed: () {
+                                                              Navigator.pop(context);
                                                               Navigator.push(
                                                                   context,
                                                                   MaterialPageRoute(
@@ -500,6 +543,12 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                                                         RescheduleAppointment(
                                                                           id: appointmentId,
                                                                           centerId: centerId,
+                                                                          serviceId: serviceId,
+                                                                          serviceName: serviceName,
+                                                                          employeeId: employeeId,
+                                                                          employeeName: employeeName,
+                                                                          employeeProfileImage: userProfile,
+                                                                          empUserId: empUserId,
                                                                         ),
                                                                   ));
                                                             },
@@ -510,6 +559,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                                             )),
                                                         TextButton(
                                                             onPressed: () {
+                                                              Navigator.pop(context);
                                                               _modalBottomCancelReturn(context, appointmentId);
                                                             },
                                                             child: const Text(
@@ -538,7 +588,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                               );
                             },
                             child:
-                            const Icon(Icons.more_vert, color: Colors.black)),
+                            const Icon(Icons.more_vert, color: Colors.black)):Container(),
                       ],
                     ),
                     Text(service["name"] ?? " ",
@@ -583,7 +633,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text("Accepted",
+                   Text(status,
                       style: TextStyle(fontSize: 14, color: Color(0xFF23B816),fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
@@ -724,8 +774,11 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
       setState(() => isLoading = true);
 
       // Prepare request body (base64 encoding of {"_id": userId})
+      /*final requestModel = {
+        "data": base64.encode(utf8.encode(json.encode({"_id": userId,"status":"all"})))
+      };*/
       final requestModel = {
-        "data": base64.encode(utf8.encode(json.encode({"_id": userId})))
+        "data": base64.encode(utf8.encode(json.encode({"_id": userId,"status":"upcoming"})))
       };
 
       ApiBaseHelper helper = ApiBaseHelper();
@@ -802,7 +855,20 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     String appointmentId=appointment['_id']?.toString()??"";
     final service = appointment["service"] ?? {};
     final employee = appointment["employee"] ?? {};
-    final employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+    String employeeName = employee["userDetails"]?["name"] ?? "Unknown";
+    String employeeImage = employee["userDetails"]?["file"] ?? "";
+
+    String serviceId=appointment['serviceId']?.toString()??service["_id"]?.toString()??"";
+    String employeeId=appointment['employeeId']?.toString()??employee['_id'].toString()??"";
+    String serviceName=service["name"]?.toString()??"";
+    String empUserId=employee['userId']?.toString()??"";
+
+    String userProfile="";
+    if(employeeImage.isNotEmpty){
+      userProfile=AppConstant.appBaseURL+employeeImage;
+    }
+
+    String status=appointment['status']?.toString()??"";
 
     List<dynamic> centerList=employee['centerId']??[];
     String centerId="";
@@ -853,7 +919,25 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              userProfile.isNotEmpty?
+              ClipRRect(
+                borderRadius: BorderRadius.circular(35), // rounded corners
+                child: CachedNetworkImage(
+                  height: 70,
+                  width: 70,
+                  imageUrl: userProfile,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => NameAvatar(fullName: employeeName,size: 70,),
+                ),
+              ):
               NameAvatar(fullName: employeeName,size: 70,),
+
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -880,7 +964,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                   ],
                 ),
               ),
-              GestureDetector(
+              status!="cancelled"?GestureDetector(
                   onTap: () {
                     showModalBottomSheet(
                       // isScrollControlled: true,
@@ -934,49 +1018,83 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                                     const SizedBox(height: 25),
                                     Expanded(
                                       child: Container(
-                                          padding: const EdgeInsets.all(5),
-                                          // height: 150,
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              TextButton(
-                                                  onPressed: () {
-                                                    Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              RescheduleAppointment(
-                                                            id: appointmentId,
-                                                            centerId: centerId,
-                                                          ),
-                                                        ));
-                                                  },
-                                                  child: const Text(
-                                                    "Reschedule",
-                                                    style: TextStyle(
-                                                        color: Colors.black),
-                                                  )),
-                                              TextButton(
-                                                  onPressed: () {
-                                                    _modalBottomCancelReturn(context, appointmentId);
-                                                  },
-                                                  child: const Text(
-                                                    "Cancel Appointment",
-                                                    style: TextStyle(
-                                                        color: Colors.black),
-                                                  )),
-                                              /*TextButton(
-                                                  onPressed: () {},
-                                                  child: const Text(
-                                                    "Directions",
-                                                    style: TextStyle(
-                                                        color: Colors.black),
-                                                  )),*/
-                                            ],
-                                          )),
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+
+                                            /// Reschedule Button
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: TextButton.icon(
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor: Colors.blue.shade50,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    side: BorderSide(color: Colors.blue.shade200),
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => RescheduleAppointment(
+                                                        id: appointmentId,
+                                                        centerId: centerId,
+                                                        serviceId: serviceId,
+                                                        employeeId: employeeId,
+                                                        employeeName: employeeName,
+                                                        serviceName: serviceName,
+                                                        employeeProfileImage: userProfile,
+                                                        empUserId: empUserId,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.schedule, color: Colors.blue),
+                                                label: const Text(
+                                                  "Reschedule",
+                                                  style: TextStyle(
+                                                    color: Colors.blue,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            /// Cancel Appointment Button
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: TextButton.icon(
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor: Colors.red.shade50,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    side: BorderSide(color: Colors.red.shade200),
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  _modalBottomCancelReturn(context, appointmentId);
+                                                },
+                                                icon: const Icon(Icons.cancel, color: Colors.red),
+                                                label: const Text(
+                                                  "Cancel Appointment",
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(height: 15),
                                   ],
@@ -988,7 +1106,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
                       }),
                     );
                   },
-                  child: const Icon(Icons.more_vert, color: Colors.black)),
+                  child: const Icon(Icons.more_vert, color: Colors.black)):Container(),
             ],
           ),
           const SizedBox(height: 4),
@@ -1017,7 +1135,7 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text("Accepted",
+                   Text(status,
                       style: TextStyle(fontSize: 14, color: Color(0xFF23B816),fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
@@ -1184,7 +1302,8 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
     ApiBaseHelper helper = ApiBaseHelper();
     Map<String, dynamic> requestBody = {
       "user": userId,
-      "_id": appointmentId // Assuming default page size
+      "_id": appointmentId,
+      "appointmentId":appointmentId// Assuming default page size
     };
     var resModel = {
       'data': base64.encode(utf8.encode(json.encode(requestBody)))
@@ -1231,7 +1350,13 @@ class _MyAppointmentScreenState extends State<MyAppointmentScreen> {
         }
 
 
-        final matchesText = searchText.isEmpty || appointment["service"]['name'].toString().toLowerCase().contains(searchText.toLowerCase());
+        final matchesText = searchText.isEmpty ||
+            appointment["service"]['name'].toString().toLowerCase().contains(searchText.toLowerCase()) ||
+            (appointment["employee"]?["userDetails"]?["name"] != null &&
+                appointment["employee"]["userDetails"]["name"]
+                    .toString()
+                    .toLowerCase()
+                    .contains(searchText.toLowerCase()));
         final matchesDate = selectedDate == null || (appointmentDateTime !=null && appointmentDateTime.year==selectedDate!.year&& appointmentDateTime.month==selectedDate!.month&& appointmentDateTime.day==selectedDate!.day);
         return matchesText && matchesDate;
       }).toList();

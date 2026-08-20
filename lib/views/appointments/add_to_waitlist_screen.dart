@@ -12,6 +12,7 @@ import '../../network/api_helper.dart';
 import '../../utils/name_avatar.dart';
 import 'package:intl/intl.dart';
 
+import '../../widgets/notification_bar_widget.dart';
 import '../home_screen.dart';
 
 class AddToWaitlistScreen extends StatefulWidget {
@@ -363,14 +364,14 @@ class _AddToWaitlistScreenState extends State<AddToWaitlistScreen> {
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -390,7 +391,7 @@ class _AddToWaitlistScreenState extends State<AddToWaitlistScreen> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -587,7 +588,14 @@ class _AddToWaitlistScreenState extends State<AddToWaitlistScreen> {
                         ),
                         const SizedBox(height: 10),
                         GestureDetector(
-                          onTap: () => selectTimeBottomSheet(context),
+                          onTap:(){
+                            if(avTimeSlotList.isNotEmpty){
+                              selectTimeBottomSheet(context);
+                            }else{
+                              Toast.show("No Slots Available",duration: Toast.lengthLong,backgroundColor: Colors.red);
+                            }
+                          },
+
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 14),
@@ -721,6 +729,8 @@ class _AddToWaitlistScreenState extends State<AddToWaitlistScreen> {
                               onTap: () => {
                                 if(availableTimeSlotList.isNotEmpty){
                                   selectTimeBottomSheetForService(context,availableTimeSlotList,selectedSlotPosition,index)
+                                }else{
+                                  Toast.show("No Slots Available",duration: Toast.lengthLong,backgroundColor: Colors.red)
                                 }
                               },
                               child: Container(
@@ -840,8 +850,7 @@ class _AddToWaitlistScreenState extends State<AddToWaitlistScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   String getInitials(String fullName) {

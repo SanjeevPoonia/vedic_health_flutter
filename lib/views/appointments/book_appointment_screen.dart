@@ -8,6 +8,10 @@ import 'package:vedic_health/utils/app_theme.dart';
 import 'package:vedic_health/views/appointments/add_to_waitlist_screen.dart';
 import 'package:vedic_health/views/appointments/book_appointment_screen2.dart';
 import 'dart:convert';
+import 'package:table_calendar/table_calendar.dart';
+
+import '../../network/Utils.dart';
+import '../../widgets/notification_bar_widget.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final List<dynamic> consultations;
@@ -33,30 +37,44 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   List serviceList = [];
   String selectedServiceTitle="";
   String selectedServiceId="";
+  String? userId;
+
+
+
+
+  List<String> selectedServicesIdsForValidation=[];
+  List<dynamic> allServicesList=[];
   @override
   void initState() {
     super.initState();
     selectedServiceTitle=widget.title;
     selectedServiceId=widget.selectedServiceId;
+    selectedServicesIdsForValidation.add(selectedServiceId);
     serviceList = widget.consultations.map((e) => e["name"] ?? "").toList();
+    allServicesList=widget.consultations;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadService(selectedServiceId);
     });
   }
   Future<void> _loadService(String serviceId) async {
     final data = await fetchServiceDetail(serviceId);
+
+   userId=await MyUtils.getSharedPreferences("user_id")??"";
+   print("UserId: $userId");
     if (data != null) {
       setState(() {
         employees = List<Map<String, dynamic>>.from(data["employees"] ?? []);
-        selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
-        selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
+       /* selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
+        selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;*/
+         selectedEmployeeId = 'any';
+        selectedUserId = 'any';
       });
-      fetchUnavailableDates(
+      /*fetchUnavailableDates(
         serviceId: selectedServiceId,
         employeeId: selectedEmployeeId ?? "",
         userId: selectedEmployeeId ?? "",
         date: DateTime.now().toIso8601String().substring(0, 10),
-      );
+      );*/
     }
   }
   Future<void> _pickDate(BuildContext context) async {
@@ -90,6 +108,86 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       setState(() => selectedDate = picked);
     }
   }
+  Future<void> openCustomDatePicker(BuildContext context) async {
+    DateTime focusedDay = DateTime.now();
+    DateTime firstDay = DateTime.now();
+
+    // ✅ Last date after 3 years
+    DateTime lastDay = DateTime.now().add(Duration(days: 365 * 3));
+
+    List<String> unAvailDated = [];
+
+    String formatDate(DateTime d) =>
+        "${d.year.toString().padLeft(4, '0')}-"
+            "${d.month.toString().padLeft(2, '0')}-"
+            "${d.day.toString().padLeft(2, '0')}";
+
+    // ✅ API Call Function
+
+
+
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          content: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return SizedBox(
+                height: 400,
+                width: 350,
+                child: TableCalendar(
+                  firstDay: firstDay,
+                  lastDay: lastDay,
+                  focusedDay: focusedDay,
+
+                  calendarFormat: CalendarFormat.month, // ✅ Always full month
+                  availableCalendarFormats: const {
+                    CalendarFormat.month: 'Month', // ✅ remove week / twoWeeks options
+                  },
+
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false, // ✅ hide format toggle
+                  ),
+
+                  // ✅ Disable unavailable dates
+                  enabledDayPredicate: (day) {
+                    return !unavailableDates.contains(formatDate(day));
+                  },
+
+                  // ✅ Detect Month Change → Call API
+                  onPageChanged: (newFocusedDay) async {
+                    focusedDay = newFocusedDay;
+
+                    await fetchUnavailableDates(
+                      serviceId: selectedServiceId,
+                      employeeId: selectedEmployeeId ?? "",
+                      userId: userId ?? "",
+                      //userId: selectedEmployeeId ?? "",
+                      date: focusedDay.toIso8601String().substring(0, 10),
+                    );
+
+                    print("unavailableDates ${unavailableDates}");
+
+                    setDialogState(() {});
+                  },
+
+                  // ✅ Select Date
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      selectedDate = selectedDay;
+                    });
+
+                    Navigator.pop(context);
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
   Future<void> fetchUnavailableDates({required String serviceId, required String employeeId, required String userId, required String date,}) async {
     await fetchUnavailableDatesForService(
       serviceId: serviceId,
@@ -105,14 +203,15 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       setState(() {
         additionalServices[serviceIndex]['employees'] =
             List<Map<String, dynamic>>.from(data["employees"] ?? []);
-        additionalServices[serviceIndex]['selectedEmployeeId'] =
+        additionalServices[serviceIndex]['selectedEmployeeId'] = 'any';
+        /*additionalServices[serviceIndex]['selectedEmployeeId'] =
             additionalServices[serviceIndex]['employees'].isNotEmpty
                 ? additionalServices[serviceIndex]['employees'][0]["_id"]
-                : null;
-        additionalServices[serviceIndex]['selectedUserId'] =
-            additionalServices[serviceIndex]['employees'].isNotEmpty
+                : null;*/
+        additionalServices[serviceIndex]['selectedUserId'] = userId;
+            /*additionalServices[serviceIndex]['employees'].isNotEmpty
                 ? additionalServices[serviceIndex]['employees'][0]["userId"]
-                : null;
+                : null;*/
       });
     }
   }
@@ -153,15 +252,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       final List<dynamic> fetched = responseJSON["data"] ?? [];
       if (fetched.isNotEmpty) {
         setState(() {
+          List<String> dateList=List<String>.from(fetched[0]["unavailableDates"] ?? []);
           if (serviceIndex == null) {
-            unavailableDates = List<String>.from(
-              fetched[0]["unavailableDates"] ?? [],
-            );
+            unavailableDates.clear();
+            unavailableDates.addAll(dateList);
           } else {
-            additionalServices[serviceIndex]['unavailableDates'] =
-                List<String>.from(
-              fetched[0]["unavailableDates"] ?? [],
-            );
+
+            additionalServices[serviceIndex]['unavailableDates']=dateList;
+
           }
         });
       }
@@ -170,19 +268,23 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   void _addNewService() {
     setState(() {
       additionalServices.add({
-        'selectedServiceIndex': 0,
-        'selectedServiceId': widget.consultations[0]["_id"],
-        'selectedServiceName': widget.consultations[0]["name"] ?? "",
+        'selectedServiceIndex': -1,
+        'selectedServiceId': null,
+        'selectedServiceName': null,
         'employees': <Map<String, dynamic>>[],
-        'selectedEmployeeId': null,
-        'selectedUserId': null,
+        'selectedEmployeeId': 'any',
+        'selectedUserId': userId,
         'selectedDate': null,
         'unavailableDates': <String>[],
       });
     });
   }
   void _removeService(int index) {
+
+    String id=additionalServices[index]['selectedServiceId']?.toString()??"";
+
     setState(() {
+      if(id.isNotEmpty){selectedServicesIdsForValidation.remove(id);}
       additionalServices.removeAt(index);
     });
   }
@@ -272,7 +374,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         "data": base64.encode(utf8.encode(json.encode({
           "serviceId": serviceId,
           "employeeId": selectedEmployeeId,
-          "userId": selectedUserId,
+          "userId": userId,
+          //"userId": selectedUserId,
           "date": selectedDate
         })))
       };
@@ -303,14 +406,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -330,7 +433,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -433,20 +536,26 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 children: [
                   MemberCard(
                     name: "Any Employee",
-                    isSelected: selectedEmployeeId == null,
+                    isSelected: selectedEmployeeId == 'any',
                     onTap: () {
                       setState(() {
-                        /*selectedEmployeeId = null;
-                        selectedUserId = null;*/
-                        selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
+
+                       /* selectedEmployeeId = employees.isNotEmpty ? employees[0]["_id"] : null;
                         selectedUserId = employees.isNotEmpty ? employees[0]["userId"] : null;
+                        selectedDate=null;*/
+
+                         selectedEmployeeId = 'any';
+                        selectedUserId ='any';
+                        selectedDate=null;
+                         unavailableDates.clear();
+
                       });
-                      fetchUnavailableDates(
+                      /*fetchUnavailableDates(
                         serviceId: selectedServiceId,
                         employeeId: selectedEmployeeId ?? "",
                         userId: selectedUserId ?? "",
                         date: DateTime.now().toIso8601String().substring(0, 10),
-                      );
+                      );*/
                     },
                   ),
                   for (var emp in employees)
@@ -457,6 +566,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         setState(() {
                           selectedEmployeeId = emp["_id"];
                           selectedUserId = emp["userId"];
+                          selectedDate=null;
                         });
                         fetchUnavailableDates(
                           serviceId: selectedServiceId,
@@ -485,7 +595,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     ),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => _pickDate(context),
+                      onTap: () => openCustomDatePicker(context),//_pickDate(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 14),
@@ -612,7 +722,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    service['selectedEmployeeId'] == null
+                                    service['selectedEmployeeId'] == 'any'
                                         ? "Any Employee"
                                         : (service['employees'] as List)
                                                 .firstWhere(
@@ -678,7 +788,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 );
               }).toList(),
 
+
               const SizedBox(height: 12),
+
+              if(canAddMoreServices)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: ElevatedButton.icon(
@@ -766,7 +879,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     MaterialPageRoute(
                         builder: (context) => BookAppointmentScreen2(
                               allServicesData: allServicesData,
-                              userId: selectedUserId ?? "",
+                              userId: userId ?? "",
+                              //userId: selectedUserId ?? "",
                             )));
               }
             },
@@ -783,8 +897,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
   void changeServiceBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -1265,8 +1378,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
   }
   void selectServiceBottomSheet(BuildContext context, int serviceIndex) {
-    int tempSelectedIndex =
-        additionalServices[serviceIndex]['selectedServiceIndex'];
+    int tempSelectedIndex = additionalServices[serviceIndex]['selectedServiceIndex'];
+
+    List<dynamic> tempServiceList=[];
+    for(int i=0;i<allServicesList.length;i++){
+      String id=allServicesList[i]['_id']?.toString()??"";
+      if(!selectedServicesIdsForValidation.contains(id) && selectedServiceId!=id){
+        tempServiceList.add(allServicesList[i]);
+      }
+    }
+
 
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
@@ -1307,7 +1428,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 const SizedBox(height: 25),
                 Expanded(
                   child: ListView.builder(
-                      itemCount: serviceList.length,
+                      //itemCount: serviceList.length,
+                      itemCount: tempServiceList.length,
                       itemBuilder: (BuildContext context, int pos) {
                         return GestureDetector(
                           onTap: () {
@@ -1329,7 +1451,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    serviceList[pos],
+                                    //serviceList[pos],
+                                    tempServiceList[pos]['name']?.toString()??"",
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: Colors.black.withOpacity(0.6),
@@ -1368,24 +1491,15 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       child: GestureDetector(
                         onTap: () async {
                           setState(() {
-                            additionalServices[serviceIndex]
-                                ['selectedServiceIndex'] = tempSelectedIndex;
-                            additionalServices[serviceIndex]
-                                    ['selectedServiceId'] =
-                                widget.consultations[tempSelectedIndex]["_id"];
-                            additionalServices[serviceIndex]
-                                    ['selectedServiceName'] =
-                                serviceList[tempSelectedIndex];
-                            additionalServices[serviceIndex]
-                                ['selectedEmployeeId'] = null;
-                            additionalServices[serviceIndex]['selectedUserId'] =
-                                null;
-                            additionalServices[serviceIndex]['selectedDate'] =
-                                null;
+                            additionalServices[serviceIndex]['selectedServiceIndex'] = tempSelectedIndex;
+                            additionalServices[serviceIndex]['selectedServiceId'] = tempServiceList[tempSelectedIndex]["_id"];
+                            additionalServices[serviceIndex]['selectedServiceName'] = tempServiceList[tempSelectedIndex]['name']?.toString()??"";
+                            additionalServices[serviceIndex]['selectedEmployeeId'] = 'any';
+                            additionalServices[serviceIndex]['selectedUserId'] = userId;
+                            additionalServices[serviceIndex]['selectedDate'] = null;
+                            selectedServicesIdsForValidation.add(tempServiceList[tempSelectedIndex]["_id"]);
                           });
-                          await _loadServiceForAdditional(
-                              widget.consultations[tempSelectedIndex]["_id"],
-                              serviceIndex);
+                          await _loadServiceForAdditional(tempServiceList[tempSelectedIndex]["_id"], serviceIndex);
                           Navigator.pop(context);
                         },
                         child: Container(
@@ -1463,7 +1577,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       GestureDetector(
                         onTap: () {
                           setModalState(() {
-                            tempSelectedEmployeeId = null;
+                            tempSelectedEmployeeId = 'any';
                           });
                         },
                         child: Container(
@@ -1472,7 +1586,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              tempSelectedEmployeeId == null
+                              tempSelectedEmployeeId == 'any'
                                   ? const Icon(Icons.radio_button_checked,
                                       color: AppTheme.darkBrown)
                                   : const Icon(Icons.radio_button_off,
@@ -1554,25 +1668,27 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           setState(() {
                             additionalServices[serviceIndex]
                                 ['selectedEmployeeId'] = tempSelectedEmployeeId;
-                            additionalServices[serviceIndex]['selectedUserId'] =
+                            /*additionalServices[serviceIndex]['selectedUserId'] =
                                 tempSelectedEmployeeId != null
                                     ? serviceEmployees.firstWhere((emp) =>
                                         emp["_id"] ==
                                         tempSelectedEmployeeId)["userId"]
-                                    : null;
+                                    : null;*/
                           });
 
-                          // Fetch unavailable dates for this service
-                          await fetchUnavailableDatesForService(
-                            serviceId: additionalServices[serviceIndex]
-                                ['selectedServiceId'],
-                            employeeId: tempSelectedEmployeeId ?? "",
-                            userId: tempSelectedEmployeeId ?? "",
-                            date: DateTime.now()
-                                .toIso8601String()
-                                .substring(0, 10),
-                            serviceIndex: serviceIndex,
-                          );
+                          if(tempSelectedEmployeeId!='any') {
+                            // Fetch unavailable dates for this service
+                            await fetchUnavailableDatesForService(
+                              serviceId: additionalServices[serviceIndex]
+                              ['selectedServiceId'],
+                              employeeId: tempSelectedEmployeeId ?? "",
+                              userId: tempSelectedEmployeeId ?? "",
+                              date: DateTime.now()
+                                  .toIso8601String()
+                                  .substring(0, 10),
+                              serviceIndex: serviceIndex,
+                            );
+                          }
 
                           Navigator.pop(context);
                         },
@@ -1601,6 +1717,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         );
       }),
     );
+  }
+
+  bool get canAddMoreServices {
+    return selectedServicesIdsForValidation.length < allServicesList.length;
   }
 }
 

@@ -1,6 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:vedic_health/views/appointments/membership/membership_detail_screen.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/loader.dart';
+
+import '../../network/Utils.dart';
+import '../../network/api_helper.dart';
+import '../../widgets/notification_bar_widget.dart';
+import 'membership_detail_screen.dart';
 
 class JoinMembershipScreen extends StatefulWidget {
   const JoinMembershipScreen({super.key});
@@ -10,34 +18,26 @@ class JoinMembershipScreen extends StatefulWidget {
 }
 
 class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
-  int selectedMembership = -1;
 
-  final List<Map<String, dynamic>> membershipPlans = [
-    {
-      "title": "Basic Membership",
-      "subtitle": "Every month Per person",
-      "price": "\$29.00"
-    },
-    {
-      "title": "E-Studio Membership",
-      "subtitle": "Every month Per household",
-      "price": "\$49.00"
-    },
-    {
-      "title": "Premium Membership",
-      "subtitle": "Every month Per person",
-      "price": "\$99.00"
-    },
-  ];
+
+  List<dynamic> membershipPlans = [];
+  var selectedPan;
+
+  bool isLoading=false;
+  int pageNo=1;
+  int pageSize=50;
+  String selectedPlanId="";
+  String userId="";
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    ToastContext().init(context);
+    return Scaffold(
         backgroundColor: const Color(0xFFF2F6FF),
-        body: SingleChildScrollView(
+        body: isLoading?Center(child: Loader(),):SingleChildScrollView(
           child: Column(
             children: [
+              NotificationBarWidget(),
               /// Back Button
               Align(
                 alignment: Alignment.centerLeft,
@@ -64,7 +64,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
               const Text(
                 "Join A Membership",
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -73,8 +73,9 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                 "Get access to classes, events,\n discounts and more",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500
                 ),
               ),
 
@@ -82,13 +83,15 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
 
               /// Lottie Animation
               Lottie.asset(
-                "assets/anotherdate.json",
+                "assets/yoga_mem.json",
                 height: 220,
               ),
 
               const SizedBox(height: 20),
 
               /// Membership Options
+              membershipPlans.isEmpty?
+              const Center(child: Text("No membership plans are available at the moment. Please check again later.", style: TextStyle(fontSize: 14,fontWeight: FontWeight.w500,color: Colors.grey),),):
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -96,10 +99,21 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemBuilder: (context, index) {
                   final plan = membershipPlans[index];
+                  String id=plan['_id']?.toString()??"";
+                  bool isSelected=false;
+                  if(selectedPlanId==id){
+                    isSelected=true;
+                  }
+                  String title=plan['plan_name']?.toString()??"";
+                  String price=plan['price']?.toString()??"0";
+                  int expiresIN=plan['expiring_in']??0;
+                  String upPlan=getPlanFromDays(expiresIN);
+
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        selectedMembership = index;
+                        selectedPlanId = id;
+                        selectedPan=plan;
                       });
                     },
                     child: Container(
@@ -109,7 +123,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: selectedMembership == index
+                          color: isSelected
                               ? const Color(0xFFB65303)
                               : Colors.grey.shade300,
                           width: 1,
@@ -124,13 +138,13 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: selectedMembership == index
+                                color: isSelected
                                     ? const Color(0xFFB65303)
                                     : Colors.grey,
                                 width: 2,
                               ),
                             ),
-                            child: selectedMembership == index
+                            child: isSelected
                                 ? Center(
                                     child: Container(
                                       height: 12,
@@ -151,7 +165,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  plan["title"],
+                                  title,
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
@@ -159,7 +173,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  plan["subtitle"],
+                                  upPlan,
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey.shade600,
@@ -171,7 +185,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
 
                           /// Price
                           Text(
-                            plan["price"],
+                            "\$ $price",
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -183,6 +197,7 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
                   );
                 },
               ),
+              
               const SizedBox(height: 80),
             ],
           ),
@@ -192,13 +207,13 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.all(14),
           child: ElevatedButton(
-            onPressed: selectedMembership == -1
+            onPressed: selectedPlanId.isEmpty
                 ? null
                 : () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MembershipDetailScreen(),
+                        builder: (context) =>  MembershipDetailScreen(selectedPan),
                       ),
                     );
                   },
@@ -216,7 +231,56 @@ class _JoinMembershipScreenState extends State<JoinMembershipScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+  Future<void>_loadUserData()async{
+    userId=await MyUtils.getSharedPreferences("user_id")??"";
+    fetchMembershipList();
+  }
+  fetchMembershipList() async {
+    setState(() {
+      isLoading = true;
+    });
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "user_id": userId,
+      "page":pageNo,
+      "pageSize":pageSize
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('membership_management/getAll', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==200){
+      membershipPlans=(responseJSON['result'] as List?)??[];
+    }else{
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong! Please try again",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+  String getPlanFromDays(int days) {
+    double months = days / 30;
+    if (months <= 1) {
+      return "Per Month, Per Person";
+    } else if (months <= 3) {
+      return "Every 3 Months, Per Person";
+    } else if (months <= 6) {
+      return "Every 6 Months, Per Person";
+    } else if (months <= 12) {
+      return "Per Year, Per Person";
+    } else {
+      return "Long-term Plan, Per Person";
+    }
+  }
+
+
 }

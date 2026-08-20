@@ -3,8 +3,10 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:vedic_health/network/Utils.dart';
 import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/login_screen.dart';
+import 'package:vedic_health/views/practitioner/practitioner_homescreen.dart';
 
 import 'home_screen.dart';
 
@@ -39,11 +41,23 @@ class SplashState extends State<SplashScreen>
   _navigateUser() async {
     if(widget.token!='')
     {
-      //change
-      Timer(
+
+      String role= await MyUtils.getSharedPreferences("role")??"";
+      print("role**********$role");
+      if(role=="practitioner"){
+        Timer(
           Duration(seconds: 2),
               () => Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (BuildContext context) => HomeScreen())));
+              builder: (BuildContext context) => PractitionerHomeScreen())));
+      }else{
+        Timer(
+            Duration(seconds: 2),
+                () => Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (BuildContext context) => HomeScreen())));
+      }
+      //change
+
+
 
     }
     else

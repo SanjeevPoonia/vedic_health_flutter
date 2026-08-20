@@ -1,15 +1,29 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
+
+import '../../network/api_dialog.dart';
+import '../../network/api_helper.dart';
+import 'login_screen.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
-  const OTPVerificationScreen({super.key});
+  String email;
+  String mobileNo;
+  String name;
+  String lastName;
+  String password;
+
+  OTPVerificationScreen(this.email, this.mobileNo, this.name,this.lastName, this.password, {super.key});
+
+
 
   @override
   State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
 }
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  final List<TextEditingController> _otpControllers =
-      List.generate(5, (index) => TextEditingController());
+  final List<TextEditingController> _otpControllers = List.generate(5, (index) => TextEditingController());
 
   @override
   void dispose() {
@@ -21,6 +35,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -96,7 +111,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                       const SizedBox(height: 16),
                       // Subtitle
                       const Text(
-                        'OTP send to your given email ID',
+                        'OTP Sent to your email or mobile no',
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF666666),
@@ -113,14 +128,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF6F6F6),
                               borderRadius: BorderRadius.circular(5),
-                              // boxShadow: [
-                              // BoxShadow(
-                              //   color: Colors.grey.withOpacity(0.1),
-                              //   spreadRadius: 1,
-                              //   blurRadius: 10,
-                              //   offset: const Offset(0, 2),
-                              // ),
-                              // ],
                             ),
                             child: TextField(
                               controller: _otpControllers[index],
@@ -177,7 +184,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               // crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
+                                const Text(
                                   "Didn't receive the OTP ",
                                   style: TextStyle(
                                     fontSize: 14,
@@ -185,7 +192,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    sendOTP();
+                                  },
                                   child: const Text(
                                     "Resend",
                                     style: TextStyle(
@@ -207,7 +216,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            verifyOtp();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF6B4423),
                             shape: RoundedRectangleBorder(
@@ -235,5 +246,118 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         ),
       ),
     );
+  }
+  sendOTP() async {
+    FocusScope.of(context).unfocus();
+    APIDialog.showAlertDialog(context, 'Sending OTP...');
+    var data = {
+      "email": widget.email,
+      "mobileNumber": widget.mobileNo,
+      "mobile_number": widget.mobileNo,
+      "requestFor": ""
+    };
+
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.postAPI('users/sendOtp', requestModel, context);
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.toString());
+    print(responseJSON['statusCode']);
+
+    if (responseJSON['statusCode'] == 200 ||
+        responseJSON['statusCode'] == 201) {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      for(int i=0;i<5;i++){
+        _otpControllers[i].text="";
+      }
+      setState(() {
+
+      });
+      //Navigator.push(context, MaterialPageRoute(builder: (context) =>  OTPVerificationScreen(_emailController.text.toString(), _mobileController.text.toString(), _nameController.text.toString(), _passwordController.text.toString()),),);
+      // showOtpVerificationDialog();
+    } else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+  }
+  signupUser()async{
+    var signupData = {
+      "email": widget.email,
+      "mobileNo": widget.mobileNo,
+      "password": widget.password,
+      "name":widget.name,
+      "lastName":widget.lastName,
+    };
+
+    var requestModel = {
+      'data': base64.encode(utf8.encode(json.encode(signupData)))
+    };
+    APIDialog.showAlertDialog(context, 'Please wait...');
+    ApiBaseHelper helper = ApiBaseHelper();
+    var signUPResponse =
+    await helper.postAPI('users/create', requestModel, context);
+    var responseJSONs = json.decode(signUPResponse.toString());
+    Navigator.pop(context);
+    print(responseJSONs);
+    print("klklkl");
+    if (responseJSONs['statusCode'] == 200 ||
+        responseJSONs['statusCode'] == 201) {
+      Toast.show("Your account has been created successfully.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const VedicHealthLoginScreen()));
+    }else{
+      Toast.show(responseJSONs['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+  }
+
+  void verifyOtp() async {
+    bool isOtpValid = _otpControllers.every((controller) => controller.text.isNotEmpty);
+
+    if (!isOtpValid) {
+      Toast.show(
+        "Please enter complete OTP",
+        duration: Toast.lengthLong,
+        gravity: Toast.bottom,
+        backgroundColor: Colors.red,
+      );
+      return;
+    }
+
+    String otp = _otpControllers.map((e) => e.text).join();
+    var data = {
+      "email": widget.email,
+      "mobileNumber": widget.mobileNo,
+      "otp": otp
+    };
+
+    APIDialog.showAlertDialog(context, 'Verifying OTP...');
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response =
+    await helper.postAPI('users/verifyOtp', requestModel, context);
+    Navigator.pop(context); // close loading dialog
+    var responseJSON = json.decode(response.toString());
+    print(responseJSON);
+    if (responseJSON['statusCode'] == 200 || responseJSON['statusCode'] == 201) {
+      signupUser();
+    } else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      for(int i=0;i<5;i++){
+        _otpControllers[i].text="";
+      }
+    }
   }
 }

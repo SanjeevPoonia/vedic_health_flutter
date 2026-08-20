@@ -94,8 +94,9 @@ class _SearchPageState extends State<SearchPage> {
                             Navigator.pop(context);
                           },
                           child: const Icon(Icons.arrow_back_ios_new_sharp,
-                              size: 17, color: Colors.black),
+                              size: 24, color: Colors.black),
                         ),
+                        SizedBox(width: 10,),
                         Expanded(
                           child: TextField(
                             controller: searchController,
@@ -243,7 +244,10 @@ class _SearchPageState extends State<SearchPage> {
                                         fontWeight:
                                         FontWeight.w500,
                                         color: Color(0xFFF38328),
-                                      )),
+                                      ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),

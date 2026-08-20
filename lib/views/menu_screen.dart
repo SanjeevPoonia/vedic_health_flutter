@@ -1,11 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-//import 'package:lottie/lottie.dart';
-//import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vedic_health/views/appointments/appointment_home.dart';
@@ -13,22 +8,23 @@ import 'package:vedic_health/views/appointments/my_appointment_screen.dart';
 import 'package:vedic_health/views/appointments/my_appointment_waitlist_screen.dart';
 import 'package:vedic_health/views/authentication/login_screen.dart';
 import 'package:vedic_health/views/change_password_screen.dart';
-import 'package:vedic_health/views/events/booked_eventlist_screen.dart';
+import 'package:vedic_health/views/membership/membership_user_screen.dart';
 import 'package:vedic_health/views/my_orders.dart';
 import 'package:vedic_health/views/profile_screen.dart';
+import 'package:vedic_health/views/yoga_classes/schedule_yoga_class_screen.dart';
 import 'package:vedic_health/views/yoga_classes/yoga_classes_screen.dart';
-
+import 'package:vedic_health/views/yoga_courses/yoga_courses_screen.dart';
+import '../network/constants.dart';
+import '../utils/name_avatar.dart';
 import '../widgets/drawer/zoom_scaffold.dart' as MEN;
-
 import 'package:toast/toast.dart';
 import '../network/Utils.dart';
-import '../network/api_helper.dart';
 import '../utils/app_theme.dart';
 import '../widgets/sidebar_widget.dart';
+import 'category_wise_products.dart';
 import 'events/event_home_screen.dart';
-import 'login_screen.dart';
 import 'my_reviews_screen.dart';
-import 'order_history_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MenuScreen extends StatefulWidget {
   @override
@@ -59,7 +55,7 @@ class MenuState extends State<MenuScreen> {
                   image: DecorationImage(
                     image: AssetImage('assets/backimage.jpeg'),
                     colorFilter: new ColorFilter.mode(
-                        Colors.black.withOpacity(0.2), BlendMode.dstATop),
+                        Colors.black.withOpacity(0.05), BlendMode.dstATop),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -69,7 +65,6 @@ class MenuState extends State<MenuScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 23),
-
                     Row(
                       children: [
                         Spacer(),
@@ -82,31 +77,37 @@ class MenuState extends State<MenuScreen> {
                           child: Container(
                             margin: const EdgeInsets.only(right: 20),
                             child: Image.asset("assets/ham_drawer.png",
-                                width: 21.2,
-                                height: 18.42,
+                                width: 24,
+                                height: 24,
                                 color: Colors.black),
                           ),
                         )
                       ],
                     ),
-
                     Padding(
                       padding: const EdgeInsets.only(top: 0),
                       child: Row(
                         children: [
                           const SizedBox(width: 12),
 
-                          profileImageUrl == null
-                              ? CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage:
-                                      AssetImage('assets/profile_d1.png'),
-                                )
-                              : CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage:
-                                      NetworkImage(profileImageUrl!),
+                          profileImageUrl == null || profileImageUrl!.isEmpty
+                              ? NameAvatar(fullName: userName,size: 50,)
+                              : ClipRRect(
+                            borderRadius: BorderRadius.circular(25), // rounded corners
+                            child: CachedNetworkImage(
+                              height: 50,
+                              width: 50,
+                              imageUrl: profileImageUrl??"",
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 ),
+                              ),
+                              errorWidget: (context, url, error) => NameAvatar(fullName: userName,size: 50,),
+                            ),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                               child: Column(
@@ -133,162 +134,57 @@ class MenuState extends State<MenuScreen> {
                         ],
                       ),
                     ),
-
                     SizedBox(height: 10),
-
                     Container(
                       margin: EdgeInsets.only(left: 15, right: 110),
                       child: Divider(
                         color: Colors.white.withOpacity(0.50),
                       ),
                     ),
-
-                    //                                  Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
                     Expanded(
                         child: ListView(
                             padding: EdgeInsets.symmetric(horizontal: 12),
                             children: [
-                              SizedBox(height: 40),
+                              SizedBox(height: 10),
                               InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
                                       listen: false)
-                                  .toggle();
+                                      .toggle();
 
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => ProfileScreen()));
-
-                              //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: AssignedAuditsScreen()));
-
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child: SideBarWidget(
-                                'My Profile ', 'assets/nav_profile.png'),
-                          ),
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => ProfileScreen()));
+                                },
+                                // child: SideBarWidget('My Profile ', 'assets/nav_profile.png'),
+                                child: SideBarWidget('My Profile ', 'assets/ic_menu_profile.svg'),
+                              ),
                               InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
                                       listen: false)
-                                  .toggle();
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
+                                      .toggle();
+
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryWiseProducts("","")));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()));
+                                },
+                               // child: SideBarWidget('Shop ', 'assets/nav_profile.png'),
+                                child: SideBarWidget('Shop ', 'assets/ic_menu_shops.svg'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
                                           const MyOrdersScreen()));
-
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: HomeScreen()));
-
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child: SideBarWidget(
-                                'My Orders', 'assets/checkout.png'),
-                          ),
-
-                          /*  InkWell(
-                                onTap: (){
-
-                                  Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                      .toggle();
-                                  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: OfflineAuditListScreen()));
-
-                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-
                                 },
-                                child: SideBarWidget(
-                                    'Offline Audit List',
-                                    'assets/ic_offline_data.PNG'
-                                ),
-                              ),
-*/
-
-                              InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                  .toggle();
-
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => MyReviewScreen()));
-
-                              // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child:
-                                SideBarWidget('Reviews', 'assets/review.png'),
-                          ),
-                              InkWell(
-                            onTap: () {
-                              Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                  .toggle();
-
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => MyAppointmentScreen(
-                                            id: id,
-                                          )));
-
-                              // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
-                              //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                            },
-                            child: SideBarWidget(
-                                'My Appointments', 'assets/review.png'),
-                          ),
-                              InkWell(
-                                onTap: () {
-                                  Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                      .toggle();
-
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              AppointmentHomeScreen()));
-
-                                  // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
-                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                                },
-                                child: SideBarWidget(
-                                    'Book Appointments', 'assets/review.png'),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                      .toggle();
-
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              MyAppointmentWaitlistScreen()));
-
-                                  // Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SavedAuditListScreen()));
-                                  //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
-                                },
-                                child: SideBarWidget(
-                                    'My Waitlist', 'assets/review.png'),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  Provider.of<MEN.MenuController>(context,
-                                      listen: false)
-                                      .toggle();
-
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => EventHomeScreen()));
-                                },
-                                child: SideBarWidget(
-                                    'Events', 'assets/review.png'),
+                                child: SideBarWidget('My Orders', 'assets/ic_menu_myorders.svg'),
+                                //child: SideBarWidget('My Orders', 'assets/checkout.png'),
                               ),
                               InkWell(
                                 onTap: () {
@@ -301,13 +197,128 @@ class MenuState extends State<MenuScreen> {
                                       MaterialPageRoute(
                                           builder: (context) => YogaClassesScreen()));
                                 },
-                                child: SideBarWidget(
-                                    'Yoga', 'assets/review.png'),
+                                //child: SideBarWidget('Yoga Classes', 'assets/review.png'),
+                                child: SideBarWidget('Yoga Classes', 'assets/ic_menu_yogaclasses.svg'),
                               ),
                               InkWell(
                                 onTap: () {
                                   Provider.of<MEN.MenuController>(context,
-                                          listen: false)
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => ScheduleClassesScreen()));
+                                },
+                                child: SideBarWidget('Schedule Classes', 'assets/ic_menu_yogaclasses.svg'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              AppointmentHomeScreen()));
+                                },
+                                child: SideBarWidget('Book Appointments', 'assets/ic_menu_appoint.svg'),
+                                //child: SideBarWidget('Book Appointments', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => MyAppointmentScreen(
+                                            id: id,
+                                          )));
+                                },
+                                child: SideBarWidget('My Appointments', 'assets/ic_menu_myappoint.svg'),
+                                //child: SideBarWidget('My Appointments', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              MyAppointmentWaitlistScreen()));
+                                },
+                                child: SideBarWidget('My Waitlist', 'assets/ic_menu_waitlist.svg'),
+                               // child: SideBarWidget('My Waitlist', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => MembershipUserScreen()));
+                                },
+                                child: SideBarWidget('Membership', 'assets/ic_menu_membership.svg'),
+                                //child: SideBarWidget('Membership', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => YogaCoursesScreen()));
+                                },
+                                child: SideBarWidget('Courses', 'assets/ic_menu_couses.svg'),
+                                //child: SideBarWidget('Courses', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => EventHomeScreen()));
+                                },
+                                child: SideBarWidget('Events', 'assets/ic_menu_events.svg'),
+                               // child: SideBarWidget('Events', 'assets/review.png'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
+                                      .toggle();
+
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => MyReviewScreen()));
+                                },
+                                child:
+                                SideBarWidget('Reviews', 'assets/ic_menu_review.svg'),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Provider.of<MEN.MenuController>(context,
+                                      listen: false)
                                       .toggle();
                                   Navigator.push(
                                       context,
@@ -317,8 +328,8 @@ class MenuState extends State<MenuScreen> {
 
                                   //  Navigator.push(context, PageTransition(type: PageTransitionType.leftToRight, child: SubmitAuditListScreen()));
                                 },
-                                child: SideBarWidget(
-                                    'Change Password', 'assets/password.png'),
+                                child: SideBarWidget('Change Password', 'assets/ic_menu_changepass.svg'),
+                                //child: SideBarWidget('Change Password', 'assets/password.png'),
                               ),
                               InkWell(
                                 onTap: () {
@@ -331,8 +342,16 @@ class MenuState extends State<MenuScreen> {
 
                                   //Navigator.push(context, PageTransition(type: PageTransitionType.bottomToTop, child: AssignedTab(true)));
                                 },
-                                child: SideBarWidget('Logout', 'assets/power.png'),
+                                child: SideBarWidget('Logout', 'assets/ic_menu_logout.svg'),
                               ),
+
+
+
+
+
+
+
+
                         ])),
 
                     const SizedBox(height: 22),
@@ -343,7 +362,6 @@ class MenuState extends State<MenuScreen> {
           )),
     );
   }
-
   void _modalBottomLogout() {
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
@@ -496,23 +514,25 @@ class MenuState extends State<MenuScreen> {
       }),
     );
   }
-
   void initState() {
     super.initState();
     getValue();
   }
-
   Future<void> getValue() async {
     String? email = await MyUtils.getSharedPreferences("email");
     String? name = await MyUtils.getSharedPreferences("name");
     String? id = await MyUtils.getSharedPreferences("user_id");
+
     emailID = email ?? "";
     userName = name ?? "NA";
     id = id ?? "NA";
+    String? image = await MyUtils.getSharedPreferences("image");
+    if(image!=null && image.isNotEmpty){
+      profileImageUrl=AppConstant.appBaseURL+image;
+    }
     print(email);
     print(name);
   }
-
   _showAlertDialog() {
     showDialog(
         context: context,
@@ -578,7 +598,6 @@ class MenuState extends State<MenuScreen> {
               ],
             ));
   }
-
   _logOut(BuildContext context) async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("user_id");

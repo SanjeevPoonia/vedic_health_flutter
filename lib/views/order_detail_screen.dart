@@ -1,8 +1,10 @@
 // order_details_screen.dart
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,6 +21,10 @@ import 'package:intl/intl.dart';
 import '../network/Utils.dart';
 import '../network/api_helper.dart';
 import '../network/constants.dart';
+import '../utils/invoice_pdf.dart';
+import '../utils/invoices_item.dart';
+import '../widgets/notification_bar_widget.dart';
+import 'package:pdf/pdf.dart';
 
 class OrderDetailsScreen extends StatefulWidget{
   var order;
@@ -40,6 +46,10 @@ class orderDetailsState extends State<OrderDetailsScreen> {
   String status="";
   List<orderItemsSeries> orderItems=[];
   String pickupDate="";
+  String pickedUpDoneDate="";
+  String pickUpPackDate="";
+  String pickUpReadyDate="";
+
   String shippedDate="";
   String deliveredDate="";
   String statusKey="";
@@ -61,6 +71,19 @@ class orderDetailsState extends State<OrderDetailsScreen> {
   String categoryId="";
   bool showReturnBtn=false;
 
+  String orderType="";
+
+
+  String? customerId;
+  String? customerName;
+  String? customerEmail;
+  String? customerMobile;
+  String? customerAddress;
+
+  String? companyAddress;
+  String? companyPhone;
+  String? companyEmail;
+
 
 
 
@@ -69,10 +92,10 @@ class orderDetailsState extends State<OrderDetailsScreen> {
   Widget build(BuildContext context) {
     ToastContext().init(context);
     orderStatusColor=_findLabelColor(statusKey);
-    return SafeArea(
-        child: Scaffold(
+    return  Scaffold(
             backgroundColor: Colors.white,
             body: Column(children: [
+              NotificationBarWidget(),
               // App Bar
               Card(
                 elevation: 1,
@@ -101,7 +124,7 @@ class orderDetailsState extends State<OrderDetailsScreen> {
                           Navigator.pop(context);
                         },
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -618,20 +641,50 @@ class orderDetailsState extends State<OrderDetailsScreen> {
                                 ],
                               ),
                             ]
-                            else if (statusKey != 'order_delivered'&&widget.isReturnedOrder==false&&widget.isCancelledOrder==false) ...[
+                            else if (statusKey == 'order_pickedup') ...[
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => ProductDetailScreen(productId, categoryId)));
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                        color: Color(0xFF865940)),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                        BorderRadius.circular(20)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                  child: const Text('Buy Again',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF865940))),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                            ]
+                            else if (statusKey != 'order_pickedup'&& statusKey != 'order_delivered'&&widget.isReturnedOrder==false&&widget.isCancelledOrder==false) ...[
                               const SizedBox(height: 16),
                               Row(
                                 children: [
                                   Expanded(
                                     child: OutlinedButton(
                                       onPressed: () {
-                                        _modelBottomTrackOrder(context);
-                                        /*Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const DeliveryTrackingScreen(),
-                                            ));*/
+                                        if(orderType=='pickup'){
+                                          _modelBottomTrackOrderForPickup(context);
+                                        }else{
+                                          _modelBottomTrackOrder(context);
+                                        }
+
+
                                       },
                                       style: OutlinedButton.styleFrom(
                                         backgroundColor:
@@ -679,9 +732,65 @@ class orderDetailsState extends State<OrderDetailsScreen> {
                       ),
 
                       const SizedBox(height: 18),
-                      if (statusKey == 'order_delivered')
+                      if (statusKey == 'order_delivered' || statusKey == 'order_pickedup')
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () async {
+                            showLoading(context);
+                            try {
+                              List<InvoiceItem> items = [];
+                              for(int i=0;i<orderItems.length;i++){
+                                double newValue = toDouble(orderItems[i].productPrice);
+                                int quantity=toInteger(orderItems[i].quantity);
+                                items.add(InvoiceItem(
+                                    title: orderItems[i].productName,
+                                    cost: newValue,
+                                    unit: quantity));
+                              }
+
+                              // ✅ Generate PDF File
+                              final file = await InvoicePDF.generateInvoice(
+                                invoiceNo: "#$invoiceNo",
+                                customerName: customerName??"",
+                                email: customerEmail??"",
+                                status: status.toUpperCase(),
+                                date: formatCreatedAt(orderCreatedAt),
+                                customerId: customerId??"",
+                                storeName: "Vedic Health Inc.",
+                                storeAddress: companyAddress??"",
+                                storePhone: companyPhone??"",
+                                storeEmail: companyEmail??"",
+                                customerAddress: customerAddress ?? "",
+                                customerPhone: customerMobile??"",
+                                items: items,
+                                subTotal: totalAmount,
+                                discount: discountAmount,
+                                delivery: deliveryCharge,
+                                grandTotal: grandTotal
+
+                              );
+
+                              // ✅ Hide Loader
+                              hideLoading(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("File saved on: ${file.path}")),
+                              );
+
+                              // ✅ Open PDF Preview Instead of Share
+                              await Printing.layoutPdf(
+                                onLayout: (PdfPageFormat format) async => file.readAsBytes(),
+                              );
+
+                            } catch (e) {
+
+                              hideLoading(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e")),
+                              );
+                            }
+
+
+
+                          },
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 18),
@@ -842,8 +951,37 @@ class orderDetailsState extends State<OrderDetailsScreen> {
                   ),
                 ),
               ),
-            ])));
+            ]))
+    ;
   }
+
+  double toDouble(dynamic value) {
+    if (value == null) return 0.0;
+
+    if (value is num) {
+      return value.toDouble(); // int or double
+    }
+
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+
+    return 0.0;
+  }
+  int toInteger(dynamic value) {
+    if (value == null) return 0;
+
+    if (value is num) {
+      return value.toInt(); // int or double
+    }
+
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+
+    return 0;
+  }
+
   String formatCreatedAt(String createdAt) {
     try {
       DateTime dateTime = DateTime.parse(createdAt).toLocal();
@@ -1237,6 +1375,83 @@ Thank you,
           backgroundColor: Colors.red);
     }*/
   }
+  void _modelBottomTrackOrderForPickup(BuildContext context) {
+
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            int currentIndex = 1;
+            String createdDate=formatCreatedAt(orderCreatedAt);
+
+            String pickDate=formatCreatedAt(pickUpPackDate);
+            String readyDate=formatCreatedAt(pickUpReadyDate);
+            String deliverDate=formatCreatedAt(pickedUpDoneDate);
+
+            if(pickDate.isNotEmpty && readyDate.isEmpty && deliverDate.isEmpty){
+              currentIndex=2;
+            }else if(pickDate.isNotEmpty && readyDate.isNotEmpty && deliverDate.isEmpty){
+              currentIndex=3;
+            }else if(pickDate.isNotEmpty && readyDate.isNotEmpty && deliverDate.isNotEmpty){
+              currentIndex=4;
+            }
+
+
+
+
+            final List<Map<String, String>> statuses =  [
+              {"title": "Order PLaced", "date": createdDate},
+              {"title": "Order Packed", "date": pickDate},
+              {"title": "Order Ready", "date": readyDate},
+              {"title": "Order Picked Up", "date": deliverDate},
+            ];
+
+
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                    bottomLeft: Radius.circular(15),
+                    bottomRight: Radius.circular(15)),
+                color: Colors.white,
+              ),
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 25),
+                  Row(
+                    children: [
+                      const Text(
+                        "Package Status",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                          },
+                          child: Image.asset(
+                            'assets/close_icc.png',
+                            width: 14,
+                            height: 14,
+                          )),
+                      const SizedBox(width: 20)
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTimeline(statuses, currentIndex),
+                ],
+              ),
+            );
+          }),
+    );
+  }
   void _modelBottomTrackOrder(BuildContext context) {
 
     showModalBottomSheet(
@@ -1247,24 +1462,38 @@ Thank you,
           builder: (BuildContext context, StateSetter setModalState) {
             int currentIndex = 1;
             String createdDate=formatCreatedAt(orderCreatedAt);
+            String packDate=formatCreatedAt(pickUpPackDate);
+            String readyDate=formatCreatedAt(pickUpReadyDate);
             String pickDate=formatCreatedAt(pickupDate);
             String shipDate=formatCreatedAt(shippedDate);
             String deliverDate=formatCreatedAt(deliveredDate);
+            if(packDate.isNotEmpty && readyDate.isEmpty && pickDate.isEmpty && shipDate.isEmpty && deliverDate.isEmpty){
+              currentIndex=2;
+            }else if(packDate.isNotEmpty && readyDate.isNotEmpty && pickDate.isEmpty && shipDate.isEmpty && deliverDate.isEmpty){
+              currentIndex=3;
+            }else if(packDate.isNotEmpty && readyDate.isNotEmpty && pickDate.isNotEmpty && shipDate.isEmpty && deliverDate.isEmpty){
+              currentIndex=4;
+            }else if(packDate.isNotEmpty && readyDate.isNotEmpty && pickDate.isNotEmpty && shipDate.isNotEmpty && deliverDate.isEmpty){
+              currentIndex=5;
+            }else if(packDate.isNotEmpty && readyDate.isNotEmpty && pickDate.isNotEmpty && shipDate.isNotEmpty && deliverDate.isNotEmpty){
+              currentIndex=5;
+            }
 
-            if(pickDate.isNotEmpty && shipDate.isEmpty && deliverDate.isEmpty){
+           /* if(pickDate.isNotEmpty && shipDate.isEmpty && deliverDate.isEmpty){
               currentIndex=2;
             }else if(pickDate.isNotEmpty && shipDate.isNotEmpty && deliverDate.isEmpty){
               currentIndex=3;
             }else if(pickDate.isNotEmpty && shipDate.isNotEmpty && deliverDate.isNotEmpty){
               currentIndex=4;
-            }
+            }*/
 
 
 
 
             final List<Map<String, String>> statuses =  [
               {"title": "Order Received", "date": createdDate},
-              {"title": "Order Packed", "date": createdDate},
+              {"title": "Order Pack", "date": packDate},
+              {"title": "Order Packed", "date": readyDate},
               {"title": "Order Shipped", "date": pickDate},
               {"title": "Out for Delivery", "date": shipDate},
               {"title": "Delivered", "date": deliverDate},
@@ -1417,7 +1646,6 @@ Thank you,
       grandTotal=orderDetails['grandTotal']?.toString()??"";
       status=orderDetails['status']?.toString()??"";
       orderCreatedAt=orderDetails['created_at']?.toString()??"";
-
       if(orderDetails['address']!=null){
         shippingAddressName=orderDetails['address']?['name']?.toString()??"";
         shippingAddress="${orderDetails['address']?['flatNo']?.toString()??""},${orderDetails['address']?['area']?.toString()??""},${orderDetails['address']?['city']?.toString()??""},${orderDetails['address']?['state']?.toString()??""},${orderDetails['address']?['country']?.toString()??""},${orderDetails['address']?['pincode']?.toString()??""}";
@@ -1453,9 +1681,56 @@ Thank you,
        orderItems.add(orderItemsSeries(itemId, quantity, productPrice, productName, productBrand, productImage));
 
      }
+
+     //customerData
+      String firstName=orderDetails['address']?['name']?.toString()??"";
+      //String lastName=orderDetails['user']?['lastName']?.toString()??"";
+      customerName= "$firstName";
+      customerId =orderDetails['user']?['vedicCustomerId']?.toString()??"";
+      customerEmail=orderDetails['user']?['email']?.toString()??"";
+      customerMobile=orderDetails['address']?['mobile']?.toString()??"";
+
+      String address1=orderDetails['billingAddress1']?.toString()??"";
+      String address2=orderDetails['billingAddress2']?.toString()??"";
+      String city=orderDetails['billingCity']?.toString()??"";
+      String state=orderDetails['billingState']?.toString()??"";
+      String country=orderDetails['billingCountry']?.toString()??"";
+      String zipcode=orderDetails['billingZipcode']?.toString()??"";
+
+      customerAddress="$address1, $address2, $city, $state, $country, $zipcode";
+
+     // companyPhone=orderDetails['address']?['mobile']?.toString()??"";
+    //  companyEmail="info@vedichealth.org";
+
+
+      String area=orderDetails['address']?['area']?.toString()??"";
+      String flatNo=orderDetails['address']?['flatNo']?.toString()??"";
+      String comcity=orderDetails['address']?['city']?.toString()??"";
+      String comstate=orderDetails['address']?['state']?.toString()??"";
+      String comcountry=orderDetails['address']?['country']?.toString()??"";
+      String pincode=orderDetails['address']?['pincode']?.toString()??"";
+
+     // companyAddress="$area, $flatNo, $comcity, $comstate, $comcountry, $pincode";
+
+
+
+
+
       pickupDate=orderDetails['deliveryDates']?['pickupDate']?.toString()??"";
       shippedDate=orderDetails['deliveryDates']?['shippedDate']?.toString()??"";
       deliveredDate=orderDetails['deliveryDates']?['deliveredDate']?.toString()??"";
+
+      pickedUpDoneDate=orderDetails['pickupDoneDate']?.toString()??"";
+      pickUpPackDate=orderDetails['orderPackDate']?.toString()??"";
+      pickUpReadyDate=orderDetails['orderReadyDate']?.toString()??"";
+
+      String pickupType_Date=orderDetails['pickupDate']?.toString()??"";
+      String orderStatus= orderDetails['orderStatus']?.toString()??"";
+
+      if(pickupType_Date.isNotEmpty){
+        orderType="pickup";
+      }
+
       statusKey="";
       statusName="";
       if(widget.isReturnedOrder){
@@ -1465,8 +1740,34 @@ Thank you,
       else if(widget.isCancelledOrder){
         statusName="Order Cancelled";
         statusKey="order_cancelled";
+      }else if(orderStatus.isEmpty && pickupDate.isEmpty && shippedDate.isEmpty  && deliveredDate.isEmpty){
+        statusName="Order Placed";
+        statusKey="order_place";
+      }else if(orderStatus=='orderPacked'){
+        statusName="Order Pack";
+        statusKey="order_pack";
+      }else if(orderStatus == 'orderReady'){
+        statusName="Order Ready";
+        statusKey="order_ready";
+      }else if(orderStatus == 'orderPickedUp' && pickupType_Date.isNotEmpty){
+        statusName="Order Picked Up";
+        statusKey="order_pickedup";
+      }else if(orderStatus == 'orderPickedUp' && pickupType_Date.isEmpty){
+        statusName="Order Picked Up";
+        statusKey="order_dispatch";
+      }else if(deliveredDate.isNotEmpty){
+        statusName="Order Delivered";
+        statusKey="order_delivered";
+        int rtDays=int.parse(widget.returnDays);
+        showReturnBtn=canShowReturnButton(deliveredDate, rtDays);
+      }else if (pickupDate.isNotEmpty && shippedDate.isEmpty  && deliveredDate.isEmpty){
+        statusName="Order Dispatched";
+        statusKey="order_dispatch";
+      }else if (pickupDate.isNotEmpty && shippedDate.isNotEmpty  && deliveredDate.isEmpty){
+        statusName="Out For Delivery";
+        statusKey="order_ofd";
       }
-      else if(pickupDate.isEmpty && shippedDate.isEmpty && deliveredDate.isEmpty){
+      /*else if(pickupDate.isEmpty && shippedDate.isEmpty && deliveredDate.isEmpty){
        statusName="Order Ready";
        statusKey="order_pack";
      }
@@ -1481,7 +1782,7 @@ Thank you,
        statusKey="order_delivered";
        int rtDays=int.parse(widget.returnDays);
        showReturnBtn=canShowReturnButton(deliveredDate, rtDays);
-      }
+      }*/
 
 
       if(widget.isReturnedOrder && orderDetails['returnData']!=null){
@@ -1510,25 +1811,60 @@ Thank you,
      /* statusName="Order Delivered";
       statusKey="order_delivered";
       showReturnBtn=true;*/
-
+      fetchVedicHealthInfo();
 
 
    }
+
+  fetchVedicHealthInfo() async {
+    //APIDialog.showAlertDialog(context, "Please wait...");
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      //"id": userId,
+      "id": "67f4da7497d93651914eb2f7",
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('master/view', resModel, context);
+    var responseJSON= json.decode(response.toString());
+    int statusCode=responseJSON['statusCode']??0;
+    if(statusCode==201 ||statusCode==200){
+      companyAddress=responseJSON['data']?['address']?.toString()??"";
+      companyEmail=responseJSON['data']?['email']?.toString()??"";
+      companyPhone=responseJSON['data']?['number']?.toString()??"";
+    }
+
+    /*if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }*/
+    setState(() {
+
+    });
+  }
   _findLabelColor(String key){
-    var color=Colors.green;
-    if(key=="order_pack"){
-      color=Colors.cyan;
-    }else if(key=="order_pickup"){
+    var color=Colors.grey;
+    if(key == 'order_place'){
+      color = Colors.indigo;
+    } else if(key=="order_pack"){
+      color=Colors.amber;
+    } else if(key=="order_ready"){
+      color=Colors.lightGreen;
+    }else if(key=="order_delivered" || key == 'order_pickedup'){
+      color=Colors.green;
+    }else if(key=="order_cancelled"){
+      color=Colors.red;
+    }else if(key=="order_return"){
+      color=Colors.blueGrey;
+    }else if (key == 'order_dispatch'){
+      color = Colors.purple;
+    }else if (key == 'order_ofd'){
+      color = Colors.orange;
+    }/*else if(key=="order_pickup"){
       color=Colors.amber;
     }else if(key=="order_shipped"){
       color=Colors.orange;
-    }else if(key=="order_delivered"){
-      color=Colors.green;
-    }else if(key=="order_return"){
-      color=Colors.blueGrey;
-    }else if(key=="order_cancelled"){
-      color=Colors.red;
-    }
+    }*/
     return color;
   }
   cancelOrder() async {
@@ -1579,6 +1915,27 @@ Thank you,
       return false;
     }
   }
+
+  void showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Preparing PDF..."),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void hideLoading(BuildContext context) {
+    Navigator.pop(context);
+  }
+
 }
 class orderItemsSeries{
   String itemId;

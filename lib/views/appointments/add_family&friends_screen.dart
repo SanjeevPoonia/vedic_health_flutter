@@ -71,7 +71,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -169,7 +169,7 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
                         ),
                         const SizedBox(height: 12),
                         const Text(
-                          "Phone",
+                          "Mobile",
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 15,
@@ -761,11 +761,11 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
     if(selectedRelationType.isEmpty){
       Toast.show("Please select Relationship",duration: Toast.lengthLong,backgroundColor: Colors.red);
       return ;
-    }else if(emailController.text.isEmpty){
-      Toast.show("Please Enter Email",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }else if(emailController.text.isEmpty || !isValidEmail(emailController.text.toString())){
+      Toast.show("Please Enter valid email address",duration: Toast.lengthLong,backgroundColor: Colors.red);
       return ;
-    }else if(phoneController.text.isEmpty){
-      Toast.show("Please Enter Phone Number",duration: Toast.lengthLong,backgroundColor: Colors.red);
+    }else if(phoneController.text.isEmpty || !isValidGlobalMobile(phoneController.text.toString())){
+      Toast.show("Please Enter valid Mobile Number",duration: Toast.lengthLong,backgroundColor: Colors.red);
       return ;
     }else if(firstNameController.text.isEmpty){
       Toast.show("Please Enter First Name",duration: Toast.lengthLong,backgroundColor: Colors.red);
@@ -834,6 +834,24 @@ class _AddFamilyFriendScreenState extends State<AddFamilyFriendScreen> {
     }
 
 
+  }
+  bool isValidEmail(String value) {
+    if (value.isEmpty) return false;
+    final RegExp emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(value.trim());
+  }
+  bool isValidGlobalMobile(String value) {
+    if (value.isEmpty) return false;
+
+    final RegExp globalPhoneRegex = RegExp(
+      r'^\+?[1-9]\d{7,14}$',
+    );
+
+    return globalPhoneRegex.hasMatch(
+      value.replaceAll(RegExp(r'\s|-|\(|\)'), ''),
+    );
   }
 
 

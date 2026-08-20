@@ -87,7 +87,7 @@ class OrderHistoryState extends State<OrderHistoryScreen> {
                           Navigator.pop(context);
 
                         },
-                        child:Icon(Icons.arrow_back_ios_new_sharp,size: 17,color: Colors.black)),
+                        child:Icon(Icons.arrow_back_ios_new_sharp,size: 24,color: Colors.black)),
 
 
 

@@ -8,6 +8,7 @@ import 'package:vedic_health/network/loader.dart';
 
 import '../../network/Utils.dart';
 import '../../network/api_helper.dart';
+import '../../widgets/notification_bar_widget.dart';
 import 'event_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -33,18 +34,19 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
   String eventDate="";
   String eventTime="";
   String eventAddress="";
+  String eventBannerId="";
 
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              NotificationBarWidget(),
               /// Top App Bar
               Card(
                 elevation: 1,
@@ -64,7 +66,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -111,153 +113,164 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
               /// Container
               isLoading?Center(child: Loader(),):
               eventList.isNotEmpty?
-              Container(
-                padding: const EdgeInsets.all(12),
-                width: double.maxFinite,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                height: 200,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: CachedNetworkImage(
-                          imageUrl: eventBannerImage,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            height: 250,
-                            width: double.infinity,
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            height: 200,
-                            width: double.infinity,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.broken_image, color: Colors.grey),
-                          ),
-                        ),
+                  InkWell(
+                    onTap: (){
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>  EventDetailScreen(eventBannerId),
+                          ));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      width: double.maxFinite,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      // Shadow overlay
-                      Positioned.fill(
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.topRight,
-                              colors: [
-                                Colors.black54,
-                                Colors.transparent,
-                                Colors.black54,
-                              ],
-                              stops: [0.0, 0.5, 1.0],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Text on top left
-                       Positioned(
-                        top: 16,
-                        left: 16,
-                        child: Text(
-                          eventName,
-                          maxLines: 2,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      isRSVP?
-                      Positioned(
-                        top: 16,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 25, vertical: 5),
-                          decoration: BoxDecoration(
-                              color: const Color(0xFFF38328),
-                              borderRadius: BorderRadius.circular(20)),
-                          child: const Text(
-                            "RSVP",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ):Container(),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        child: Row(
+                      height: 200,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Stack(
                           children: [
-                            Container(
-                              height: 50,
-                              width: 50,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFF865940),
-                                      Color(0xFFE77735)
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(10),
+                            Positioned.fill(
+                              child: CachedNetworkImage(
+                                imageUrl: eventBannerImage,
+                                height: 200,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  height: 250,
+                                  width: double.infinity,
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                eventDate,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                                errorWidget: (context, url, error) => Container(
+                                  height: 200,
+                                  width: double.infinity,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
                               ),
                             ),
-                            SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  eventTime,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14,
+                            // Shadow overlay
+                            Positioned.fill(
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.topRight,
+                                    colors: [
+                                      Colors.black54,
+                                      Colors.transparent,
+                                      Colors.black54,
+                                    ],
+                                    stops: [0.0, 0.5, 1.0],
                                   ),
                                 ),
-                                SizedBox(
-                                  height: 5,
+                              ),
+                            ),
+                            // Text on top left
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              child: Text(
+                                eventName,
+                                maxLines: 2,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14,
                                 ),
-                                Text(
-                                  eventAddress,
+                              ),
+                            ),
+                            isRSVP?
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 25, vertical: 5),
+                                decoration: BoxDecoration(
+                                    color: const Color(0xFFF38328),
+                                    borderRadius: BorderRadius.circular(20)),
+                                child: const Text(
+                                  "RSVP",
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
+                              ),
+                            ):Container(),
+                            Positioned(
+                              bottom: 16,
+                              left: 16,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    height: 50,
+                                    width: 50,
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF865940),
+                                            Color(0xFFE77735)
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      eventDate,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        eventTime,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 5,
+                                      ),
+                                      Text(
+                                        eventAddress,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 14,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ):Container(),
+                    ),
+                  )
+              :Container(),
 
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -294,6 +307,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                   String eventD=eventList[index]['date']?.toString()??"";
                   String eventDate=formatDateUtc(eventD);
                   String timing= "$eventDate | $address";
+                  bool isFullyBooked=eventList[index]['isFullyBooked']??false;
 
                   return Padding(padding: EdgeInsets.symmetric(horizontal: 10,vertical: 5),
                   child: EventCard(
@@ -303,6 +317,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
                     onRSVP: () {},
                     isRsvp: isRsvp,
                     eventId: eventId,
+                    isFullyBooked: isFullyBooked,
                   ),);
                 },
               ):Center(child: Padding(padding: EdgeInsets.all(16),
@@ -318,8 +333,7 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
   @override
   void initState() {
@@ -372,10 +386,14 @@ class _EventHomeScreenState extends State<EventHomeScreen> {
       List<dynamic>evList=(responseJSON['events'] as List?) ?? [];
       totalPage=responseJSON['totalPages']??1;
       totalSize=responseJSON['totalCount']??0;
-      eventList.addAll(evList);
+
+      eventList.addAll(
+        evList.where((e) => (e['is_expired'] ?? 0) != 1),
+      );
+      //eventList.addAll(evList);
 
       if(eventList.isNotEmpty){
-        String eventId=eventList[0]['_id']?.toString()??"";
+        eventBannerId=eventList[0]['_id']?.toString()??"";
         isRSVP=eventList[0]['is_rsvp']??false;
         eventName= eventList[0]['eventname']?.toString()??"";
         String imagePath= eventList[0]['coverImage']?.toString()??"";
@@ -409,6 +427,7 @@ class EventCard extends StatelessWidget {
   final VoidCallback onRSVP;
   final bool isRsvp;
   final String eventId;
+  final bool isFullyBooked;
 
   const EventCard({
     super.key,
@@ -417,13 +436,15 @@ class EventCard extends StatelessWidget {
     required this.timing,
     required this.onRSVP,
     required this.isRsvp,
-    required this.eventId
+    required this.eventId,
+    required this.isFullyBooked,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+
         Navigator.push(
             context,
             MaterialPageRoute(
@@ -516,6 +537,27 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   /// Read More Button
+                  isFullyBooked?Align(
+                    alignment: Alignment.centerLeft,
+                    child: InkWell(
+                      onTap: (){},
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 25, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFB8B6B6),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: const Text(
+                          "Fully Booked",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ):
                   isRsvp?Align(
                     alignment: Alignment.centerLeft,
                     child: InkWell(

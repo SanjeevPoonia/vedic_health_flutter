@@ -13,6 +13,7 @@ import '../network/api_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/validators.dart';
 import '../widgets/appbar_widget.dart';
+import '../widgets/notification_bar_widget.dart';
 import 'login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -37,8 +38,7 @@ class AddressDetailsState extends State<ChangePasswordScreen> {
       backgroundColor: Color(0xFFF7F9FB),
       body: Column(
         children: [
-          SizedBox(height: 22),
-
+          NotificationBarWidget(),
           AppBarWidget("Change Password"),
           Expanded(
             child: Container(

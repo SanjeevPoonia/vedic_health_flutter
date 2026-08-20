@@ -69,7 +69,7 @@ class _BookClassScreenState extends State<BookClassScreen> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black),
+                            size: 24, color: Colors.black),
                       ),
                       const Expanded(
                         child: Center(
@@ -218,6 +218,7 @@ class _BookClassScreenState extends State<BookClassScreen> {
                             SizedBox(
                               height: 18,
                               width: 18,
+
                               child: SvgPicture.asset(
                                 "assets/calendar.svg",
                                 color: Colors.grey,

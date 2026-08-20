@@ -15,15 +15,19 @@ import 'package:vedic_health/views/product_detail_screen.dart';
 import '../network/Utils.dart';
 import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
+import '../widgets/notification_bar_widget.dart';
 
 class AddAddressScreen extends StatefulWidget {
+  bool isEdit;
+  dynamic addressData;
+  AddAddressScreen(this.isEdit, this.addressData);
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<AddAddressScreen> {
   int selectedIndex = 0;
   int selectedSortIndex = 0;
-  var selectDOB = TextEditingController();
+
   var nameController = TextEditingController();
   var streetAddressController = TextEditingController();
   var flatController = TextEditingController();
@@ -33,54 +37,19 @@ class _MyHomePageState extends State<AddAddressScreen> {
   var countryController = TextEditingController();
   var mobileController = TextEditingController();
   String? profileImage = "";
-
   String selectedAddressID = "";
-  final List<String> tabs = ["Category", "Brand"];
-
-  List<bool> categoryCheckList = [false, false, false, false];
-  List<bool> brandCheckList = [false, false, false, false];
-
-  List<String> categoryList = [
-    "All Categories (390)",
-    "Health & Beauty (195)",
-    "Health Care (195)",
-    "Personal Care (0)"
-  ];
-  int selectedTab = 1;
-
-  List<String> brandList = [
-    "Auromere",
-    "Thorne",
-    "J. Crow's",
-    "Kerala Ayurveda"
-  ];
-  List<String> sortList = [
-    "Most Popular",
-    "High to Low",
-    "Low to High",
-    "Highly Rated"
-  ];
-  double shippingCost = 0;
-
-  int selectedRadioButton = 0;
-
-  bool checkToggle = false;
-
-  bool isLoading = false;
-  List<dynamic> addressList = [];
-  List<dynamic> centersList = [];
-
   final _formKey = GlobalKey<FormState>();
+
+  String editAddressId="";
 
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Color(0xFFF7F9FB),
-        //backgroundColor: Colors.red,
+    return  Scaffold(
+        backgroundColor: Colors.white,
         body: Column(
           children: [
+            NotificationBarWidget(),
             Card(
               elevation: 2,
               margin: EdgeInsets.only(bottom: 10),
@@ -108,12 +77,12 @@ class _MyHomePageState extends State<AddAddressScreen> {
                           Navigator.pop(context);
                         },
                         child: Icon(Icons.arrow_back_ios_new_sharp,
-                            size: 17, color: Colors.black)),
+                            size: 24, color: Colors.black)),
                     Expanded(
                       child: Center(
                         child: Padding(
                           padding: const EdgeInsets.only(right: 10),
-                          child: Text("Add new address",
+                          child: Text(widget.isEdit?"Edit Address":"Add new address",
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
@@ -558,19 +527,47 @@ class _MyHomePageState extends State<AddAddressScreen> {
             )
           ],
         ),
-      ),
-    );
+      );
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    if(widget.isEdit){
+      _fetchAndSetEditAddress();
+    }
   }
 
-  // Successurl
-  //http://vedic.qdegrees.com:3008/order-management/paymentSuccess/682dff96a56e642c84ea1a4f
+  _fetchAndSetEditAddress(){
+    if(widget.addressData!=null){
+      dynamic data=widget.addressData;
 
+      String name=data["name"]?.toString()??"";
+      String stAddress=data["area"]?.toString()??"";
+      String flatHouse=data["flatNo"]?.toString()??"";
+      String state=data["state"]?.toString()??"";
+      String city=data["city"]?.toString()??"";
+      String country=data["country"]?.toString()??"";
+      String pincode=data["pincode"]?.toString()??"";
+      String mobile=data["mobile"]?.toString()??"";
+      editAddressId=data['_id']?.toString()??"";
+
+      nameController.text=name;
+      streetAddressController .text=stAddress;
+      flatController .text=flatHouse;
+      cityController .text=city;
+      stateController .text=state;
+      zipcodeController .text=pincode;
+      countryController .text=country;
+      mobileController .text=mobile;
+
+      setState(() {
+
+      });
+
+
+    }
+  }
   fetchCountryID() async {
     APIDialog.showAlertDialog(context, "Please wait...");
 
@@ -621,7 +618,12 @@ class _MyHomePageState extends State<AddAddressScreen> {
     print(stateID);
     print(countryID);
 
-    addAddress(stateID, countryID);
+    if(widget.isEdit){
+      editAddress(stateID, countryID);
+    }else{
+      addAddress(stateID, countryID);
+    }
+
   }
 
   addAddress(String stateCode, String countryCode) async {
@@ -655,7 +657,7 @@ class _MyHomePageState extends State<AddAddressScreen> {
     var responseJSON = json.decode(response.toString());
     print(response.toString());
 
-    if (responseJSON['message'] == "Address added successfully!") {
+    if (responseJSON['statusCode'] == 201) {
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
@@ -667,6 +669,56 @@ class _MyHomePageState extends State<AddAddressScreen> {
       Navigator.pop(context, addressID);
     } else {
       Toast.show(responseJSON['error'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+
+    setState(() {});
+  }
+  editAddress(String stateCode, String countryCode) async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+
+    String? userId = await MyUtils.getSharedPreferences("user_id");
+    var data = {
+      "id": editAddressId,
+      "name": nameController.text.toString(),
+      "mobile": mobileController.text.toString(),
+      "flatNo": flatController.text.toString(),
+      "area": streetAddressController.text.toString(),
+      "state": stateController.text.toString(),
+      "city": cityController.text.toString(),
+      "country": countryController.text.toString(),
+      "pincode": zipcodeController.text.toString(),
+      "user_id": userId,
+      "stateCode": stateCode,
+      "countryCode": countryCode
+    };
+
+    print(data.toString());
+    var requestModel = {'data': base64.encode(utf8.encode(json.encode(data)))};
+    print(requestModel);
+
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response =
+        await helper.postAPI('users/edit-address', requestModel, context);
+
+    Navigator.pop(context);
+
+    var responseJSON = json.decode(response.toString());
+    print(response.toString());
+
+    if (responseJSON['statusCode'] == 200) {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      String addressID = "";
+      addressID = responseJSON["data"]["_id"].toString();
+      Navigator.pop(context);
+      Navigator.pop(context, addressID);
+    } else {
+      Toast.show(responseJSON['message']?.toString()??"Something went wrong. Please try again",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);

@@ -1,0 +1,155 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:toast/toast.dart';
+import 'package:vedic_health/network/constants.dart';
+import 'package:vedic_health/views/payment_success_screen.dart';
+import 'package:vedic_health/views/practitioner/practitioner_paymentsucess_screen.dart';
+import 'package:vedic_health/widgets/notification_bar_widget.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+import '../../network/loader.dart';
+import '../../widgets/appbar_widget.dart';
+
+class PractitionerPaymentPage extends StatefulWidget{
+  final String url;
+  final String orderID;
+
+  PractitionerPaymentPage(this.url, this.orderID);
+
+  _practitionerPaymennt createState()=> _practitionerPaymennt();
+}
+class _practitionerPaymennt extends State<PractitionerPaymentPage> {
+  bool isLoading = true;
+  late final WebViewController _controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () {
+        Navigator.pop(context);
+        return Future.value(false);
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body:
+        Column(
+          children: [
+            NotificationBarWidget(),
+            AppBarWidget("Payment"),
+            Expanded(
+              child:
+              isLoading ?
+              Center(
+                child: Loader(),
+              ) :
+              WebViewWidget(
+                controller: _controller,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    print(widget.url);
+    _controller = WebViewController()
+      ..enableZoom(true)
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Update loading bar.
+          },
+          onPageStarted: (String url) {
+            setState(() {
+              isLoading = true;
+            });
+          },
+          onPageFinished: (String url) {
+            setState(() {
+              isLoading = false;
+            });
+          },
+
+          onHttpError: (HttpResponseError error) {},
+          onWebResourceError: (WebResourceError error) {},
+          onNavigationRequest: (NavigationRequest request) {
+            print("***&&&");
+            print(request.url.toString());
+
+
+            if (request.url.toString().startsWith(
+                "${AppConstant.appBaseURL}order-management/paymentSuccess")) {
+              ToastContext().init(context);
+              Toast.show('Payment Successful',
+                  duration: Toast.lengthShort,
+                  gravity: Toast.bottom,
+                  backgroundColor: Colors.green);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PractitionerPaymentSuccessScreen(widget.orderID, 0)),
+                      (Route<dynamic> route) => false);
+              return NavigationDecision.prevent;
+            } else if (request.url.toString().startsWith("${AppConstant
+                .appBaseURL}event_management/eventPaymentSuccess")) {
+              ToastContext().init(context);
+              Toast.show('Payment Successful',
+                  duration: Toast.lengthShort,
+                  gravity: Toast.bottom,
+                  backgroundColor: Colors.green);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PractitionerPaymentSuccessScreen(widget.orderID, 1)),
+                      (Route<dynamic> route) => false);
+              return NavigationDecision.prevent;
+            } else if (request.url.toString().startsWith(
+                "${AppConstant.appBaseURL}course_management/paymentSuccess")) {
+              ToastContext().init(context);
+              Toast.show('Payment Successful',
+                  duration: Toast.lengthShort,
+                  gravity: Toast.bottom,
+                  backgroundColor: Colors.green);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PractitionerPaymentSuccessScreen(widget.orderID, 3)),
+                      (Route<dynamic> route) => false);
+              return NavigationDecision.prevent;
+            } else if (request.url.toString().startsWith("${AppConstant
+                .appBaseURL}membership_buy_management/paymentSuccess")) {
+              ToastContext().init(context);
+              Toast.show('Payment Successful',
+                  duration: Toast.lengthShort,
+                  gravity: Toast.bottom,
+                  backgroundColor: Colors.green);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PractitionerPaymentSuccessScreen(widget.orderID, 4)),
+                      (Route<dynamic> route) => false);
+              return NavigationDecision.prevent;
+            } else if (request.url.toString().startsWith("${AppConstant.appBaseURL}Shop/thankYou")||request.url.toString().contains("AyurvedicInitialConsult/Thankyou")) {
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          PractitionerPaymentSuccessScreen(widget.orderID, 2)),
+                      (Route<dynamic> route) => false);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+}

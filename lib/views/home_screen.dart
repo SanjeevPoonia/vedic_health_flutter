@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,10 +14,13 @@ import 'package:vedic_health/network/Utils.dart';
 import 'package:vedic_health/network/constants.dart';
 import 'package:vedic_health/network/loader.dart';
 import 'package:vedic_health/utils/app_theme.dart';
+import 'package:vedic_health/views/appointments/appointment_home.dart';
+import 'package:vedic_health/views/appointments/book_appointment_screen.dart';
 import 'package:vedic_health/views/menu_screen.dart';
 import 'package:vedic_health/views/product_detail_screen.dart';
 import 'package:vedic_health/views/search_product_screen.dart';
 
+import '../network/api_dialog.dart';
 import '../network/api_helper.dart';
 import '../widgets/drawer/zoom_scaffold.dart' as MEN;
 import 'appointments/book_classes/select_class_screen.dart';
@@ -37,6 +41,15 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
   String? name;
   final GlobalKey<ScaffoldState> _key = GlobalKey();
   final ApiBaseHelper helper = ApiBaseHelper();
+  bool _isCalling = false;
+
+
+  String catBannerDescription="";
+  String catBannerId="";
+  String catBannerImage="";
+  String catBannerName="";
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -124,38 +137,88 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                                 const SizedBox(height: 22),
+                                catBannerId.isNotEmpty?
                                 Stack(
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                                      child: Image.asset("assets/banner1.png"),
+                                      child: catBannerImage.isNotEmpty?CachedNetworkImage(
+                                        height: 150,
+                                        width: double.infinity,
+                                        imageUrl: catBannerImage,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error, color: Colors.red),
+                                      ):Image.asset("assets/banner1.png"),
                                     ),
+
+                                    Positioned(
+                                      left: 12,
+                                      right: 12,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        height: 150,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.45), // 👈 opacity control
+                                        ),
+                                      ),
+                                    ),
+
                                     Padding(
-                                      padding: const EdgeInsets.only(left: 26),
+                                      padding: const EdgeInsets.only(left: 26,right: 26),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           const SizedBox(height: 10),
-                                          const Text("The Combination of\nNature and Science",
+                                          Text(catBannerName,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 10),
+                                           Text(catBannerDescription,
                                               style: TextStyle(
-                                                fontSize: 17,
+                                                fontSize: 14,
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.white,
-                                              )),
+                                              ),
+                                             maxLines: 2,
+                                             overflow: TextOverflow.ellipsis,
+                                           ),
                                           const SizedBox(height: 9),
-                                          Container(
-                                            width: 108,
-                                            height: 37,
-                                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(77), color: Colors.white),
-                                            child: const Center(
-                                              child: Text("Shop Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.greenColor,)),
+                                          InkWell(
+                                            onTap: (){
+                                              if(catBannerId.isNotEmpty){
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryWiseProducts(catBannerName,catBannerId)));
+                                              }
+
+                                            },
+                                            child: Container(
+                                              width: 108,
+                                              height: 37,
+                                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(77), color: Colors.white),
+                                              child: const Center(
+                                                child: Text("Shop Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.greenColor,)),
+                                              ),
                                             ),
                                           )
                                         ],
                                       ),
                                     )
                                   ],
-                                ),
+                                ):Container(),
                                 const SizedBox(height: 22),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -196,6 +259,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                               (BuildContext context, int pos) {
                                             String categoryName=categoryList[pos]["cat_name"]?.toString()??"";
                                             String categoryId=categoryList[pos]["cat_id"]?.toString()??"";
+                                            String catImage=categoryList[pos]['image']?.toString()??"";
                                             return Row(
                                               children: [
                                                 GestureDetector(
@@ -207,23 +271,44 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     width: 95,
                                                     child: Stack(
                                                       children: [
+                                                        catImage.isNotEmpty?
+                                                            CachedNetworkImage(
+                                                              height: 84,
+                                                              width: 95,
+                                                              imageUrl: catImage,
+                                                              fit: BoxFit.cover,
+                                                              placeholder: (context, url) => Container(
+                                                                color: Colors.grey[200],
+                                                                child: const Center(
+                                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                                ),
+                                                              ),
+                                                              errorWidget: (context, url, error) =>
+                                                              const Icon(Icons.error, color: Colors.red),
+                                                            ):
                                                         Image.asset(
-                                                            "assets/grid1.png"),
+                                                            "assets/grid1.png",
+                                                          height: 84,
+                                                          width: 95,
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                        Container(
+                                                          height: 84,
+                                                          width: 95,
+                                                          color: Colors.black.withOpacity(0.6),   // 40% black overlay
+                                                        ),
                                                         Center(
                                                           child: Text(
                                                               categoryName,
-                                                              style: TextStyle(
+                                                              style: const TextStyle(
                                                                 fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .white,
+                                                                fontWeight: FontWeight.w500,
+                                                                color: Colors.white,
                                                               ),
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              maxLines: 3),
+                                                              textAlign: TextAlign.center,
+                                                              maxLines: 3,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
                                                         )
                                                       ],
                                                     ),
@@ -266,11 +351,12 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                       String discountedPrice=productList[index]["discounted_price"]?.toString()??"";
                                       String productImage="";
                                       String productprice="";
-                                      if(discountedPrice.isNotEmpty){
-                                        productprice=discountedPrice;
-                                      }else {
+                                      if(price.isNotEmpty){
                                         productprice=price;
+                                      }else {
+                                        productprice=discountedPrice;
                                       }
+
                                       if(coverImage.isNotEmpty){
                                         productImage=AppConstant.appBaseURL+coverImage;
                                       }
@@ -371,7 +457,10 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       fontWeight:
                                                           FontWeight.w500,
                                                       color: Color(0xFFF38328),
-                                                    )),
+                                                    ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -422,7 +511,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                         context,
                                                         MaterialPageRoute(
                                                           builder: (context) =>
-                                                          const SelectClassScreen(),
+                                                          const AppointmentHomeScreen(),
                                                         ));
                                                   },
                                                   child:Container(
@@ -589,10 +678,10 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                       String discountedPrice=popularProductList[index]["discounted_price"]?.toString()??"";
                                       String productImage="";
                                       String productprice="";
-                                      if(discountedPrice.isNotEmpty){
-                                        productprice=discountedPrice;
-                                      }else {
+                                      if(price.isNotEmpty){
                                         productprice=price;
+                                      }else {
+                                        productprice=discountedPrice;
                                       }
                                       if(coverImage.isNotEmpty){
                                         productImage=AppConstant.appBaseURL+coverImage;
@@ -707,7 +796,10 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       fontWeight:
                                                           FontWeight.w500,
                                                       color: Color(0xFFF38328),
-                                                    )),
+                                                    ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 2,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -725,7 +817,6 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   void allCategoryBottomSheet(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -792,6 +883,7 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                           itemCount: categoryList.length,
                           itemBuilder: (context, index) {
+                            String catImage=categoryList[index]['image']?.toString()??"";
                             return GestureDetector(
                               onTap: () {
 
@@ -808,10 +900,35 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                               },
                               child: SizedBox(
                                 height: 84,
-                                width: 95,
+                                width: double.infinity,
                                 child: Stack(
                                   children: [
-                                    Image.asset("assets/grid1.png"),
+                                    catImage.isNotEmpty?
+                                    CachedNetworkImage(
+                                      height: 84,
+                                      width: double.infinity,
+                                      imageUrl: catImage,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error, color: Colors.red),
+                                    ):
+                                    Image.asset(
+                                      "assets/grid1.png",
+                                      height: 84,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    Container(
+                                      height: 84,
+                                      width: double.infinity,
+                                      color: Colors.black.withOpacity(0.6),   // 40% black overlay
+                                    ),
                                     Center(
                                       child: Text(
                                         categoryList[index]["cat_name"].toString(),
@@ -821,6 +938,8 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
                                           color: Colors.white,
                                         ),
                                         textAlign: TextAlign.center,
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -841,7 +960,6 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   fetchCategories() async {
     setState(() {
       isLoading = true;
@@ -864,21 +982,17 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
     for (int i = 0; i < categoryIDs.length; i++) {
       categoryList.add({
         "cat_id": categoryIDs[i].toString(),
-        "cat_name": responseJSON["data"][categoryIDs[i].toString()]
-                ["categoryName"]
-            .toString(),
+        "cat_name": responseJSON["data"][categoryIDs[i].toString()]["categoryName"].toString(),
       });
     }
-
     if (categoryIDs.isNotEmpty) {
       productList = responseJSON["data"][categoryIDs[0].toString()]["products"];
     }
-
     print(categoryList.toString());
     print("%%%%%");
     print(productList.toString());
-
     setState(() {});
+    fetchCatTypes();
   }
   void _showShareOptions(BuildContext context, id) {
     showModalBottomSheet(
@@ -992,12 +1106,14 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
     });
 
   }
-
   Future<void> launchPhoneCall() async {
+    if (_isCalling) return; // prevent multiple taps
+
+    setState(() {
+      _isCalling = true;
+    });
 
     final Uri callUri = Uri.parse('tel:2407530151');
-
-
     try {
       if (await canLaunchUrl(callUri)) {
         await launchUrl(
@@ -1009,6 +1125,87 @@ class _MyHomePageState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       print('Error launching call: $e');
+    }finally{
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _isCalling = false;
+          });
+        }
+      });
     }
   }
+  fetchCatTypes() async {
+    APIDialog.showAlertDialog(context, "Please wait...");
+    ApiBaseHelper helper = ApiBaseHelper();
+    Map<String, dynamic> requestBody = {
+      "dropdown_type":"category",
+      "page":1,
+      "pageSize":100// Assuming default page size
+    };
+    var resModel = {
+      'data': base64.encode(utf8.encode(json.encode(requestBody)))
+    };
+    var response = await helper.postAPI('master/allData', resModel, context);
+    if(Navigator.canPop(context)){
+      Navigator.of(context).pop();
+    }
+    var responseJSON= json.decode(response.toString());
+    print(responseJSON);
+    if(responseJSON["statusCode"]==200){
+      List<dynamic> catList=(responseJSON['result'] as List?)??[];
+
+      for(var item in catList){
+
+        String _id=item['_id']?.toString()??"";
+        String _file=item['file']?.toString()??"";
+        String iconFile=item['icon_file']?.toString()??"";
+        String description=item['description']?.toString()??"";
+
+        for(int i=0;i<categoryList.length;i++){
+          String catId=categoryList[i]['cat_id']?.toString()??"";
+          if(catId==_id){
+            String fileNew="";
+            if(_file.isNotEmpty){
+              fileNew=AppConstant.appBaseURL+_file;
+            }else if(iconFile.isNotEmpty){
+              fileNew=AppConstant.appBaseURL+iconFile;
+            }
+            categoryList[i]['image']=fileNew;
+            categoryList[i]['description']=description;
+
+          }
+        }
+
+
+        if(categoryList.length>1){
+
+          int position=categoryList.length-2;
+          catBannerImage=categoryList[position]['image']?.toString()??"";
+          catBannerDescription=categoryList[position]['description']?.toString()??"";
+          catBannerId=categoryList[position]['cat_id']?.toString()??"";
+          catBannerName=categoryList[position]['cat_name']?.toString()??"";
+
+        }else if(categoryList.isNotEmpty){
+          catBannerImage=categoryList[0]['image']?.toString()??"";
+          catBannerDescription=categoryList[0]['description']?.toString()??"";
+          catBannerId=categoryList[0]['cat_id']?.toString()??"";
+          catBannerName=categoryList[0]['cat_name']?.toString()??"";
+        }
+
+        setState(() {
+
+        });
+
+
+
+      }
+
+
+    }
+
+
+
+  }
+
 }
